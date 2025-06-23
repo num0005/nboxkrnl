@@ -10,6 +10,9 @@
 #define ASM_BEGIN __asm {
 #define ASM_END }
 
+// segment tag, not currently enabled but will eventually be used to discard INIT after boot, etc
+#define CODE_SEG(segment)
+
 #include <stdint.h>
 #include <stddef.h>
 #include "bug_codes.hpp"
@@ -22,8 +25,14 @@
 #define XBOXAPI  __stdcall
 #define FASTCALL __fastcall
 #define CDECL    __cdecl
+#define NTAPI XBOXAPI
+#define OUT
+#define IN
+#define OPTIONAL
+#define PAGED_CODE()
+static inline void DPRINT(const char* fmt, ...) {};
 
-#define EXPORTNUM(n)
+#define EXPORTNUM(n) 
 #define DLLEXPORT __declspec(dllexport)
 
 
@@ -41,9 +50,9 @@ using USHORT = uint16_t;
 using CSHORT = int16_t;
 using WORD = uint16_t;
 using DWORD = uint32_t;
-using ULONG = uint32_t;
+using ULONG = unsigned long;
 using UINT = uint32_t;
-using LONG = int32_t;
+using LONG = long;
 using INT = int32_t;
 using LONGLONG = int64_t;
 using ULONGLONG = uint64_t;
@@ -56,11 +65,13 @@ using PULONG = ULONG *;
 using PULONGLONG = ULONGLONG *;
 using LPDWORD = DWORD *;
 using PUCHAR = UCHAR *;
+using PWSTR = WCHAR *;
+using PCWSTR = const WCHAR *;
 using PLONG = LONG *;
 using PCSZ = const CHAR *;
-using ULONG_PTR = uintptr_t;
-using DWORD_PTR = uintptr_t;
-using LONG_PTR = intptr_t;
+using ULONG_PTR = ULONG;
+using DWORD_PTR = ULONG;
+using LONG_PTR = LONG;
 using PULONG_PTR = ULONG_PTR *;
 using SIZE_T = ULONG_PTR;
 using PSIZE_T = SIZE_T *;
@@ -276,3 +287,6 @@ struct IMAGE_SECTION_HEADER {
 	DWORD   Characteristics;
 };
 using PIMAGE_SECTION_HEADER = IMAGE_SECTION_HEADER *;
+
+typedef ULONG KSPIN_LOCK;  // winnt ntndis
+typedef KSPIN_LOCK* PKSPIN_LOCK;
