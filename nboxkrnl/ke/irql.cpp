@@ -10,30 +10,12 @@
 
 EXPORTNUM(103) KIRQL XBOXAPI KeGetCurrentIrql()
 {
-	ASM(movzx eax, byte ptr [KiPcr].Irql);
+	return KeGetPcr()->Irql;
 }
 
 EXPORTNUM(129) KIRQL XBOXAPI KeRaiseIrqlToDpcLevel()
 {
-	// This function is called frequently, so avoid forwarding to KfRaiseIrql
-	// This function must update the irql atomically, so we use inline assembly
-
-	ASM_BEGIN
-		ASM(movzx eax, byte ptr [KiPcr].Irql); // clear the high bits to avoid returning a bogus irql
-		ASM(mov byte ptr [KiPcr].Irql, DISPATCH_LEVEL);
-#if _DEBUG
-		// Only bug check in debug builds
-		ASM(cmp al, DISPATCH_LEVEL);
-		ASM(jle ok);
-		ASM(push 0);
-		ASM(push 0);
-		ASM(push DISPATCH_LEVEL);
-		ASM(push eax);
-		ASM(push IRQL_NOT_GREATER_OR_EQUAL);
-		ASM(call KeBugCheckEx);
-	ok:
-#endif
-	ASM_END
+	return KfRaiseIrql(DISPATCH_LEVEL);
 }
 
 EXPORTNUM(130) KIRQL XBOXAPI KeRaiseIrqlToSynchLevel()
@@ -41,62 +23,64 @@ EXPORTNUM(130) KIRQL XBOXAPI KeRaiseIrqlToSynchLevel()
 	return KfRaiseIrql(SYNC_LEVEL);
 }
 
+// source: reactos
 EXPORTNUM(160) KIRQL FASTCALL KfRaiseIrql
 (
 	KIRQL NewIrql
 )
 {
-	// This function must update the irql atomically, so we use inline assembly
+	PKPCR Pcr = KeGetPcr();
+	KIRQL CurrentIrql;
 
-	ASM_BEGIN
-		ASM(movzx eax, byte ptr [KiPcr].Irql); // clear the high bits to avoid returning a bogus irql
-		ASM(mov byte ptr [KiPcr].Irql, cl);
-#if _DEBUG
-		// Only bug check in debug builds
-		ASM(cmp al, cl);
-		ASM(jle ok);
-		ASM(movzx ecx, cl);
-		ASM(push 0);
-		ASM(push 0);
-		ASM(push ecx);
-		ASM(push eax);
-		ASM(push IRQL_NOT_GREATER_OR_EQUAL);
-		ASM(call KeBugCheckEx);
-	ok:
-#endif
-	ASM_END
+	/* Read current IRQL */
+	CurrentIrql = Pcr->Irql;
+
+	#if DBG
+	/* Validate correct raise */
+	if (CurrentIrql > NewIrql)
+	{
+		/* Crash system */
+		Pcr->Irql = PASSIVE_LEVEL;
+		KeBugCheck(IRQL_NOT_GREATER_OR_EQUAL);
+	}
+	#endif
+
+		/* Set new IRQL */
+	Pcr->Irql = NewIrql;
+
+	/* Return old IRQL */
+	return CurrentIrql;
 }
 
 EXPORTNUM(161) VOID FASTCALL KfLowerIrql
 (
-	KIRQL NewIrql
+	KIRQL OldIrql
 )
 {
-	// This function must update the irql atomically, so we use inline assembly
+	PKPCR Pcr = KeGetPcr();
 
-	ASM_BEGIN
-		ASM(and ecx, 0xFF); // clear the high bits to avoid using a bogus irql
-#if _DEBUG
-		// Only bug check in debug builds
-		ASM(cmp byte ptr [KiPcr].Irql, cl);
-		ASM(jge ok);
-		ASM(xor eax, eax);
-		ASM(mov al, byte ptr [KiPcr].Irql);
-		ASM(mov byte ptr [KiPcr].Irql, HIGH_LEVEL);
-		ASM(push 0);
-		ASM(push 0);
-		ASM(push ecx);
-		ASM(push eax);
-		ASM(push IRQL_NOT_LESS_OR_EQUAL);
-		ASM(call KeBugCheckEx);
-	ok:
-#endif
-		ASM(pushfd);
-		ASM(cli);
-		ASM(mov byte ptr [KiPcr].Irql, cl);
-		ASM(call HalpCheckUnmaskedInt);
-		ASM(popfd);
-	ASM_END
+	#if DBG
+		/* Validate correct lower */
+	if (OldIrql > Pcr->Irql)
+	{
+		/* Crash system */
+		Pcr->Irql = HIGH_LEVEL;
+		KeBugCheck(IRQL_NOT_LESS_OR_EQUAL);
+	}
+	#endif
+
+	/* Save EFlags and disable interrupts */
+	ULONG EFlags = __readeflags();
+	_disable();
+
+	/* Set old IRQL */
+	Pcr->Irql = OldIrql;
+
+	/* Check for pending software interrupts */
+	HalpCheckUnmaskedInt();
+
+	/* Restore interrupt state */
+	__writeeflags(EFlags);
 }
 
 EXPORTNUM(163) __declspec(naked) VOID FASTCALL KiUnlockDispatcherDatabase

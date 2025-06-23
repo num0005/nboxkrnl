@@ -85,24 +85,57 @@ extern UCHAR HalpBlockAmount;
 extern KEVENT HalpSmbusLock;
 extern KEVENT HalpSmbusComplete;
 
+// macro copied from reactos source code then modified to work in a header
+
+#if defined(__GNUC__)
+
+#define HalpHwInt(x)                                                \
+    static inline                                                   \
+    VOID                                                            \
+    XBOXAPI                                                         \
+    HalpHwInt##x(VOID)                                              \
+    {                                                               \
+        asm volatile ("int $%c0\n"::"i"(PRIMARY_VECTOR_BASE + x));  \
+    }
+
+#elif defined(_MSC_VER)
+
+#define HalpHwInt(x)                                                \
+    static inline                                                   \
+    VOID                                                            \
+    XBOXAPI                                                         \
+    HalpHwInt##x(VOID)                                              \
+    {                                                               \
+        __asm                                                       \
+        {                                                           \
+            int IDT_INT_VECTOR_BASE + x                             \
+        }                                                           \
+    }
+
+#else
+#error Unsupported compiler
+#endif
+
+HalpHwInt(0);
+HalpHwInt(1);
+HalpHwInt(2);
+HalpHwInt(3);
+HalpHwInt(4);
+HalpHwInt(5);
+HalpHwInt(6);
+HalpHwInt(7);
+HalpHwInt(8);
+HalpHwInt(9);
+HalpHwInt(10);
+HalpHwInt(11);
+HalpHwInt(12);
+HalpHwInt(13);
+HalpHwInt(14);
+HalpHwInt(15);
+
 VOID XBOXAPI HalpSwIntApc();
 VOID XBOXAPI HalpSwIntDpc();
-VOID XBOXAPI HalpHwInt0();
-VOID XBOXAPI HalpHwInt1();
-VOID XBOXAPI HalpHwInt2();
-VOID XBOXAPI HalpHwInt3();
-VOID XBOXAPI HalpHwInt4();
-VOID XBOXAPI HalpHwInt5();
-VOID XBOXAPI HalpHwInt6();
-VOID XBOXAPI HalpHwInt7();
-VOID XBOXAPI HalpHwInt8();
-VOID XBOXAPI HalpHwInt9();
-VOID XBOXAPI HalpHwInt10();
-VOID XBOXAPI HalpHwInt11();
-VOID XBOXAPI HalpHwInt12();
-VOID XBOXAPI HalpHwInt13();
-VOID XBOXAPI HalpHwInt14();
-VOID XBOXAPI HalpHwInt15();
+
 
 VOID XBOXAPI HalpInterruptCommon();
 VOID XBOXAPI HalpClockIsr();
@@ -136,6 +169,7 @@ VOID HalpInitPIC();
 VOID HalpInitPIT();
 VOID HalpInitSMCstate();
 VOID HalpReadCmosTime(PTIME_FIELDS TimeFields);
+// check for unmasked interrupts, must be called with interrupts disabled
 VOID HalpCheckUnmaskedInt();
 VOID XBOXAPI HalpSmbusDpcRoutine(PKDPC Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2);
 VOID HalpExecuteReadSmbusCycle(UCHAR SlaveAddress, UCHAR CommandCode, BOOLEAN ReadWordValue);

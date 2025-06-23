@@ -7,6 +7,16 @@
 #include "rtl.hpp"
 #include <assert.h>
 
+typedef union _PIC_MASK
+{
+	struct
+	{
+		UCHAR Master;
+		UCHAR Slave;
+	};
+	USHORT Both;
+} PIC_MASK, * PPIC_MASK;
+
 
 // Mask out sw interrupts in HalpIntInProgress
 #define ACTIVE_IRQ_MASK 0xFFFFFFF0
@@ -184,122 +194,33 @@ VOID __declspec(naked) XBOXAPI HalpSwIntDpc()
 	ASM_END
 }
 
-VOID XBOXAPI HalpHwInt0()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 0);
-}
-
-VOID XBOXAPI HalpHwInt1()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 1);
-}
-
-VOID XBOXAPI HalpHwInt2()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 2);
-}
-
-VOID XBOXAPI HalpHwInt3()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 3);
-}
-
-VOID XBOXAPI HalpHwInt4()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 4);
-}
-
-VOID XBOXAPI HalpHwInt5()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 5);
-}
-
-VOID XBOXAPI HalpHwInt6()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 6);
-}
-
-VOID XBOXAPI HalpHwInt7()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 7);
-}
-
-VOID XBOXAPI HalpHwInt8()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 8);
-}
-
-VOID XBOXAPI HalpHwInt9()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 9);
-}
-
-VOID XBOXAPI HalpHwInt10()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 10);
-}
-
-VOID XBOXAPI HalpHwInt11()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 11);
-}
-
-VOID XBOXAPI HalpHwInt12()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 12);
-}
-
-VOID XBOXAPI HalpHwInt13()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 13);
-}
-
-VOID XBOXAPI HalpHwInt14()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 14);
-}
-
-VOID XBOXAPI HalpHwInt15()
-{
-	ASM(int IDT_INT_VECTOR_BASE + 15);
-}
-
-VOID __declspec(naked) HalpCheckUnmaskedInt()
+VOID HalpCheckUnmaskedInt()
 {
 	// On entry, interrupts must be disabled
+	NT_ASSERT_MESSAGE(((__readeflags() & 0x200) == 0),
+		"CRITICAL: Interrupts must be disabled when unmasking!");
+	
+	DWORD PendingIrqlMask = HalpPendingInt & HalpIrqlMasks[KeGetPcr()->Irql];
+	if (PendingIrqlMask && !(HalpIntInProgress & ACTIVE_IRQ_MASK))
+	{
+		ULONG PendingIrql;
+		/* Check if pending IRQL affects hardware state */
+		RtlpBitScanReverse(&PendingIrql, PendingIrqlMask);
+		if (PendingIrql > DISPATCH_LEVEL)
+		{
+			/* Set new PIC mask */
+			PIC_MASK Mask;
+			Mask.Both = HalpPendingInt & 0xFFFF;
+			__outbyte(PIC_MASTER_DATA, Mask.Master);
+			__outbyte(PIC_SLAVE_DATA, Mask.Slave);
 
-	ASM_BEGIN
-	check_int:
-		ASM(movzx ecx, byte ptr [KiPcr]KPCR.Irql);
-		ASM(mov edx, HalpPendingInt);
-		ASM(and edx, HalpIrqlMasks[ecx * 4]); // if not zero, then there are one or more pending interrupts that have become unmasked
-		ASM(jnz unmasked_int);
-		ASM(jmp exit_func);
-	unmasked_int:
-		ASM(test HalpIntInProgress, ACTIVE_IRQ_MASK); // make sure we complete the active IRQ first
-		ASM(jnz exit_func);
-		ASM(bsr ecx, edx);
-		ASM(cmp ecx, DISPATCH_LEVEL);
-		ASM(jg hw_int);
-		ASM(call SwIntHandlers[ecx * 4]);
-		ASM(jmp check_int);
-	hw_int:
-		ASM(mov ax, HalpIntDisabled);
-		ASM(out PIC_MASTER_DATA, al);
-		ASM(shr ax, 8);
-		ASM(out PIC_SLAVE_DATA, al);
-		ASM(mov edx, 1);
-		ASM(shl edx, cl);
-		ASM(test HalpIntInProgress, edx); // check again HalpIntInProgress because if a sw/hw int comes, it re-enables interrupts, and a hw int could come again
-		ASM(jnz exit_func);
-		ASM(or HalpIntInProgress, edx);
-		ASM(xor HalpPendingInt, edx);
-		ASM(call SwIntHandlers[ecx * 4]);
-		ASM(xor HalpIntInProgress, edx);
-		ASM(jmp check_int);
-	exit_func:
-		ASM(ret);
-	ASM_END
+			/* Clear IRR bit and set */
+			HalpPendingInt ^= (1 << PendingIrql);
+		}
+
+		 /* Now handle pending interrupt */
+		SwIntHandlers[PendingIrql]();
+	}
 }
 
 static ULONG FASTCALL HalpCheckMaskedIntAtIRQLLevelNonSpurious(ULONG BusInterruptLevel, ULONG Irql)
@@ -634,11 +555,7 @@ EXPORTNUM(43) VOID XBOXAPI HalEnableSystemInterrupt
 		PicImr = HalpIntDisabled & 0xFF;
 	}
 
-	ASM_BEGIN
-		ASM(mov edx, ElcrPort);
-		ASM(in al, dx);
-		ASM(mov CurrElcr, al);
-	ASM_END
+	ElcrMask = inb(ElcrPort);
 
 	if (InterruptMode == Edge) {
 		CurrElcr &= ~ElcrMask;
@@ -647,15 +564,10 @@ EXPORTNUM(43) VOID XBOXAPI HalEnableSystemInterrupt
 		CurrElcr |= ElcrMask;
 	}
 
-	ASM_BEGIN
-		ASM(mov edx, ElcrPort);
-		ASM(mov al, CurrElcr);
-		ASM(out dx, al);
-		ASM(mov al, PicImr);
-		ASM(mov edx, DataPort);
-		ASM(out dx, al);
-		ASM(sti);
-	ASM_END
+	outb(ElcrPort, CurrElcr);
+	outb(DataPort, PicImr);
+
+	enable();
 }
 
 EXPORTNUM(44) ULONG XBOXAPI HalGetInterruptVector
@@ -679,16 +591,15 @@ EXPORTNUM(48) VOID FASTCALL HalRequestSoftwareInterrupt
 )
 {
 	assert((Request == APC_LEVEL) || (Request == DISPATCH_LEVEL));
-
-	ASM_BEGIN
-		ASM(pushfd);
-		ASM(cli);
-	ASM_END
+		/* Save EFlags and disable interrupts */
+	ULONG EFlags = __readeflags();
+	_disable();
 
 	HalpPendingInt |= (1 << Request);
-	if (HalpIrqlMasks[KiPcr.Irql] & (1 << Request)) { // is the requested IRQL unmasked at the current IRQL?
+	if (HalpIrqlMasks[KeGetPcr()->Irql] & (1 << Request)) { // is the requested IRQL unmasked at the current IRQL?
 		SwIntHandlers[Request]();
 	}
 
-	ASM(popfd);
+	/* Restore interrupt state */
+	__writeeflags(EFlags);
 }

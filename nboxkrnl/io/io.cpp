@@ -33,6 +33,17 @@ EXPORTNUM(71) OBJECT_TYPE IoFileObjectType = {
 	'eliF'
 };
 
+EXPORTNUM(64) OBJECT_TYPE IoCompletionObjectType =
+{
+	ExAllocatePoolWithTag,
+	ExFreePool,
+	NULL,
+	NULL, // TODO : xbox::IopDeleteIoCompletion,
+	NULL,
+	NULL, // &xbox::ObpDefaultObject,
+	'pmoC' // = first four characters of "Completion" in reverse
+};
+
 BOOLEAN IoInitSystem()
 {
 	for (unsigned i = 0; i < 8; ++i) {
