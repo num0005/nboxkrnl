@@ -185,6 +185,49 @@ EXPORTNUM(278) VOID XBOXAPI RtlEnterCriticalSectionAndRegion
 	RtlEnterCriticalSection(CriticalSection);
 }
 
+// ******************************************************************
+// * 0x011A - RtlExtendedLargeIntegerDivide()
+// ******************************************************************
+EXPORTNUM(282) LARGE_INTEGER NTAPI RtlExtendedLargeIntegerDivide
+(
+	IN LARGE_INTEGER Dividend,
+	IN ULONG Divisor,
+	IN OUT PULONG Remainder OPTIONAL
+)
+{
+	LARGE_INTEGER quotient = Dividend;
+
+	if (Divisor == 0)
+	{
+		RtlRaiseStatus(STATUS_INTEGER_DIVIDE_BY_ZERO);
+	}
+	else
+	{
+		ULONG local_remainder = 0;
+		BOOLEAN carry, remainder_carry;
+
+		// Binary division algorithm reverse engineered from real hardware.
+		for (uint8_t i = 64; i > 0; i--)
+		{
+			carry = (quotient.QuadPart >> 63) & 0x1;
+			remainder_carry = (local_remainder >> 31) & 0x1;
+			quotient.QuadPart <<= 1;
+			local_remainder = (local_remainder << 1) | carry;
+			if (remainder_carry || (local_remainder >= Divisor))
+			{
+				quotient.u.LowPart += 1;
+				local_remainder -= Divisor;
+			}
+		}
+		if (Remainder)
+		{
+			*Remainder = local_remainder;
+		}
+	}
+
+	return quotient;
+}
+
 // Source: Cxbx-Reloaded
 EXPORTNUM(281) LARGE_INTEGER XBOXAPI RtlExtendedIntegerMultiply
 (
@@ -244,25 +287,6 @@ EXPORTNUM(283) LARGE_INTEGER XBOXAPI RtlExtendedMagicDivide
 	}
 
 	return Result;
-}
-
-EXPORTNUM(285) VOID XBOXAPI RtlFillMemoryUlong
-(
-	PVOID Destination,
-	SIZE_T Length,
-	ULONG Pattern
-)
-{
-	assert(Length);
-	assert((Length % sizeof(ULONG)) == 0); // Length must be a multiple of ULONG
-	assert(((ULONG_PTR)Destination % sizeof(ULONG)) == 0); // Destination must be 4-byte aligned
-
-	unsigned NumOfRepeats = Length / sizeof(ULONG);
-	PULONG d = (PULONG)Destination;
-
-	for (unsigned i = 0; i < NumOfRepeats; ++i) {
-		d[i] = Pattern; // copy an ULONG at a time
-	}
 }
 
 EXPORTNUM(291) VOID XBOXAPI RtlInitializeCriticalSection
@@ -580,15 +604,6 @@ EXPORTNUM(319) ULONG XBOXAPI RtlWalkFrameChain
 	return i;
 }
 
-EXPORTNUM(320) VOID XBOXAPI RtlZeroMemory
-(
-	PVOID Destination,
-	SIZE_T Length
-)
-{
-	memset(Destination, 0, Length);
-}
-
 EXPORTNUM(352) VOID XBOXAPI RtlRip
 (
 	PVOID ApiName,
@@ -643,4 +658,114 @@ VOID CDECL RipWithMsg(const char *Func, const char *Msg, ...)
 	va_end(vlist);
 
 	RtlRip(const_cast<PCHAR>(Func), nullptr, const_cast<PCHAR>(buff));
+}
+
+
+EXPORTNUM(285) VOID XBOXAPI RtlFillMemoryUlong
+(
+	PVOID Destination,
+	SIZE_T Length,
+	ULONG Pattern
+)
+{
+	assert(Length);
+	assert((Length % sizeof(ULONG)) == 0); // Length must be a multiple of ULONG
+	assert(((ULONG_PTR)Destination % sizeof(ULONG)) == 0); // Destination must be 4-byte aligned
+
+	unsigned NumOfRepeats = Length / sizeof(ULONG);
+	PULONG d = (PULONG)Destination;
+
+	for (unsigned i = 0; i < NumOfRepeats; ++i)
+	{
+		d[i] = Pattern; // copy an ULONG at a time
+	}
+}
+
+EXPORTNUM(320) VOID XBOXAPI RtlZeroMemory
+(
+	PVOID Destination,
+	SIZE_T Length
+)
+{
+	memset(Destination, 0, Length);
+}
+
+EXPORTNUM(288) VOID NTAPI RtlGetCallersAddress(
+	OUT PVOID* CallersAddress,
+	OUT PVOID* CallersCaller
+)
+{
+	USHORT FrameCount;
+	PVOID  BackTrace[2];
+	PULONG BackTraceHash = NULL;
+
+	/* Get the tow back trace address */
+	FrameCount = RtlCaptureStackBackTrace(2, 2, &BackTrace[0], BackTraceHash);
+
+	/* Only if user want it */
+	if (CallersAddress != NULL)
+	{
+		/* only when first frames exist */
+		if (FrameCount >= 1)
+		{
+			*CallersAddress = BackTrace[0];
+		}
+		else
+		{
+			*CallersAddress = NULL;
+		}
+	}
+
+	/* Only if user want it */
+	if (CallersCaller != NULL)
+	{
+		/* only when second frames exist */
+		if (FrameCount >= 2)
+		{
+			*CallersCaller = BackTrace[1];
+		}
+		else
+		{
+			*CallersCaller = NULL;
+		}
+	}
+}
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1910 || !defined(_WIN64))
+#pragma function(memmove)
+#endif /* _MSC_VER */
+
+/* NOTE: This code is duplicated in memcpy function */
+void* __cdecl memmove(void* dest, const void* src, size_t count)
+{
+	char* char_dest = (char*)dest;
+	char* char_src = (char*)src;
+
+	if ((char_dest <= char_src) || (char_dest >= (char_src + count)))
+	{
+		/*  non-overlapping buffers */
+		while (count > 0)
+		{
+			*char_dest = *char_src;
+			char_dest++;
+			char_src++;
+			count--;
+		}
+	}
+	else
+	{
+		/* overlaping buffers */
+		char_dest = (char*)dest + count - 1;
+		char_src = (char*)src + count - 1;
+
+		while (count > 0)
+		{
+			*char_dest = *char_src;
+			char_dest--;
+			char_src--;
+			count--;
+		}
+	}
+
+	return dest;
 }

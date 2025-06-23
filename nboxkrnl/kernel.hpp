@@ -226,69 +226,51 @@ VOID RemoveEntryList(PLIST_ENTRY pEntry);
 PLIST_ENTRY RemoveTailList(PLIST_ENTRY pListHead);
 PLIST_ENTRY RemoveHeadList(PLIST_ENTRY pListHead);
 
+#include <intrin.h>
+
 static inline VOID CDECL outl(USHORT Port, ULONG Value)
 {
-	ASM_BEGIN
-		ASM(mov eax, Value);
-		ASM(mov dx, Port);
-		ASM(out dx, eax);
-	ASM_END
+	__outdword(Port, Value);
 }
 
 static inline VOID CDECL outw(USHORT Port, USHORT Value)
 {
-	ASM_BEGIN
-		ASM(mov ax, Value);
-		ASM(mov dx, Port);
-		ASM(out dx, ax);
-	ASM_END
+	__outword(Port, Value);
 }
 
 static inline VOID CDECL outb(USHORT Port, BYTE Value)
 {
-	ASM_BEGIN
-		ASM(mov al, Value);
-		ASM(mov dx, Port);
-		ASM(out dx, al);
-	ASM_END
+	__outbyte(Port, Value);
 }
 
 static inline ULONG CDECL inl(USHORT Port)
 {
-	ASM_BEGIN
-		ASM(mov dx, Port);
-		ASM(in eax, dx);
-	ASM_END
+	return __indword(Port);
 }
 
 static inline USHORT CDECL inw(USHORT Port)
 {
-	ASM_BEGIN
-		ASM(mov dx, Port);
-		ASM(in ax, dx);
-	ASM_END
+	return __inword(Port);
 }
 
 static inline BYTE CDECL inb(USHORT Port)
 {
-	ASM_BEGIN
-		ASM(mov dx, Port);
-		ASM(in al, dx);
-	ASM_END
+	return __inbyte(Port);
 }
 
 static inline VOID CDECL enable()
 {
-	ASM(sti);
+	_enable();
 }
 
 static inline VOID CDECL disable()
 {
-	ASM(cli);
+	_disable();
 }
 
 static inline VOID CDECL atomic_store64(LONGLONG *dst, LONGLONG val)
 {
+
 	ASM_BEGIN
 		ASM(pushfd);
 		ASM(cli);
@@ -311,4 +293,39 @@ static inline VOID CDECL atomic_add64(LONGLONG *dst, LONGLONG val)
 	*dst = temp;
 
 	ASM(popfd);
+}
+
+extern "C"
+{
+	// helper functions that map to intrinics that are exported by the xbox kernel
+	// marked as inline in case we want to use them anywhere interally to the kernel
+	inline EXPORTNUM(329) DLLEXPORT void XBOXAPI READ_PORT_BUFFER_UCHAR(IN DWORD Port, IN PUCHAR Buffer, IN ULONG Count)
+	{
+		__inbytestring(Port, Buffer, Count);
+	}
+
+	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI READ_PORT_BUFFER_USHORT(IN DWORD Port, IN PUSHORT Buffer, IN ULONG Count)
+	{
+		__inwordstring(Port, Buffer, Count);
+	}
+
+	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI READ_PORT_BUFFER_ULONG(IN DWORD Port, IN PULONG Buffer, IN ULONG Count)
+	{
+		__indwordstring(Port, Buffer, Count);
+	}
+
+	inline EXPORTNUM(332) DLLEXPORT void XBOXAPI WRITE_PORT_BUFFER_UCHAR(IN DWORD Port, OUT PUCHAR Buffer, IN ULONG Count)
+	{
+		__outbytestring(Port, Buffer, Count);
+	}
+
+	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI WRITE_PORT_BUFFER_USHORT(IN DWORD Port, OUT PUSHORT Buffer, IN ULONG Count)
+	{
+		__outwordstring(Port, Buffer, Count);
+	}
+
+	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI WRITE_PORT_BUFFER_ULONG(IN DWORD Port, OUT PULONG Buffer, IN ULONG Count)
+	{
+		__outdwordstring(Port, Buffer, Count);
+	}
 }
