@@ -26,6 +26,7 @@ static_assert(sizeof(CHUNK_HEADER) == 8);
 #define CHUNK_OVERHEAD       sizeof(CHUNK_HEADER)
 #define CHUNK_SHIFT          5
 #define NUM_CHUNK_LISTS      64
+#define NONE_TAG             'enoN'
 
 // Macros to ensure thread safety
 #define PoolLock() KeRaiseIrqlToDpcLevel()
@@ -81,7 +82,7 @@ EXPORTNUM(14) PVOID XBOXAPI ExAllocatePool
 	SIZE_T NumberOfBytes
 )
 {
-	return ExAllocatePoolWithTag(NumberOfBytes, 'enoN');
+	return ExAllocatePoolWithTag(NumberOfBytes, NONE_TAG);
 }
 
 EXPORTNUM(15) PVOID XBOXAPI ExAllocatePoolWithTag
@@ -109,13 +110,25 @@ EXPORTNUM(17) VOID XBOXAPI ExFreePool
 	PVOID P
 )
 {
-	if (CHECK_ALIGNMENT(P, POOL_SIZE)) {
+	ExFreePoolWithTag(P, 0);
+}
+
+VOID XBOXAPI ExFreePoolWithTag
+(
+	PVOID P,
+	ULONG Tag
+)
+{
+	if (CHECK_ALIGNMENT(P, POOL_SIZE))
+	{
 		MiFreeSystemMemory(P, 0);
 		return;
 	}
 
 	KIRQL OldIrql = PoolLock();
-	CHUNK_HEADER *Header = (CHUNK_HEADER *)((uint8_t *)P - CHUNK_OVERHEAD);
+	CHUNK_HEADER* Header = (CHUNK_HEADER*)((uint8_t*)P - CHUNK_OVERHEAD);
+	NT_ASSERT_MESSAGE(Tag == NONE_TAG || Tag == 0 || (Header && Header->Busy.Tag == Tag),
+		"Unexpected memory tag, expected %d, got %d");
 	FreeChunk(Header, (Header->Busy.Size - 1) >> CHUNK_SHIFT);
 	PoolUnlock(OldIrql);
 }
