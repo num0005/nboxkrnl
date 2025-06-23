@@ -188,6 +188,12 @@ EXPORTNUM(17) DLLEXPORT VOID XBOXAPI ExFreePool
 	PVOID P
 );
 
+VOID XBOXAPI ExFreePoolWithTag
+(
+	PVOID P,
+	ULONG Tag
+);
+
 EXPORTNUM(18) DLLEXPORT VOID XBOXAPI ExInitializeReadWriteLock
 (
 	PERWLOCK ReadWriteLock
@@ -246,6 +252,35 @@ EXPORTNUM(54) DLLEXPORT LONG FASTCALL InterlockedExchange
 	volatile PLONG Destination,
 	LONG Value
 );
+
+NTSTATUS
+NTAPI
+NtCreateSemaphore(OUT PHANDLE SemaphoreHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes OPTIONAL,
+	IN LONG InitialCount,
+	IN LONG MaximumCount);
+
+NTSTATUS
+NTAPI
+NtOpenSemaphore(OUT PHANDLE SemaphoreHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes);
+
+NTSTATUS
+NTAPI
+NtQuerySemaphore(IN HANDLE SemaphoreHandle,
+	OUT PSEMAPHORE_BASIC_INFORMATION BasicInfo);
+
+NTSTATUS
+NTAPI
+NtReleaseSemaphore(IN HANDLE SemaphoreHandle,
+	IN LONG ReleaseCount,
+	OUT PLONG PreviousCount OPTIONAL);
+
+NTSTATUS
+NTAPI
+NtCreateTimer(OUT PHANDLE TimerHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes OPTIONAL,
+	IN TIMER_TYPE TimerType);
 
 #ifdef __cplusplus
 }

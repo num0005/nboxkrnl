@@ -8,8 +8,6 @@
 #include "rtl.hpp"
 #include <string.h>
 
-#define RtlCopyMemory(Destination,Source,Length) memcpy((Destination),(Source),(Length))
-
 
 /* SHA1 algorithm
  *

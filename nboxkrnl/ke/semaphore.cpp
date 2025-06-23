@@ -4,6 +4,7 @@
  */
 
 #include "ke.hpp"
+#include "ki.hpp"
 #include "..\kernel.hpp"
 #include "ex.hpp"
 
@@ -21,6 +22,17 @@ EXPORTNUM(112) VOID XBOXAPI KeInitializeSemaphore
 	Semaphore->Header.SignalState = Count;
 	InitializeListHead(&Semaphore->Header.WaitListHead);
 	Semaphore->Limit = Limit;
+}
+
+LONG XBOXAPI KeReadStateSemaphore
+(
+	IN PKSEMAPHORE Semaphore
+)
+{
+	//ASSERT_SEMAPHORE(Semaphore);
+
+	/* Just return the Signal State */
+	return Semaphore->Header.SignalState;
 }
 
 // Source: Cxbx-Reloaded
