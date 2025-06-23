@@ -30,6 +30,7 @@ add_compile_definitions(
  NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
  NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0
  NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0
+ _X86_=1
 )
 
 add_compile_options(
@@ -49,6 +50,7 @@ include_directories(
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/include"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/platform/xbox/include"
  "${NBOXKRNL_ROOT_DIR}/import/nanoprintf"
+ "${NBOXKRNL_ROOT_DIR}/import/reactos/sdk/include/vcruntime"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/dbg"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal"
@@ -115,6 +117,8 @@ file (GLOB HEADERS
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/include/pdclib/_PDCLIB_lib_ext1.h"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/platform/xbox/include/pdclib/_PDCLIB_config.h"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/platform/xbox/include/assert.h"
+ 
+ "${NBOXKRNL_ROOT_DIR}/import/reactos/sdk/include/vcruntime/*.h"
 
  "${NBOXKRNL_ROOT_DIR}/import/nanoprintf/nanoprintf.h"
 )
@@ -212,6 +216,7 @@ set_target_properties(nboxkrnl PROPERTIES
  /ENTRY:KernelEntry \
  /IGNORE:4210 \
  /SAFESEH:NO \
+ /MANIFEST:NO \
  "
 )
 
