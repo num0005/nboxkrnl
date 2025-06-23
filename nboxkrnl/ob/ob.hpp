@@ -199,10 +199,18 @@ EXPORTNUM(250) DLLEXPORT VOID FASTCALL ObfDereferenceObject
 	PVOID Object
 );
 
+inline static VOID ObDereferenceObject(IN PVOID Object)
+{
+	/* Call the fastcall function */
+	ObfDereferenceObject(Object);
+}
+
 EXPORTNUM(251) DLLEXPORT VOID FASTCALL ObfReferenceObject
 (
 	PVOID Object
 );
+
+BOOLEAN FASTCALL ObReferenceObjectSafe(IN PVOID Object);
 
 #ifdef __cplusplus
 }

@@ -283,8 +283,8 @@ typedef struct npf_bufputc_ctx {
 #endif
 
 #ifdef _MSC_VER
-// This is only necessary to use the BitScanReverse intrinsic, so we replace it with our RtlpBitScanReverse from the kernel
-//  #include <intrin.h> // nboxkrnl
+// This is only necessary to use the BitScanReverse intrinsic
+#include <intrin.h> 
 #endif
 
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
@@ -695,9 +695,8 @@ static int npf_bin_len(npf_uint_t u) {
     #define NPF_HAVE_BUILTIN_CLZ
     #define NPF_CLZ _BitScanReverse64
   #elif NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
-    unsigned char RtlpBitScanReverse(unsigned int *Index, unsigned int Mask); // nboxkrnl
     #define NPF_HAVE_BUILTIN_CLZ
-    #define NPF_CLZ RtlpBitScanReverse // nboxkrnl
+    #define NPF_CLZ _BitScanReverse
   #endif
   #ifdef NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;

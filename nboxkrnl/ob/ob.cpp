@@ -423,3 +423,33 @@ EXPORTNUM(251) VOID FASTCALL ObfReferenceObject
 {
 	InterlockedIncrement(&GetObjHeader(Object)->PointerCount);
 }
+
+// from reactos
+BOOLEAN FASTCALL ObReferenceObjectSafe(IN PVOID Object)
+{
+	POBJECT_HEADER ObjectHeader;
+	LONG_PTR OldValue, NewValue;
+
+	/* Get the object header */
+	ObjectHeader = GetObjHeader(Object);
+
+	/* Get the current reference count and fail if it's zero */
+	OldValue = ObjectHeader->PointerCount;
+	if (!OldValue) return FALSE;
+
+	/* Start reference loop */
+	do
+	{
+		/* Increase the reference count */
+		NewValue = InterlockedCompareExchange(&ObjectHeader->PointerCount,
+			OldValue + 1,
+			OldValue);
+		if (OldValue == NewValue) return TRUE;
+
+		/* Keep looping */
+		OldValue = NewValue;
+	} while (OldValue);
+
+	/* If we got here, then the reference count is now 0 */
+	return FALSE;
+}

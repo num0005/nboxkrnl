@@ -245,6 +245,29 @@ VOID KiTimerListExpire(PLIST_ENTRY ExpiredListHead, KIRQL OldIrql)
 	}
 }
 
+// source: reactos
+EXPORTNUM(97) BOOLEAN NTAPI KeCancelTimer(IN OUT PKTIMER Timer)
+{
+	KIRQL OldIrql;
+	BOOLEAN Inserted;
+	//ASSERT_TIMER(Timer);
+	NT_ASSERT(KeGetCurrentIrql() <= DISPATCH_LEVEL);
+	DPRINT("KeCancelTimer(): Timer %p\n", Timer);
+
+	/* Lock the Database and Raise IRQL */
+	OldIrql = KeRaiseIrqlToDpcLevel();
+
+	/* Check if it's inserted, and remove it if it is */
+	Inserted = Timer->Header.Inserted;
+	if (Inserted) KiRemoveTimer(Timer);
+
+	/* Release Dispatcher Lock */
+	KfLowerIrql(OldIrql);
+
+	/* Return the old state */
+	return Inserted;
+}
+
 // Source: Cxbx-Reloaded
 EXPORTNUM(113) VOID XBOXAPI KeInitializeTimerEx
 (

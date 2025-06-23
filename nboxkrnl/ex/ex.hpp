@@ -137,6 +137,19 @@ struct ERWLOCK {
 };
 using PERWLOCK = ERWLOCK *;
 
+typedef struct _ETIMER
+{
+	KTIMER KeTimer;
+	KAPC TimerApc;
+	KDPC TimerDpc;
+	LIST_ENTRY ActiveTimerListEntry;
+	KSPIN_LOCK Lock;
+	LONG Period;
+	BOOLEAN ApcAssociated;
+	BOOLEAN WakeTimer;
+	LIST_ENTRY WakeTimerListEntry;
+} ETIMER, * PETIMER;
+
 static_assert(sizeof(XBOX_EEPROM) == 256);
 
 inline XBOX_EEPROM CachedEeprom;
