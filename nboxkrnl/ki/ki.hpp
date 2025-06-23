@@ -7,6 +7,7 @@
 #include "..\types.hpp"
 #include "ke.hpp"
 #include "..\kernel.hpp"
+#include "..\driverspecs.h"
 
 #define EXCEPTION_CHAIN_END2 0xFFFFFFFF
 #define EXCEPTION_CHAIN_END reinterpret_cast<EXCEPTION_REGISTRATION_RECORD *>(EXCEPTION_CHAIN_END2)
@@ -152,11 +153,27 @@ inline constexpr size_t KiFxAreaSize = sizeof(FX_SAVE_AREA);
 extern KPROCESS KiUniqueProcess;
 extern KPROCESS KiIdleProcess;
 
+#if defined(CONFIG_SMP)
+#define KeGetPcr()              ((KPCR *)__readfsdword(offsetof(KPCR, SelfPcr)))
+inline PKPRCB KeGetCurrentPrcb(VOID)
+{
+	return (PKPRCB)(ULONG_PTR)__readfsdword(offsetof(KPCR, Prcb));
+}
+#else
+// xbox is a single core system so this is mostly for reactos/windows compat
+// compiles down to just acccessing the global
+#define KeGetPcr()              (&KiPcr)
+inline PKPRCB KeGetCurrentPrcb(VOID)
+{
+	return KeGetPcr()->Prcb;
+}
+#endif
+
 
 VOID InitializeCrt();
 [[noreturn]] VOID KiInitializeKernel();
 VOID KiInitSystem();
-[[noreturn]] VOID KiIdleLoopThread();
+[[noreturn]] void KiIdleLoop();
 DWORD KiSwapThreadContext();
 VOID XBOXAPI KiExecuteApcQueue();
 VOID XBOXAPI KiExecuteDpcQueue();
@@ -177,3 +194,13 @@ VOID KiTimerListExpire(PLIST_ENTRY ExpiredListHead, KIRQL OldIrql);
 
 VOID KiWaitTest(PVOID Object, KPRIORITY Increment);
 VOID KiUnwaitThread(PKTHREAD Thread, LONG_PTR WaitStatus, KPRIORITY Increment);
+
+_Acquires_nonreentrant_lock_(SpinLock)
+VOID
+FASTCALL
+KiAcquireSpinLock(IN PKSPIN_LOCK SpinLock);
+
+_Releases_nonreentrant_lock_(SpinLock)
+VOID
+FASTCALL
+KiReleaseSpinLock(IN PKSPIN_LOCK SpinLock);

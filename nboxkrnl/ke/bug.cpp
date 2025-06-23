@@ -5,6 +5,7 @@
 #include "ke.hpp"
 #include "halp.hpp"
 #include "dbg.hpp"
+#include <intrin.h>
 
 
 EXPORTNUM(95) VOID XBOXAPI KeBugCheck
@@ -36,18 +37,10 @@ EXPORTNUM(96) VOID XBOXAPI KeBugCheckEx
 	HalpShutdownSystem();
 }
 
-VOID __declspec(naked, noinline) CDECL KeBugCheckLogEip(ULONG BugCheckCode)
+VOID __declspec(noinline) CDECL KeBugCheckLogEip(ULONG BugCheckCode)
 {
-	// This function must be naked and never inlined because it needs to capture the return address placed on the stack by the caller
+	// This function must never inlined because it needs to capture the return address placed on the stack by the caller
 
-	ASM_BEGIN
-		ASM(mov eax, dword ptr [esp]);
-		ASM(mov ecx, dword ptr [esp + 4]);
-		ASM(push 0);
-		ASM(push 0);
-		ASM(push 0);
-		ASM(push eax);
-		ASM(push ecx);
-		ASM(call KeBugCheckEx); // won't return
-	ASM_END
+	void* caller = _ReturnAddress();
+	KeBugCheckEx(BugCheckCode, reinterpret_cast<ULONG_PTR>(caller), 0, 0, 0);
 }

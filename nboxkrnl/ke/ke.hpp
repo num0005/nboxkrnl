@@ -5,6 +5,7 @@
 #pragma once
 
 #include "..\types.hpp"
+#include "..\driverspecs.h"
 
 #define XBOX_KEY_LENGTH 16
 
@@ -288,6 +289,13 @@ struct KSEMAPHORE {
 };
 using PKSEMAPHORE = KSEMAPHORE *;
 
+typedef struct _SEMAPHORE_BASIC_INFORMATION
+{
+	LONG CurrentCount;
+	LONG MaximumCount;
+}
+SEMAPHORE_BASIC_INFORMATION, * PSEMAPHORE_BASIC_INFORMATION;
+
 struct KEVENT {
 	DISPATCHER_HEADER Header;
 };
@@ -532,6 +540,10 @@ EXPORTNUM(112) DLLEXPORT VOID XBOXAPI KeInitializeSemaphore
 	LONG Limit
 );
 
+EXPORTNUM(97) BOOLEAN NTAPI KeCancelTimer(
+	IN OUT PKTIMER Timer
+);
+
 EXPORTNUM(113) DLLEXPORT VOID XBOXAPI KeInitializeTimerEx
 (
 	PKTIMER Timer,
@@ -578,6 +590,11 @@ EXPORTNUM(131) DLLEXPORT LONG XBOXAPI KeReleaseMutant
 	KPRIORITY Increment,
 	BOOLEAN Abandoned,
 	BOOLEAN Wait
+);
+
+LONG NTAPI KeReadStateSemaphore
+(
+	IN PKSEMAPHORE Semaphore
 );
 
 EXPORTNUM(132) DLLEXPORT LONG XBOXAPI KeReleaseSemaphore
@@ -651,6 +668,7 @@ EXPORTNUM(160) DLLEXPORT KIRQL FASTCALL KfRaiseIrql
 	KIRQL NewIrql
 );
 
+
 EXPORTNUM(161) DLLEXPORT VOID FASTCALL KfLowerIrql
 (
 	KIRQL NewIrql
@@ -682,3 +700,75 @@ VOID KiScheduleThread(PKTHREAD Thread);
 VOID FASTCALL KeAddThreadToTailOfReadyList(PKTHREAD Thread);
 
 [[noreturn]] VOID CDECL KeBugCheckLogEip(ULONG BugCheckCode);
+
+// no need for memory barriers on a single core/single cpu system
+#define KeMemoryBarrier() _ReadWriteBarrier()
+#define KeMemoryBarrierWithoutFence() _ReadWriteBarrier()
+
+// not exported on XBOX, we still want this for easier reactos/windows driver compatibility
+static inline VOID KeRaiseIrql(KIRQL NewIrql,
+	PKIRQL OldIrql)
+{
+	/* Call the fastcall function */
+	*OldIrql = KfRaiseIrql(NewIrql);
+};
+// exactly the same as KfLowerIrql, as above, reactos/windows compat
+#define KeLowerIrql(new_irql) KfLowerIrql(new_irql)
+
+// no-op on Pentium 3, fancy no-op on later CPUs
+#define YieldProcessor _mm_pause
+
+// currently unexported spinlock functions, esentially no-op and for debugging but kept in ke* to match
+// reactos/windows
+// may be exported as functions beyond the standard xbox API at some point
+
+void NTAPI KeInitializeSpinLock(PKSPIN_LOCK SpinLock);
+
+_Requires_lock_not_held_(*SpinLock)
+_Acquires_lock_(*SpinLock)
+_IRQL_requires_max_(DISPATCH_LEVEL)
+_IRQL_saves_
+_IRQL_raises_(DISPATCH_LEVEL)
+KIRQL
+FASTCALL
+KfAcquireSpinLock(
+	_Inout_ PKSPIN_LOCK SpinLock);
+#define KeAcquireSpinLock(a,b) *(b) = KfAcquireSpinLock(a)
+
+
+_Requires_lock_held_(*SpinLock)
+_Releases_lock_(*SpinLock)
+_IRQL_requires_(DISPATCH_LEVEL)
+VOID
+FASTCALL
+KfReleaseSpinLock(
+	_Inout_ PKSPIN_LOCK SpinLock,
+	_In_ _IRQL_restores_ KIRQL NewIrql);
+#define KeReleaseSpinLock(a,b) KfReleaseSpinLock(a,b)
+
+
+_Requires_lock_not_held_(*SpinLock)
+_Acquires_lock_(*SpinLock)
+_IRQL_requires_min_(DISPATCH_LEVEL)
+VOID
+NTAPI
+KeAcquireSpinLockAtDpcLevel(
+	_Inout_ PKSPIN_LOCK SpinLock);
+
+_Requires_lock_held_(*SpinLock)
+_Releases_lock_(*SpinLock)
+_IRQL_requires_min_(DISPATCH_LEVEL)
+VOID
+NTAPI
+KeReleaseSpinLockFromDpcLevel(
+	_Inout_ PKSPIN_LOCK SpinLock);
+
+_Must_inspect_result_
+_IRQL_requires_min_(DISPATCH_LEVEL)
+_Post_satisfies_(return == 1 || return == 0)
+BOOLEAN
+FASTCALL
+KeTryToAcquireSpinLockAtDpcLevel(
+	_Inout_ _Requires_lock_not_held_(*_Curr_)
+	_When_(return != 0, _Acquires_lock_(*_Curr_))
+	PKSPIN_LOCK SpinLock);
