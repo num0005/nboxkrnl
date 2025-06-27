@@ -142,49 +142,6 @@ EXPORTNUM(266) USHORT XBOXAPI RtlCaptureStackBackTrace
 	return i;
 }
 
-EXPORTNUM(277) VOID XBOXAPI RtlEnterCriticalSection
-(
-	PRTL_CRITICAL_SECTION CriticalSection
-)
-{
-	// This function must update the members of CriticalSection atomically, so we use assembly
-
-	ASM_BEGIN
-		ASM(mov ecx, CriticalSection);
-		ASM(mov eax, [KiPcr]KPCR.PrcbData.CurrentThread);
-		ASM(inc [ecx]RTL_CRITICAL_SECTION.LockCount);
-		ASM(jnz already_owned);
-		ASM(mov [ecx]RTL_CRITICAL_SECTION.OwningThread, eax);
-		ASM(mov [ecx]RTL_CRITICAL_SECTION.RecursionCount, 1);
-		ASM(jmp end_func);
-	already_owned:
-		ASM(cmp [ecx]RTL_CRITICAL_SECTION.OwningThread, eax);
-		ASM(jz owned_by_self);
-		ASM(push eax);
-		ASM(push 0);
-		ASM(push FALSE);
-		ASM(push KernelMode);
-		ASM(push WrExecutive);
-		ASM(push ecx);
-		ASM(call KeWaitForSingleObject);
-		ASM(pop [ecx]RTL_CRITICAL_SECTION.OwningThread);
-		ASM(mov [ecx]RTL_CRITICAL_SECTION.RecursionCount, 1);
-		ASM(jmp end_func);
-	owned_by_self:
-		ASM(inc [ecx]RTL_CRITICAL_SECTION.RecursionCount);
-	end_func:
-	ASM_END
-}
-
-EXPORTNUM(278) VOID XBOXAPI RtlEnterCriticalSectionAndRegion
-(
-	PRTL_CRITICAL_SECTION CriticalSection
-)
-{
-	KeEnterCriticalRegion();
-	RtlEnterCriticalSection(CriticalSection);
-}
-
 // ******************************************************************
 // * 0x011A - RtlExtendedLargeIntegerDivide()
 // ******************************************************************
@@ -287,70 +244,6 @@ EXPORTNUM(283) LARGE_INTEGER XBOXAPI RtlExtendedMagicDivide
 	}
 
 	return Result;
-}
-
-EXPORTNUM(291) VOID XBOXAPI RtlInitializeCriticalSection
-(
-	PRTL_CRITICAL_SECTION CriticalSection
-)
-{
-	KeInitializeEvent((PKEVENT)&CriticalSection->Event, SynchronizationEvent, FALSE);
-	CriticalSection->LockCount = -1;
-	CriticalSection->RecursionCount = 0;
-	CriticalSection->OwningThread = 0;
-}
-
-EXPORTNUM(294) VOID XBOXAPI RtlLeaveCriticalSection
-(
-	PRTL_CRITICAL_SECTION CriticalSection
-)
-{
-	// This function must update the members of CriticalSection atomically, so we use assembly
-
-	ASM_BEGIN
-		ASM(mov ecx, CriticalSection);
-		ASM(dec [ecx]RTL_CRITICAL_SECTION.RecursionCount);
-		ASM(jnz dec_count);
-		ASM(dec [ecx]RTL_CRITICAL_SECTION.LockCount);
-		ASM(mov [ecx]RTL_CRITICAL_SECTION.OwningThread, 0);
-		ASM(jl end_func);
-		ASM(push FALSE);
-		ASM(push PRIORITY_BOOST_EVENT);
-		ASM(push ecx);
-		ASM(call KeSetEvent);
-		ASM(jmp end_func);
-	dec_count:
-		ASM(dec [ecx]RTL_CRITICAL_SECTION.LockCount);
-	end_func:
-	ASM_END
-}
-
-EXPORTNUM(295) VOID XBOXAPI RtlLeaveCriticalSectionAndRegion
-(
-	PRTL_CRITICAL_SECTION CriticalSection
-)
-{
-	// NOTE: this must check RecursionCount only once, so that it can unconditionally call KeLeaveCriticalRegion if the counter is zero regardless of
-	// its current value. This, to guard against the case where a thread switch happens after the counter is updated but before KeLeaveCriticalRegion is called
-
-	ASM_BEGIN
-		ASM(mov ecx, CriticalSection);
-		ASM(dec [ecx]RTL_CRITICAL_SECTION.RecursionCount);
-		ASM(jnz dec_count);
-		ASM(dec [ecx]RTL_CRITICAL_SECTION.LockCount);
-		ASM(mov [ecx]RTL_CRITICAL_SECTION.OwningThread, 0);
-		ASM(jl not_signalled);
-		ASM(push FALSE);
-		ASM(push PRIORITY_BOOST_EVENT);
-		ASM(push ecx);
-		ASM(call KeSetEvent);
-	not_signalled:
-		ASM(call KeLeaveCriticalRegion);
-		ASM(jmp end_func);
-	dec_count:
-		ASM(dec [ecx]RTL_CRITICAL_SECTION.LockCount);
-	end_func:
-	ASM_END
 }
 
 // Source: Cxbx-Reloaded
@@ -606,9 +499,9 @@ EXPORTNUM(319) ULONG XBOXAPI RtlWalkFrameChain
 
 EXPORTNUM(352) VOID XBOXAPI RtlRip
 (
-	PVOID ApiName,
-	PVOID Expression,
-	PVOID Message
+	const CHAR* ApiName,
+	const CHAR* Expression,
+	const CHAR* Message
 )
 {
 	// This routine terminates the system. It should be used when a failure is expected, for example when executing unimplemented stuff
@@ -618,21 +511,21 @@ EXPORTNUM(352) VOID XBOXAPI RtlRip
 
 	if (!Message) {
 		if (Expression) {
-			Message = const_cast<PCHAR>("failed");
+			Message = "failed";
 		}
 		else {
-			Message = const_cast<PCHAR>("execution failure");
+			Message = "execution failure";
 		}
 	}
 
 	if (!Expression) {
-		Expression = const_cast<PCHAR>("");
+		Expression = "";
 		OpenBracket = "";
 		CloseBracket = " ";
 	}
 
 	if (!ApiName) {
-		ApiName = const_cast<PCHAR>("RIP");
+		ApiName = "RIP";
 	}
 
 	DbgPrint("%s:%s%s%s%s", ApiName, OpenBracket, Expression, CloseBracket, Message);

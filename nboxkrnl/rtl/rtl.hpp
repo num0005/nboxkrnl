@@ -11,10 +11,10 @@
 
 
 struct RTL_CRITICAL_SECTION {
-	DISPATCHER_HEADER Event;
+	KEVENT Event;
 	LONG LockCount;
 	LONG RecursionCount;
-	HANDLE OwningThread;
+	struct KTHREAD* OwningThread;
 };
 using PRTL_CRITICAL_SECTION = RTL_CRITICAL_SECTION *;
 
@@ -25,8 +25,8 @@ using PRTL_CRITICAL_SECTION = RTL_CRITICAL_SECTION *;
         offsetof(RTL_CRITICAL_SECTION, LockCount) / sizeof(LONG),  \
         FALSE,                                                     \
         FALSE,                                                     \
-        &CriticalSection.Event.WaitListHead,                       \
-        &CriticalSection.Event.WaitListHead,                       \
+        &CriticalSection.Event.Header.WaitListHead,                       \
+        &CriticalSection.Event.Header.WaitListHead,                       \
         -1,                                                        \
         0,                                                         \
         NULL                                                       \
@@ -364,9 +364,9 @@ EXPORTNUM(320) DLLEXPORT VOID XBOXAPI RtlZeroMemory
 
 [[noreturn]] EXPORTNUM(352) DLLEXPORT VOID XBOXAPI RtlRip
 (
-	PVOID ApiName,
-	PVOID Expression,
-	PVOID Message
+	const CHAR *ApiName,
+	const CHAR *Expression,
+	const CHAR *Message
 );
 
 #ifdef __cplusplus
@@ -384,7 +384,10 @@ EXPORTNUM(320) DLLEXPORT VOID XBOXAPI RtlZeroMemory
 #define NT_ASSERT(expr) NT_ASSERT_MESSAGE((expr), "Assertion \"%s\" failed in function %s line %d", #expr, __func__)
 #else
 #define NT_ASSERT_MESSAGE(expr, Msg, ...) ((void)0)
+#define NT_ASSERT(expr) ((void)0)
 #endif
+
+#define UNREACHABLE NT_ASSERT_MESSAGE(FALSE, "unreachable code reached!")
 
 #include <intrin.h>
 

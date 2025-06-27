@@ -5,6 +5,7 @@
  */
 
 #include "ex.hpp"
+#include "hal.hpp"
 
 
 // Source: Cxbx-Reloaded

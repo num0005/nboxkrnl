@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ex.hpp"
+#include <intrin.h>
 
 extern "C" {
 

@@ -132,7 +132,12 @@ VOID XBOXAPI KiExecuteApcQueue()
 
 EXPORTNUM(101) VOID XBOXAPI KeEnterCriticalRegion()
 {
-	(*(volatile ULONG *)&KeGetCurrentThread()->KernelApcDisable) -= 1;
+	PKTHREAD thread = KeGetCurrentThread();
+	NT_ASSERT((thread->KernelApcDisable <= 0) && \
+		(thread->KernelApcDisable != -32768));
+
+	/* Disable Kernel APCs */
+	thread->KernelApcDisable--;
 }
 
 // Source: Cxbx-Reloaded

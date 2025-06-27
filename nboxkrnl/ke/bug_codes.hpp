@@ -18,8 +18,9 @@
 #define XBE_LAUNCH_FAILED                 9
 #define UNREACHABLE_CODE_REACHED          10
 #define MULTIPLE_IRP_COMPLETE_REQUESTS    68
-#define SPIN_LOCK_ALREADY_OWNED 200
-#define SPIN_LOCK_NOT_OWNED 201
+#define SPIN_LOCK_ALREADY_OWNED           200
+#define SPIN_LOCK_NOT_OWNED               201
+#define CRITICAL_SECTION_INTERNAL_ERRROR  202
 
 // Optional bug codes used in following arguments in KeBugCheckEx
 #define MM_FAILURE 0
