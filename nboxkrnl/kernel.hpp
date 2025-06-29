@@ -151,11 +151,3 @@ IoInfoBlock SubmitIoRequestToHost(ULONG Type, LONGLONG Offset, ULONG Size, ULONG
 IoInfoBlockOc SubmitIoRequestToHost(ULONG Type, LONGLONG InitialSize, ULONG Size, ULONG Handle, ULONG Path, ULONG Attributes, ULONG Timestamp,
 	ULONG DesiredAccess, ULONG CreateOptions);
 VOID KeSetSystemTime(PLARGE_INTEGER NewTime, PLARGE_INTEGER OldTime);
-
-VOID InitializeListHead(PLIST_ENTRY pListHead);
-BOOLEAN IsListEmpty(PLIST_ENTRY pListHead);
-VOID InsertTailList(PLIST_ENTRY pListHead, PLIST_ENTRY pEntry);
-VOID InsertHeadList(PLIST_ENTRY pListHead, PLIST_ENTRY pEntry);
-VOID RemoveEntryList(PLIST_ENTRY pEntry);
-PLIST_ENTRY RemoveTailList(PLIST_ENTRY pListHead);
-PLIST_ENTRY RemoveHeadList(PLIST_ENTRY pListHead);
