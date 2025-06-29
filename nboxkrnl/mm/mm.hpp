@@ -206,6 +206,32 @@ EXPORTNUM(181) DLLEXPORT NTSTATUS XBOXAPI MmQueryStatistics
 	PMM_STATISTICS MemoryStatistics
 );
 
+EXPORTNUM(374) PVOID NTAPI MmDbgAllocateMemory
+(
+	IN ULONG NumberOfBytes,
+	IN ULONG Protect
+);
+
+EXPORTNUM(375) ULONG NTAPI MmDbgFreeMemory
+(
+	IN PVOID BaseAddress,
+	IN ULONG NumberOfBytes
+);
+
+EXPORTNUM(376) ULONG NTAPI MmDbgQueryAvailablePages();
+
+EXPORTNUM(377) void NTAPI MmDbgReleaseAddress
+(
+	IN PVOID VirtualAddress,
+	IN PULONG Opaque
+);
+
+EXPORTNUM(378) PVOID NTAPI MmDbgWriteCheck
+(
+	IN PVOID VirtualAddress,
+	IN PULONG Opaque
+);
+
 #ifdef __cplusplus
 }
 #endif

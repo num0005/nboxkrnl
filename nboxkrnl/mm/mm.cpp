@@ -29,7 +29,6 @@ BOOLEAN MmInitSystem()
 	ULONG RequiredPt = 2;
 
 	XboxType = HalQueryConsoleType();
-	MiLayoutRetail = (XboxType == CONSOLE_XBOX);
 	MiLayoutChihiro = (XboxType == CONSOLE_CHIHIRO);
 	MiLayoutDevkit = (XboxType == CONSOLE_DEVKIT);
 
@@ -62,17 +61,22 @@ BOOLEAN MmInitSystem()
 	// Mark all the entries in the pfn database as free
 	PFN DatabasePfn, DatabasePfnEnd;
 	{
-		if (MiLayoutRetail) {
+		switch (XboxType)
+		{
+		case CONSOLE_XBOX:
 			DatabasePfn = XBOX_PFN_DATABASE_PHYSICAL_PAGE;
 			DatabasePfnEnd = XBOX_PFN_DATABASE_PHYSICAL_PAGE + 16 - 1;
-		}
-		else if (MiLayoutDevkit) {
-			DatabasePfn = XBOX_PFN_DATABASE_PHYSICAL_PAGE;
-			DatabasePfnEnd = XBOX_PFN_DATABASE_PHYSICAL_PAGE + 32 - 1;
-		}
-		else {
+			break;
+		case CONSOLE_CHIHIRO:
 			DatabasePfn = CHIHIRO_PFN_DATABASE_PHYSICAL_PAGE;
 			DatabasePfnEnd = CHIHIRO_PFN_DATABASE_PHYSICAL_PAGE + 32 - 1;
+			break;
+		case CONSOLE_DEVKIT:
+			DatabasePfn = XBOX_PFN_DATABASE_PHYSICAL_PAGE;
+			DatabasePfnEnd = XBOX_PFN_DATABASE_PHYSICAL_PAGE + 32 - 1;
+			break;
+		default:
+			break;
 		}
 
 		MiInsertPageRangeInFreeListNoBusy(0, MiHighestPage);
@@ -195,7 +199,7 @@ BOOLEAN MmInitSystem()
 	{
 		// Map the nv2a instance memory
 		PFN Pfn, PfnEnd;
-		if (MiLayoutRetail || MiLayoutDevkit) {
+		if (!MiLayoutChihiro) {
 			Pfn = XBOX_INSTANCE_PHYSICAL_PAGE;
 			PfnEnd = XBOX_INSTANCE_PHYSICAL_PAGE + NV2A_INSTANCE_PAGE_COUNT - 1;
 		}

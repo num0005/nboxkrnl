@@ -451,7 +451,7 @@ static PMMPTE MiReservePtes(PPTEREGION PteRegion, ULONG NumberOfPtes)
 	return MiReservePtes(PteRegion, NumberOfPtes);
 }
 
-PVOID MiAllocateSystemMemory(ULONG NumberOfBytes, ULONG Protect, PageType BusyType, BOOLEAN AddGuardPage)
+PVOID MiAllocateSystemMemory(ULONG NumberOfBytes, ULONG Protect, PageType BusyType, BOOLEAN AddGuardPage, BOOLEAN ZeroMemory)
 {
 	if (NumberOfBytes == 0) {
 		return nullptr;
@@ -507,7 +507,11 @@ PVOID MiAllocateSystemMemory(ULONG NumberOfBytes, ULONG Protect, PageType BusyTy
 
 	MiUnlock(OldIrql);
 
-	return (PVOID)GetVAddrMappedByPte(StartPte);
+	PVOID Memory = (PVOID)GetVAddrMappedByPte(StartPte);
+	if (ZeroMemory)
+		RtlZeroMemory(Memory, NumberOfPages << PAGE_SHIFT);
+
+	return Memory;
 }
 
 ULONG MiFreeSystemMemory(PVOID BaseAddress, ULONG NumberOfBytes)

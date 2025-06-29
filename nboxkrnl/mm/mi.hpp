@@ -148,7 +148,6 @@ enum PageType {
 #define MiLock() KeRaiseIrqlToDpcLevel()
 #define MiUnlock(Irql) KfLowerIrql(Irql)
 
-inline bool MiLayoutRetail;
 inline bool MiLayoutChihiro;
 inline bool MiLayoutDevkit;
 
@@ -198,7 +197,7 @@ VOID MiRemoveAndZeroPageTableFromFreeList(PFN_NUMBER Pfn, PageType BusyType, PMM
 VOID MiRemoveAndZeroPageFromFreeList(PFN_NUMBER Pfn, PageType BusyType, PMMPTE Pte);
 PFN_NUMBER MiRemovePageFromFreeList(PageType BusyType, PMMPTE Pte, PFN_COUNT(*AllocationRoutine)());
 PFN_NUMBER MiRemoveAnyPageFromFreeList();
-PVOID MiAllocateSystemMemory(ULONG NumberOfBytes, ULONG Protect, PageType BusyType, BOOLEAN AddGuardPage);
+PVOID MiAllocateSystemMemory(ULONG NumberOfBytes, ULONG Protect, PageType BusyType, BOOLEAN AddGuardPage, BOOLEAN ZeroMemory = false);
 ULONG MiFreeSystemMemory(PVOID BaseAddress, ULONG NumberOfBytes);
 BOOLEAN MiConvertPageToPtePermissions(ULONG Protect, PMMPTE Pte);
 BOOLEAN MiConvertPageToSystemPtePermissions(ULONG Protect, PMMPTE Pte);
