@@ -450,6 +450,105 @@ struct KINTERRUPT {
 };
 using PKINTERRUPT = KINTERRUPT *;
 
+#define SIZE_OF_FPU_REGISTERS        128
+#define NPX_STATE_NOT_LOADED (CR0_TS | CR0_MP) // x87 fpu, XMM, and MXCSR registers not loaded on fpu
+#define NPX_STATE_LOADED 0                     // x87 fpu, XMM, and MXCSR registers loaded on fpu
+
+#pragma pack(1)
+struct FLOATING_SAVE_AREA
+{
+	USHORT  ControlWord;
+	USHORT  StatusWord;
+	USHORT  TagWord;
+	USHORT  ErrorOpcode;
+	ULONG   ErrorOffset;
+	ULONG   ErrorSelector;
+	ULONG   DataOffset;
+	ULONG   DataSelector;
+	ULONG   MXCsr;
+	ULONG   Reserved1;
+	UCHAR   RegisterArea[SIZE_OF_FPU_REGISTERS];
+	UCHAR   XmmRegisterArea[SIZE_OF_FPU_REGISTERS];
+	UCHAR   Reserved2[224];
+	ULONG   Cr0NpxState;
+};
+#pragma pack()
+
+struct  FX_SAVE_AREA
+{
+	FLOATING_SAVE_AREA FloatSave;
+	ULONG Align16Byte[3];
+};
+using PFX_SAVE_AREA = FX_SAVE_AREA*;
+
+struct KPRCB
+{
+	struct KTHREAD* CurrentThread;
+	struct KTHREAD* NextThread;
+	struct KTHREAD* IdleThread;
+	struct KTHREAD* NpxThread;
+	ULONG InterruptCount;
+	ULONG DpcTime;
+	ULONG InterruptTime;
+	ULONG DebugDpcTime;
+	ULONG KeContextSwitches;
+	ULONG DpcInterruptRequested;
+	LIST_ENTRY DpcListHead;
+	ULONG DpcRoutineActive;
+	PVOID DpcStack;
+	ULONG QuantumEnd;
+	// NOTE: if this is used with a fxsave instruction to save the float state, then this buffer must be 16-bytes aligned.
+	// At the moment, we only use the Npx area in the thread's stack
+	FX_SAVE_AREA NpxSaveArea;
+	VOID* DmEnetFunc;
+	VOID* DebugMonitorData;
+};
+using PKPRCB = KPRCB*;
+
+struct NT_TIB
+{
+	struct EXCEPTION_REGISTRATION_RECORD* ExceptionList;
+	PVOID StackBase;
+	PVOID StackLimit;
+	PVOID SubSystemTib;
+	union
+	{
+		PVOID FiberData;
+		DWORD Version;
+	};
+	PVOID ArbitraryUserPointer;
+	NT_TIB* Self;
+};
+using PNT_TIB = NT_TIB*;
+
+struct KPCR
+{
+	NT_TIB NtTib;
+	KPCR* SelfPcr;
+	KPRCB* Prcb;
+	KIRQL Irql;
+	KPRCB PrcbData;
+};
+using PKPCR = KPCR*;
+
+extern KPCR KiPcr;
+
+#if defined(CONFIG_SMP)
+#define KeGetPcr()              ((KPCR *)__readfsdword(offsetof(KPCR, SelfPcr)))
+inline PKPRCB KeGetCurrentPrcb(VOID)
+{
+	return (PKPRCB)(ULONG_PTR)__readfsdword(offsetof(KPCR, Prcb));
+}
+#else
+// xbox is a single core system so this is mostly for reactos/windows compat
+// compiles down to just acccessing the global
+#define KeGetPcr()              (&KiPcr)
+inline PKPRCB KeGetCurrentPrcb(VOID)
+{
+	return KeGetPcr()->Prcb;
+}
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -484,7 +583,10 @@ EXPORTNUM(101) DLLEXPORT VOID XBOXAPI KeEnterCriticalRegion();
 
 EXPORTNUM(103) DLLEXPORT KIRQL XBOXAPI KeGetCurrentIrql();
 
-EXPORTNUM(104) DLLEXPORT PKTHREAD XBOXAPI KeGetCurrentThread();
+inline EXPORTNUM(104) DLLEXPORT PKTHREAD XBOXAPI KeGetCurrentThread(VOID)
+{
+	return KeGetCurrentPrcb()->CurrentThread;
+}
 
 EXPORTNUM(105) DLLEXPORT VOID XBOXAPI KeInitializeApc
 (
@@ -702,6 +804,7 @@ VOID FASTCALL KeAddThreadToTailOfReadyList(PKTHREAD Thread);
 [[noreturn]] VOID CDECL KeBugCheckLogEip(ULONG BugCheckCode);
 
 // no need for memory barriers on a single core/single cpu system
+#include <intrin.h>
 #define KeMemoryBarrier() _ReadWriteBarrier()
 #define KeMemoryBarrierWithoutFence() _ReadWriteBarrier()
 

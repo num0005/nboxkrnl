@@ -441,11 +441,6 @@ NTSTATUS __declspec(naked) XBOXAPI KiSwapThread()
 	ASM_END
 }
 
-EXPORTNUM(104) PKTHREAD XBOXAPI KeGetCurrentThread()
-{
-	ASM(mov eax, [KiPcr]KPCR.PrcbData.CurrentThread);
-}
-
 EXPORTNUM(140) ULONG XBOXAPI KeResumeThread
 (
 	PKTHREAD Thread

@@ -17,10 +17,6 @@
 #define CR0_EM (1 << 2) // emulation
 #define CR0_MP (1 << 1) // monitor coprocessor
 
-#define SIZE_OF_FPU_REGISTERS        128
-#define NPX_STATE_NOT_LOADED (CR0_TS | CR0_MP) // x87 fpu, XMM, and MXCSR registers not loaded on fpu
-#define NPX_STATE_LOADED 0                     // x87 fpu, XMM, and MXCSR registers loaded on fpu
-
 #define TIMER_TABLE_SIZE 32
 #define CLOCK_TIME_INCREMENT 10000 // one clock interrupt every ms -> 1ms == 10000 units of 100ns
 
@@ -29,31 +25,6 @@
 using KGDT = uint64_t;
 using KIDT = uint64_t;
 using KTSS = uint32_t[26];
-
-#pragma pack(1)
-struct FLOATING_SAVE_AREA {
-	USHORT  ControlWord;
-	USHORT  StatusWord;
-	USHORT  TagWord;
-	USHORT  ErrorOpcode;
-	ULONG   ErrorOffset;
-	ULONG   ErrorSelector;
-	ULONG   DataOffset;
-	ULONG   DataSelector;
-	ULONG   MXCsr;
-	ULONG   Reserved1;
-	UCHAR   RegisterArea[SIZE_OF_FPU_REGISTERS];
-	UCHAR   XmmRegisterArea[SIZE_OF_FPU_REGISTERS];
-	UCHAR   Reserved2[224];
-	ULONG   Cr0NpxState;
-};
-#pragma pack()
-
-struct  FX_SAVE_AREA {
-	FLOATING_SAVE_AREA FloatSave;
-	ULONG Align16Byte[3];
-};
-using PFX_SAVE_AREA = FX_SAVE_AREA *;
 
 
 #define CONTEXT_i386                0x00010000
@@ -81,53 +52,6 @@ struct CONTEXT {
 };
 using PCONTEXT = CONTEXT *;
 
-struct KPRCB {
-	struct KTHREAD *CurrentThread;
-	struct KTHREAD *NextThread;
-	struct KTHREAD *IdleThread;
-	struct KTHREAD *NpxThread;
-	ULONG InterruptCount;
-	ULONG DpcTime;
-	ULONG InterruptTime;
-	ULONG DebugDpcTime;
-	ULONG KeContextSwitches;
-	ULONG DpcInterruptRequested;
-	LIST_ENTRY DpcListHead;
-	ULONG DpcRoutineActive;
-	PVOID DpcStack;
-	ULONG QuantumEnd;
-	// NOTE: if this is used with a fxsave instruction to save the float state, then this buffer must be 16-bytes aligned.
-	// At the moment, we only use the Npx area in the thread's stack
-	FX_SAVE_AREA NpxSaveArea;
-	VOID *DmEnetFunc;
-	VOID *DebugMonitorData;
-};
-using PKPRCB = KPRCB *;
-
-struct NT_TIB {
-	struct EXCEPTION_REGISTRATION_RECORD *ExceptionList;
-	PVOID StackBase;
-	PVOID StackLimit;
-	PVOID SubSystemTib;
-	union {
-		PVOID FiberData;
-		DWORD Version;
-	};
-	PVOID ArbitraryUserPointer;
-	NT_TIB *Self;
-};
-using PNT_TIB = NT_TIB *;
-
-struct KPCR {
-	NT_TIB NtTib;
-	KPCR *SelfPcr;
-	KPRCB *Prcb;
-	KIRQL Irql;
-	KPRCB PrcbData;
-};
-using PKPCR = KPCR *;
-
-
 inline KTHREAD KiIdleThread;
 inline uint8_t alignas(16) KiIdleThreadStack[KERNEL_STACK_SIZE]; // must be 16 byte aligned because it's used by fxsave and fxrstor
 
@@ -143,7 +67,6 @@ inline LIST_ENTRY KiTimerTableListHead[TIMER_TABLE_SIZE];
 
 inline KDPC KiTimerExpireDpc;
 
-extern KPCR KiPcr;
 extern KTSS KiTss;
 extern const KGDT KiGdt[5];
 extern KIDT KiIdt[64];
@@ -152,22 +75,6 @@ inline constexpr uint16_t KiIdtLimit = sizeof(KiIdt) - 1;
 inline constexpr size_t KiFxAreaSize = sizeof(FX_SAVE_AREA);
 extern KPROCESS KiUniqueProcess;
 extern KPROCESS KiIdleProcess;
-
-#if defined(CONFIG_SMP)
-#define KeGetPcr()              ((KPCR *)__readfsdword(offsetof(KPCR, SelfPcr)))
-inline PKPRCB KeGetCurrentPrcb(VOID)
-{
-	return (PKPRCB)(ULONG_PTR)__readfsdword(offsetof(KPCR, Prcb));
-}
-#else
-// xbox is a single core system so this is mostly for reactos/windows compat
-// compiles down to just acccessing the global
-#define KeGetPcr()              (&KiPcr)
-inline PKPRCB KeGetCurrentPrcb(VOID)
-{
-	return KeGetPcr()->Prcb;
-}
-#endif
 
 
 VOID InitializeCrt();
