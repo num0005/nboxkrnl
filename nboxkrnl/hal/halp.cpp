@@ -134,17 +134,6 @@ VOID HalpReadCmosTime(PTIME_FIELDS TimeFields)
 	TimeFields->Year += (Century * 100);
 }
 
-[[noreturn]] VOID HalpShutdownSystem()
-{
-	outl(KE_ABORT, 0);
-
-	while (true)
-	{
-		_disable();
-		__halt();
-	}
-}
-
 VOID HalpExecuteReadSmbusCycle(UCHAR SlaveAddress, UCHAR CommandCode, BOOLEAN ReadWordValue)
 {
 	outb(SMBUS_ADDRESS, SlaveAddress | HA_RC);

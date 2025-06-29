@@ -4,6 +4,7 @@
 
 #include "..\kernel.hpp"
 #include "ke.hpp"
+#include "hal.hpp"
 #include "rtl.hpp"
 #include "fsc.hpp"
 #include "mm.hpp"
@@ -27,7 +28,7 @@ BOOLEAN MmInitSystem()
 {
 	ULONG RequiredPt = 2;
 
-	XboxType = static_cast<ConsoleType>(inl(KE_SYSTEM_TYPE));
+	XboxType = HalQueryConsoleType();
 	MiLayoutRetail = (XboxType == CONSOLE_XBOX);
 	MiLayoutChihiro = (XboxType == CONSOLE_CHIHIRO);
 	MiLayoutDevkit = (XboxType == CONSOLE_DEVKIT);

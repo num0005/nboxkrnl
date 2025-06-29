@@ -7,6 +7,7 @@
 #include "rtl.hpp"
 #include "../hdd/hdd.hpp"
 #include <assert.h>
+#include <hal.hpp>
 
 
 static NTSTATUS XBOXAPI RawIrpCreate(PDEVICE_OBJECT DeviceObject, PIRP Irp);
@@ -281,7 +282,7 @@ static NTSTATUS XBOXAPI RawIrpRead(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		DEV_PARTITION0 + PartitionNumber
 	);
 
-	NTSTATUS Status = HostToNtStatus(InfoBlock.Status);
+	NTSTATUS Status = InfoBlock.Status;
 	if (Status == STATUS_PENDING) {
 		// Should not happen right now, because RetrieveIoRequestFromHost is always synchronous
 		RIP_API_MSG("Asynchronous IO is not supported");
@@ -355,7 +356,7 @@ static NTSTATUS XBOXAPI RawIrpWrite(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		DEV_PARTITION0 + PartitionNumber
 	);
 
-	NTSTATUS Status = HostToNtStatus(InfoBlock.Status);
+	NTSTATUS Status = InfoBlock.Status;
 	if (Status == STATUS_PENDING) {
 		// Should not happen right now, because RetrieveIoRequestFromHost is always synchronous
 		RIP_API_MSG("Asynchronous IO is not supported");

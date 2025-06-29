@@ -9,6 +9,8 @@
 #include "nt.hpp"
 #include "mi.hpp"
 #include "obp.hpp"
+#include "hal.hpp"
+#include "dbg.hpp"
 #include <string.h>
 
 #define XBE_BASE_ADDRESS 0x10000
@@ -40,92 +42,127 @@ static NTSTATUS XeLoadXbe()
 		// TODO: XBE reboot support, by reading the path of the new XBE from the LaunchDataPage
 		RIP_API_MSG("XBE reboot not supported");
 	}
-	else {
-		// NOTE: we cannot just assume that the XBE name from the DVD drive is called "default.xbe", because the user might have renamed it
-		ULONG PathSize;
-		ASM_BEGIN
-			ASM(mov edx, XE_XBE_PATH_LENGTH);
-			ASM(in eax, dx);
-			ASM(mov PathSize, eax);
-		ASM_END
-
-		PCHAR PathBuffer = (PCHAR)ExAllocatePoolWithTag(PathSize, 'PebX');
-		if (!PathBuffer) {
-			return STATUS_INSUFFICIENT_RESOURCES;
-		}
-
-		ASM_BEGIN
-			ASM(mov edx, XE_XBE_PATH_ADDR);
-			ASM(mov eax, PathBuffer);
-			ASM(out dx, eax);
-		ASM_END
-
-		XeImageFileName.Buffer = PathBuffer;
-		XeImageFileName.Length = (USHORT)PathSize;
-		XeImageFileName.MaximumLength = (USHORT)PathSize;
-		memcpy(XeImageFileName.Buffer, PathBuffer, PathSize); // NOTE: doesn't copy the terminating NULL character
-
-		OBJECT_ATTRIBUTES ObjectAttributes;
-		InitializeObjectAttributes(&ObjectAttributes, &XeImageFileName, OBJ_CASE_INSENSITIVE, nullptr);
-		IO_STATUS_BLOCK IoStatusBlock;
-		HANDLE XbeHandle;
-		if (NTSTATUS Status = NtOpenFile(&XbeHandle, GENERIC_READ, &ObjectAttributes, &IoStatusBlock, FILE_SHARE_READ,
-			FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE); !NT_SUCCESS(Status)) {
+	else
+	{
+		// NOTE: we cannot just assume that the XBE name from the DVD drive is called "default.xbe",
+		// because the user might have renamed it. Read it in from host instead.
+		// TODO: different logic here for physical hardware? Is this the right place to decide what should go in 
+		// XeImageFileName or should that be moved up the call stack?
+		if (NTSTATUS Status = HalEmuQueryXBEPath(&XeImageFileName); !NT_SUCCESS(Status))
+		{
+			#if DBG
+			// that shouldn't really fail, log if it does
+			DbgPrint("Unable to query XBE path from host - %x", Status);
+			#endif
 			return Status;
 		}
+	}
 
-		PXBE_HEADER XbeHeader = (PXBE_HEADER)ExAllocatePoolWithTag(PAGE_SIZE, 'hIeX');
-		if (!XbeHeader) {
-			return STATUS_INSUFFICIENT_RESOURCES;
-		}
+	OBJECT_ATTRIBUTES ObjectAttributes;
+	InitializeObjectAttributes(&ObjectAttributes, &XeImageFileName, OBJ_CASE_INSENSITIVE, nullptr);
+	IO_STATUS_BLOCK IoStatusBlock;
+	HANDLE XbeHandle;
+	if (NTSTATUS Status = NtOpenFile(&XbeHandle, GENERIC_READ, &ObjectAttributes, &IoStatusBlock, FILE_SHARE_READ,
+		FILE_SYNCHRONOUS_IO_NONALERT | FILE_NON_DIRECTORY_FILE); !NT_SUCCESS(Status)) {
+		return Status;
+	}
 
-		LARGE_INTEGER XbeOffset{ .QuadPart = 0 };
-		if (NTSTATUS Status = NtReadFile(XbeHandle, nullptr, nullptr, nullptr, &IoStatusBlock,
-			XbeHeader, PAGE_SIZE, &XbeOffset); !NT_SUCCESS(Status)) {
-			ExFreePool(XbeHeader);
-			NtClose(XbeHandle);
-			return Status;
-		}
+	PXBE_HEADER XbeHeader = (PXBE_HEADER)ExAllocatePoolWithTag(PAGE_SIZE, 'hIeX');
+	if (!XbeHeader) {
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
 
-		// Sanity checks: make sure that the file looks like an XBE
-		if ((IoStatusBlock.Information < sizeof(XBE_HEADER)) ||
-			(XbeHeader->dwMagic != *(PULONG)"XBEH") ||
-			(XbeHeader->dwSizeofHeaders > XbeHeader->dwSizeofImage) ||
-			(XbeHeader->dwBaseAddr != XBE_BASE_ADDRESS)) {
-			ExFreePool(XbeHeader);
-			NtClose(XbeHandle);
-			return STATUS_INVALID_IMAGE_FORMAT;
-		}
+	LARGE_INTEGER XbeOffset{ .QuadPart = 0 };
+	if (NTSTATUS Status = NtReadFile(XbeHandle, nullptr, nullptr, nullptr, &IoStatusBlock,
+		XbeHeader, PAGE_SIZE, &XbeOffset); !NT_SUCCESS(Status)) {
+		ExFreePool(XbeHeader);
+		NtClose(XbeHandle);
+		return Status;
+	}
 
-		PVOID Address = GetXbeAddress();
-		ULONG Size = XbeHeader->dwSizeofImage;
-		NTSTATUS Status = NtAllocateVirtualMemory(&Address, 0, &Size, MEM_RESERVE, PAGE_READWRITE);
-		if (!NT_SUCCESS(Status)) {
-			ExFreePool(XbeHeader);
-			NtClose(XbeHandle);
-			return Status;
-		}
+	// Sanity checks: make sure that the file looks like an XBE
+	if ((IoStatusBlock.Information < sizeof(XBE_HEADER)) ||
+		(XbeHeader->dwMagic != *(PULONG)"XBEH") ||
+		(XbeHeader->dwSizeofHeaders > XbeHeader->dwSizeofImage) ||
+		(XbeHeader->dwBaseAddr != XBE_BASE_ADDRESS)) {
+		ExFreePool(XbeHeader);
+		NtClose(XbeHandle);
+		return STATUS_INVALID_IMAGE_FORMAT;
+	}
 
+	PVOID Address = GetXbeAddress();
+	ULONG Size = XbeHeader->dwSizeofImage;
+	NTSTATUS Status = NtAllocateVirtualMemory(&Address, 0, &Size, MEM_RESERVE, PAGE_READWRITE);
+	if (!NT_SUCCESS(Status)) {
+		ExFreePool(XbeHeader);
+		NtClose(XbeHandle);
+		return Status;
+	}
+
+	Address = GetXbeAddress();
+	Size = XbeHeader->dwSizeofHeaders;
+	Status = NtAllocateVirtualMemory(&Address, 0, &Size, MEM_COMMIT, PAGE_READWRITE);
+	if (!NT_SUCCESS(Status)) {
 		Address = GetXbeAddress();
-		Size = XbeHeader->dwSizeofHeaders;
-		Status = NtAllocateVirtualMemory(&Address, 0, &Size, MEM_COMMIT, PAGE_READWRITE);
-		if (!NT_SUCCESS(Status)) {
+		Size = 0;
+		NtFreeVirtualMemory(&Address, &Size, MEM_RELEASE);
+		ExFreePool(XbeHeader);
+		NtClose(XbeHandle);
+		return Status;
+	}
+
+	memcpy(GetXbeAddress(), XbeHeader, PAGE_SIZE);
+	ExFreePool(XbeHeader);
+	XbeHeader = nullptr;
+
+	if (GetXbeAddress()->dwSizeofHeaders > PAGE_SIZE) {
+		LARGE_INTEGER XbeOffset{ .QuadPart = PAGE_SIZE };
+		if (NTSTATUS Status = NtReadFile(XbeHandle, nullptr, nullptr, nullptr, &IoStatusBlock,
+			(PCHAR)XbeHeader + PAGE_SIZE, GetXbeAddress()->dwSizeofHeaders - PAGE_SIZE, &XbeOffset); !NT_SUCCESS(Status)) {
 			Address = GetXbeAddress();
 			Size = 0;
 			NtFreeVirtualMemory(&Address, &Size, MEM_RELEASE);
-			ExFreePool(XbeHeader);
 			NtClose(XbeHandle);
 			return Status;
 		}
+	}
 
-		memcpy(GetXbeAddress(), XbeHeader, PAGE_SIZE);
-		ExFreePool(XbeHeader);
-		XbeHeader = nullptr;
+	// Unscramble XBE entry point and kernel thunk addresses
+	static constexpr ULONG SEGABOOT_EP_XOR = 0x40000000;
+	if ((GetXbeAddress()->dwEntryAddr & WRITE_COMBINED_BASE) == SEGABOOT_EP_XOR) {
+		GetXbeAddress()->dwEntryAddr ^= XOR_EP_CHIHIRO;
+		GetXbeAddress()->dwKernelImageThunkAddr ^= XOR_KT_CHIHIRO;
+	}
+	else if ((GetXbeAddress()->dwKernelImageThunkAddr & PHYSICAL_MAP_BASE) > 0) {
+		GetXbeAddress()->dwEntryAddr ^= XOR_EP_DEBUG;
+		GetXbeAddress()->dwKernelImageThunkAddr ^= XOR_KT_DEBUG;
+	}
+	else {
+		GetXbeAddress()->dwEntryAddr ^= XOR_EP_RETAIL;
+		GetXbeAddress()->dwKernelImageThunkAddr ^= XOR_KT_RETAIL;
+	}
 
-		if (GetXbeAddress()->dwSizeofHeaders > PAGE_SIZE) {
-			LARGE_INTEGER XbeOffset{ .QuadPart = PAGE_SIZE };
-			if (NTSTATUS Status = NtReadFile(XbeHandle, nullptr, nullptr, nullptr, &IoStatusBlock,
-				(PCHAR)XbeHeader + PAGE_SIZE, GetXbeAddress()->dwSizeofHeaders - PAGE_SIZE, &XbeOffset); !NT_SUCCESS(Status)) {
+	// Disable security checks. TODO: is this necessary?
+	XBE_CERTIFICATE *XbeCertificate = (XBE_CERTIFICATE *)(GetXbeAddress()->dwCertificateAddr);
+	XbeCertificate->dwAllowedMedia |= (
+		XBEIMAGE_MEDIA_TYPE_HARD_DISK |
+		XBEIMAGE_MEDIA_TYPE_DVD_X2 |
+		XBEIMAGE_MEDIA_TYPE_DVD_CD |
+		XBEIMAGE_MEDIA_TYPE_CD |
+		XBEIMAGE_MEDIA_TYPE_DVD_5_RO |
+		XBEIMAGE_MEDIA_TYPE_DVD_9_RO |
+		XBEIMAGE_MEDIA_TYPE_DVD_5_RW |
+		XBEIMAGE_MEDIA_TYPE_DVD_9_RW);
+	if (XbeCertificate->dwSize >= offsetof(XBE_CERTIFICATE, bzCodeEncKey)) {
+		XbeCertificate->dwSecurityFlags &= ~1;
+	}
+
+	// Load all sections marked as "preload"
+	PXBE_SECTION SectionHeaders = (PXBE_SECTION)GetXbeAddress()->dwSectionHeadersAddr;
+	for (unsigned i = 0; i < GetXbeAddress()->dwSections; ++i) {
+		if (SectionHeaders[i].Flags & XBEIMAGE_SECTION_PRELOAD) {
+			Status = XeLoadSection(&SectionHeaders[i]);
+			if (!NT_SUCCESS(Status)) {
 				Address = GetXbeAddress();
 				Size = 0;
 				NtFreeVirtualMemory(&Address, &Size, MEM_RELEASE);
@@ -133,75 +170,30 @@ static NTSTATUS XeLoadXbe()
 				return Status;
 			}
 		}
-
-		// Unscramble XBE entry point and kernel thunk addresses
-		static constexpr ULONG SEGABOOT_EP_XOR = 0x40000000;
-		if ((GetXbeAddress()->dwEntryAddr & WRITE_COMBINED_BASE) == SEGABOOT_EP_XOR) {
-			GetXbeAddress()->dwEntryAddr ^= XOR_EP_CHIHIRO;
-			GetXbeAddress()->dwKernelImageThunkAddr ^= XOR_KT_CHIHIRO;
-		}
-		else if ((GetXbeAddress()->dwKernelImageThunkAddr & PHYSICAL_MAP_BASE) > 0) {
-			GetXbeAddress()->dwEntryAddr ^= XOR_EP_DEBUG;
-			GetXbeAddress()->dwKernelImageThunkAddr ^= XOR_KT_DEBUG;
-		}
-		else {
-			GetXbeAddress()->dwEntryAddr ^= XOR_EP_RETAIL;
-			GetXbeAddress()->dwKernelImageThunkAddr ^= XOR_KT_RETAIL;
-		}
-
-		// Disable security checks. TODO: is this necessary?
-		XBE_CERTIFICATE *XbeCertificate = (XBE_CERTIFICATE *)(GetXbeAddress()->dwCertificateAddr);
-		XbeCertificate->dwAllowedMedia |= (
-			XBEIMAGE_MEDIA_TYPE_HARD_DISK |
-			XBEIMAGE_MEDIA_TYPE_DVD_X2 |
-			XBEIMAGE_MEDIA_TYPE_DVD_CD |
-			XBEIMAGE_MEDIA_TYPE_CD |
-			XBEIMAGE_MEDIA_TYPE_DVD_5_RO |
-			XBEIMAGE_MEDIA_TYPE_DVD_9_RO |
-			XBEIMAGE_MEDIA_TYPE_DVD_5_RW |
-			XBEIMAGE_MEDIA_TYPE_DVD_9_RW);
-		if (XbeCertificate->dwSize >= offsetof(XBE_CERTIFICATE, bzCodeEncKey)) {
-			XbeCertificate->dwSecurityFlags &= ~1;
-		}
-
-		// Load all sections marked as "preload"
-		PXBE_SECTION SectionHeaders = (PXBE_SECTION)GetXbeAddress()->dwSectionHeadersAddr;
-		for (unsigned i = 0; i < GetXbeAddress()->dwSections; ++i) {
-			if (SectionHeaders[i].Flags & XBEIMAGE_SECTION_PRELOAD) {
-				Status = XeLoadSection(&SectionHeaders[i]);
-				if (!NT_SUCCESS(Status)) {
-					Address = GetXbeAddress();
-					Size = 0;
-					NtFreeVirtualMemory(&Address, &Size, MEM_RELEASE);
-					NtClose(XbeHandle);
-					return Status;
-				}
-			}
-		}
-
-		// Map the kernel thunk table to the XBE kernel imports
-		PULONG XbeKrnlThunk = (PULONG)GetXbeAddress()->dwKernelImageThunkAddr;
-		unsigned i = 0;
-		while (XbeKrnlThunk[i]) {
-			ULONG t = XbeKrnlThunk[i] & 0x7FFFFFFF;
-			XbeKrnlThunk[i] = KernelThunkTable[t];
-			++i;
-		}
-
-		if ((XboxType == CONSOLE_DEVKIT) && !(GetXbeAddress()->dwInitFlags.bLimit64MB)) {
-			MiAllowNonDebuggerOnTop64MiB = TRUE;
-		}
-
-		if (XboxType == CONSOLE_CHIHIRO) {
-			GetXbeAddress()->dwInitFlags.bDontSetupHarddisk = 1;
-		}
-
-		// TODO: extract the keys from the certificate and store them in XboxLANKey, XboxSignatureKey and XboxAlternateSignatureKeys
-
-		NtClose(XbeHandle);
-
-		return STATUS_SUCCESS;
 	}
+
+	// Map the kernel thunk table to the XBE kernel imports
+	PULONG XbeKrnlThunk = (PULONG)GetXbeAddress()->dwKernelImageThunkAddr;
+	unsigned i = 0;
+	while (XbeKrnlThunk[i]) {
+		ULONG t = XbeKrnlThunk[i] & 0x7FFFFFFF;
+		XbeKrnlThunk[i] = KernelThunkTable[t];
+		++i;
+	}
+
+	if ((XboxType == CONSOLE_DEVKIT) && !(GetXbeAddress()->dwInitFlags.bLimit64MB)) {
+		MiAllowNonDebuggerOnTop64MiB = TRUE;
+	}
+
+	if (XboxType == CONSOLE_CHIHIRO) {
+		GetXbeAddress()->dwInitFlags.bDontSetupHarddisk = 1;
+	}
+
+	// TODO: extract the keys from the certificate and store them in XboxLANKey, XboxSignatureKey and XboxAlternateSignatureKeys
+
+	NtClose(XbeHandle);
+
+	return STATUS_SUCCESS;
 }
 
 VOID XBOXAPI XbeStartupThread(PVOID Opaque)

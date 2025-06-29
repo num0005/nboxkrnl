@@ -164,6 +164,7 @@ inline constexpr VOID(XBOXAPI *const SwIntHandlers[])() = {
 	&HalpHwInt15
 };
 
+// todo: replace usages of this with HalReturnToFirmware?
 [[noreturn]] VOID HalpShutdownSystem();
 VOID HalpInitPIC();
 VOID HalpInitPIT();

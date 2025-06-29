@@ -5,6 +5,7 @@
 #include "hal.hpp"
 #include "halp.hpp"
 #include "rtl.hpp"
+#include "halp_nxbx.h"
 #include <assert.h>
 
 typedef union _PIC_MASK

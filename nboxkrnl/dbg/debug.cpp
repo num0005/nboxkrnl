@@ -7,6 +7,7 @@
 #include <nanoprintf.h>
 #include <string.h>
 #include <stdarg.h>
+#include <hal.hpp>
 
 
 EXPORTNUM(8) ULONG CDECL DbgPrint
@@ -23,7 +24,7 @@ EXPORTNUM(8) ULONG CDECL DbgPrint
 		npf_vsnprintf(buff, sizeof(buff), Format, vlist);
 		va_end(vlist);
 
-		outl(DBG_OUTPUT_STR_PORT, reinterpret_cast<ULONG>(buff));
+		HalpWriteToDebugOutput(buff, sizeof(buff));
 	}
 
 	return STATUS_SUCCESS;
