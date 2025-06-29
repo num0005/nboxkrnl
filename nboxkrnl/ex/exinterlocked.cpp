@@ -5,16 +5,33 @@
 
 extern "C" {
 
-	LONGLONG
-		FASTCALL
-		ExInterlockedCompareExchange64(
+	EXPORTNUM(19) LARGE_INTEGER NTAPI ExInterlockedAddLargeInteger
+	(
+		IN OUT PLARGE_INTEGER Addend,
+		IN LARGE_INTEGER Increment
+	)
+	{
+		ULONG Flags = __readeflags();
+		_disable();
+
+		LARGE_INTEGER OldValue = *Addend;
+
+		Addend->QuadPart = OldValue.QuadPart + Increment.QuadPart;
+
+		__writeeflags(Flags);
+
+		return OldValue;
+	}
+
+	LONGLONG FASTCALL ExInterlockedCompareExchange64
+	(
 			IN OUT LONGLONG volatile* Destination,
 			IN LONGLONG* Exchange,
-			IN LONGLONG* Comparand)
+			IN LONGLONG* Comparand
+	)
 	{
 		return _InterlockedCompareExchange64(Destination, *Exchange, *Comparand);
 	}
-
 
 	EXPORTNUM(51) LONG FASTCALL InterlockedCompareExchange
 	(

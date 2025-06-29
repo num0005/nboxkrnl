@@ -64,33 +64,6 @@ static inline VOID CDECL disable()
 	_disable();
 }
 
-static inline VOID CDECL atomic_store64(LONGLONG* dst, LONGLONG val)
-{
-
-	ASM_BEGIN
-		ASM(pushfd);
-	ASM(cli);
-	ASM_END
-
-		* dst = val;
-
-	ASM(popfd);
-}
-
-static inline VOID CDECL atomic_add64(LONGLONG* dst, LONGLONG val)
-{
-	ASM_BEGIN
-		ASM(pushfd);
-	ASM(cli);
-	ASM_END
-
-		LONGLONG temp = *dst;
-	temp += val;
-	*dst = temp;
-
-	ASM(popfd);
-}
-
 // detect console type, on emulator builds this may be a call to host
 ConsoleType HalQueryConsoleType();
 
