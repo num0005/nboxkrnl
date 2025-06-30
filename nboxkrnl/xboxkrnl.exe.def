@@ -12,7 +12,7 @@ EXPORTS
     _DbgBreakPoint@0                          @   5 NONAME
     _DbgBreakPointWithStatus@4                @   6 NONAME
     _DbgLoadImageSymbols@12                   @   7 NONAME
-    DbgPrint                                 @   8 NONAME
+    DbgPrint                                  @   8 NONAME
     _HalReadSMCTrayState@8                    @   9 NONAME
     _DbgPrompt@12                             @  10 NONAME
     _DbgUnLoadImageSymbols@12                 @  11 NONAME
@@ -20,13 +20,13 @@ EXPORTS
     _ExAcquireReadWriteLockShared@4           @  13 NONAME
     _ExAllocatePool@4                         @  14 NONAME
     _ExAllocatePoolWithTag@8                  @  15 NONAME
-    ExEventObjectType                        @  16 NONAME DATA
+    ExEventObjectType                         @  16 NONAME DATA
     _ExFreePool@4                             @  17 NONAME
     _ExInitializeReadWriteLock@4              @  18 NONAME
-    _ExInterlockedAddLargeInteger@16          @  19 NONAME
-    @ExInterlockedAddLargeStatistic@8        @  20 NONAME
-    @ExInterlockedCompareExchange64@12       @  21 NONAME
-    ExMutantObjectType                       @  22 NONAME DATA
+    _ExInterlockedAddLargeInteger@12          @  19 NONAME
+    @ExInterlockedAddLargeStatistic@8         @  20 NONAME
+    @ExInterlockedCompareExchange64@12        @  21 NONAME
+    ExMutantObjectType                        @  22 NONAME DATA
     _ExQueryPoolBlockSize@4                   @  23 NONAME
     _ExQueryNonVolatileSetting@20             @  24 NONAME
     _ExReadWriteRefurbInfo@12                 @  25 NONAME
@@ -34,48 +34,48 @@ EXPORTS
     _ExRaiseStatus@4                          @  27 NONAME
     _ExReleaseReadWriteLock@4                 @  28 NONAME
     _ExSaveNonVolatileSetting@16              @  29 NONAME
-    ExSemaphoreObjectType                    @  30 NONAME DATA
-    ExTimerObjectType                        @  31 NONAME DATA
-    @ExfInterlockedInsertHeadList@8          @  32 NONAME
-    @ExfInterlockedInsertTailList@8          @  33 NONAME
-    @ExfInterlockedRemoveHeadList@4          @  34 NONAME
+    ExSemaphoreObjectType                     @  30 NONAME DATA
+    ExTimerObjectType                         @  31 NONAME DATA
+    @ExfInterlockedInsertHeadList@8           @  32 NONAME
+    @ExfInterlockedInsertTailList@8           @  33 NONAME
+    @ExfInterlockedRemoveHeadList@4           @  34 NONAME
     _FscGetCacheSize@0                        @  35 NONAME
     _FscInvalidateIdleBlocks@0                @  36 NONAME
     _FscSetCacheSize@4                        @  37 NONAME
-    @HalClearSoftwareInterrupt@4             @  38 NONAME
+    @HalClearSoftwareInterrupt@4              @  38 NONAME
     _HalDisableSystemInterrupt@4              @  39 NONAME
-    HalDiskCachePartitionCount               @  40 NONAME DATA
-    HalDiskModelNumber                       @  41 NONAME DATA
-    HalDiskSerialNumber                      @  42 NONAME DATA
+    HalDiskCachePartitionCount                @  40 NONAME DATA
+    HalDiskModelNumber                        @  41 NONAME DATA
+    HalDiskSerialNumber                       @  42 NONAME DATA
     _HalEnableSystemInterrupt@8               @  43 NONAME
     _HalGetInterruptVector@8                  @  44 NONAME
     _HalReadSMBusValue@16                     @  45 NONAME
     _HalReadWritePCISpace@24                  @  46 NONAME
-    HalRegisterShutdownNotification@8        @  47 NONAME
-    @HalRequestSoftwareInterrupt@4           @  48 NONAME
+    HalRegisterShutdownNotification@8         @  47 NONAME
+    @HalRequestSoftwareInterrupt@4            @  48 NONAME
     _HalReturnToFirmware@4                    @  49 NONAME
     _HalWriteSMBusValue@16                    @  50 NONAME
-    @InterlockedCompareExchange@12           @  51 NONAME
-    @InterlockedDecrement@4                  @  52 NONAME
-    @InterlockedIncrement@4                  @  53 NONAME
-    @InterlockedExchange@8                   @  54 NONAME
-    @InterlockedExchangeAdd@8                @  55 NONAME
-    @InterlockedFlushSList@4                 @  56 NONAME
-    @InterlockedPopEntrySList@4              @  57 NONAME
-    @InterlockedPushEntrySList@8             @  58 NONAME
+    @InterlockedCompareExchange@12            @  51 NONAME
+    @InterlockedDecrement@4                   @  52 NONAME
+    @InterlockedIncrement@4                   @  53 NONAME
+    @InterlockedExchange@8                    @  54 NONAME
+    @InterlockedExchangeAdd@8                 @  55 NONAME
+    @InterlockedFlushSList@4                  @  56 NONAME
+    @InterlockedPopEntrySList@4               @  57 NONAME
+    @InterlockedPushEntrySList@8              @  58 NONAME
     _IoAllocateIrp@4                          @  59 NONAME
     _IoBuildAsynchronousFsdRequest@24         @  60 NONAME
     _IoBuildDeviceIoControlRequest@36         @  61 NONAME
     _IoBuildSynchronousFsdRequest@28          @  62 NONAME
     _IoCheckShareAccess@20                    @  63 NONAME
-    IoCompletionObjectType                   @  64 NONAME DATA
+    IoCompletionObjectType                    @  64 NONAME DATA
     _IoCreateDevice@24                        @  65 NONAME
     _IoCreateFile@40                          @  66 NONAME
     _IoCreateSymbolicLink@8                   @  67 NONAME
     _IoDeleteDevice@4                         @  68 NONAME
     _IoDeleteSymbolicLink@4                   @  69 NONAME
-    IoDeviceObjectType                       @  70 NONAME DATA
-    IoFileObjectType                         @  71 NONAME DATA
+    IoDeviceObjectType                        @  70 NONAME DATA
+    IoFileObjectType                          @  71 NONAME DATA
     _IoFreeIrp@4                              @  72 NONAME
     _IoInitializeIrp@12                       @  73 NONAME
     _IoInvalidDeviceRequest@8                 @  74 NONAME
@@ -90,8 +90,8 @@ EXPORTS
     _IoStartPacket@12                         @  83 NONAME
     _IoSynchronousDeviceIoControlRequest@32   @  84 NONAME
     _IoSynchronousFsdRequest@20               @  85 NONAME
-    @IofCallDriver@8                         @  86 NONAME
-    @IofCompleteRequest@8                    @  87 NONAME
+    @IofCallDriver@8                          @  86 NONAME
+    @IofCompleteRequest@8                     @  87 NONAME
     ;KdDebuggerEnabled                        @  88 NONAME DATA
     ;KdDebuggerNotPresent                     @  89 NONAME DATA
     _IoDismountVolume@4                       @  90 NONAME
@@ -106,7 +106,7 @@ EXPORTS
     _KeDelayExecutionThread@12                @  99 NONAME
     _KeDisconnectInterrupt@4                  @ 100 NONAME
     _KeEnterCriticalRegion@0                  @ 101 NONAME
-    MmGlobalData                             @ 102 NONAME DATA
+    MmGlobalData                              @ 102 NONAME DATA
     _KeGetCurrentIrql@0                       @ 103 NONAME
     _KeGetCurrentThread@0                     @ 104 NONAME
     _KeInitializeApc@28                       @ 105 NONAME

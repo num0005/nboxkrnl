@@ -8,7 +8,30 @@
 #include <string.h>
 #include <stdarg.h>
 #include <hal.hpp>
+#include "rtl.hpp"
 
+EXPORTNUM(5) void NTAPI DbgBreakPointWithStatus
+(
+	IN ULONG Status
+)
+{
+	RIP_UNIMPLEMENTED();
+}
+
+EXPORTNUM(6) void NTAPI DbgBreakPoint(void)
+{
+	DbgBreakPointWithStatus(STATUS_BREAKPOINT);
+}
+
+EXPORTNUM(7) void NTAPI DbgLoadImageSymbols
+(
+	PSTRING FileName,
+	PVOID ImageBase,
+	ULONG_PTR ProcessId
+)
+{
+	RIP_UNIMPLEMENTED();
+}
 
 EXPORTNUM(8) ULONG CDECL DbgPrint
 (
@@ -28,4 +51,34 @@ EXPORTNUM(8) ULONG CDECL DbgPrint
 	}
 
 	return STATUS_SUCCESS;
+}
+
+EXPORTNUM(10) ULONG NTAPI DbgPrompt
+(
+	PCHAR Prompt,
+	PCHAR Response,
+	ULONG MaximumResponseLength
+)
+{
+	if (Prompt)
+	{
+		HalpWriteToDebugOutput(Prompt);
+	}
+
+	if (Response && MaximumResponseLength)
+	{
+		*Response = '\0';
+	}
+
+	return 0;
+}
+
+EXPORTNUM(11) VOID NTAPI DbgUnLoadImageSymbols
+(
+	PSTRING FileName,
+	PVOID ImageBase,
+	ULONG_PTR ProcessId
+)
+{
+	RIP_UNIMPLEMENTED();
 }
