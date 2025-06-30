@@ -232,11 +232,6 @@ union LARGE_INTEGER {
 	} u;
 
 	LONGLONG QuadPart;
-
-	LARGE_INTEGER(ULONG Integer)
-	{
-		QuadPart = Integer;
-	}
 };
 using PLARGE_INTEGER = LARGE_INTEGER *;
 

@@ -290,7 +290,7 @@ static NTSTATUS XBOXAPI RawIrpRead(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	else if (NT_SUCCESS(Status)) {
 		if (FileObject->Flags & FO_SYNCHRONOUS_IO) {
 			// NOTE: FileObject->CurrentByteOffset.QuadPart must be updated atomically because RawIrpRead acquires a shared lock, which means it can be concurrently updated
-			ExInterlockedAddLargeInteger(&FileObject->CurrentByteOffset, InfoBlock.Info);
+			ExInterlockedAddLargeInteger(&FileObject->CurrentByteOffset, LARGE_INTEGER{ InfoBlock.Info });
 		}
 	}
 
