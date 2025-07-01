@@ -83,7 +83,10 @@ VOID KiInitSystem();
 [[noreturn]] void KiIdleLoop();
 DWORD KiSwapThreadContext();
 VOID XBOXAPI KiExecuteApcQueue();
-VOID XBOXAPI KiExecuteDpcQueue();
+// called KiRetireDpcList on reactos
+VOID FASTCALL KiExecuteDpcQueue();
+// called KiRetireDpcListInDpcStack on reactos
+VOID FASTCALL KiExecuteDpcQueueInDpcStack(IN PVOID DpcStack);
 PKTHREAD XBOXAPI KiQuantumEnd();
 VOID KiAdjustQuantumThread();
 NTSTATUS XBOXAPI KiSwapThread();

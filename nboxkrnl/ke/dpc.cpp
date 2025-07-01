@@ -50,25 +50,43 @@ EXPORTNUM(119) BOOLEAN XBOXAPI KeInsertQueueDpc
 }
 
 // Source: Cxbx-Reloaded
-VOID XBOXAPI KiExecuteDpcQueue()
+VOID FASTCALL KiExecuteDpcQueue()
 {
 	// On entry, interrupts must be disabled
+	PKPRCB Prcb = KeGetCurrentPrcb();
 
-	while (!IsListEmpty(&KiPcr.PrcbData.DpcListHead)) {
+	while (!IsListEmpty(&Prcb->DpcListHead)) {
 		// Extract the head entry and retrieve the containing KDPC pointer for it:
-		PKDPC Dpc = CONTAINING_RECORD(RemoveHeadList(&KiPcr.PrcbData.DpcListHead), KDPC, DpcListEntry);
+		PKDPC Dpc = CONTAINING_RECORD(RemoveHeadList(&Prcb->DpcListHead), KDPC, DpcListEntry);
 		// Mark it as no longer linked into the DpcQueue
 		Dpc->Inserted = FALSE;
 		// Set DpcRoutineActive to support KeIsExecutingDpc:
-		KiPcr.PrcbData.DpcRoutineActive = TRUE;
+		Prcb->DpcRoutineActive = TRUE;
 		enable();
 
 		// Call the Deferred Procedure:
 		Dpc->DeferredRoutine(Dpc, Dpc->DeferredContext, Dpc->SystemArgument1, Dpc->SystemArgument2);
 
 		disable();
-		KiPcr.PrcbData.DpcRoutineActive = FALSE;
+		Prcb->DpcRoutineActive = FALSE;
 	}
 
-	KiPcr.PrcbData.DpcInterruptRequested = FALSE;
+	Prcb->DpcInterruptRequested = FALSE;
 }
+
+// source: reactos
+VOID __declspec(naked) FASTCALL KiExecuteDpcQueueInDpcStack(IN PVOID DpcStack)
+{
+	ASM_BEGIN
+		// switch stack
+		ASM(mov eax, esp)
+		ASM(mov esp, ecx)
+		ASM(push eax)
+		// call wrapped function
+		ASM(call KiExecuteDpcQueue)
+		// switch back stacks
+		ASM(pop esp)
+		ASM(ret)
+	ASM_END
+}
+
