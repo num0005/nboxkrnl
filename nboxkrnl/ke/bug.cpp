@@ -7,6 +7,8 @@
 #include "dbg.hpp"
 #include <intrin.h>
 
+EXPORTNUM(162) ULONG_PTR KiBugCheckData[5];
+
 
 EXPORTNUM(95) VOID XBOXAPI KeBugCheck
 (
@@ -25,7 +27,11 @@ EXPORTNUM(96) VOID XBOXAPI KeBugCheckEx
 	ULONG_PTR BugCheckParameter4
 )
 {
-  // This routine terminates the system. It should be used when a failure is not expected, for example those caused by bugs
+	KiBugCheckData[0] = BugCheckCode;
+	KiBugCheckData[1] = BugCheckParameter1;
+	KiBugCheckData[2] = BugCheckParameter2;
+	KiBugCheckData[3] = BugCheckParameter3;
+	KiBugCheckData[4] = BugCheckParameter4;
 
 	DbgPrint("Fatal error of the kernel with code: 0x%08lx (0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx)",
 		BugCheckCode,
