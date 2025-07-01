@@ -27,26 +27,24 @@ VOID XBOXAPI KiSuspendThread(PVOID NormalContext, PVOID SystemArgument1, PVOID S
 		NULL);
 }
 
-[[noreturn]] static VOID __declspec(naked) XBOXAPI KiThreadStartup()
+[[noreturn]] static VOID XBOXAPI KiThreadStartup()
 {
 	// This function is called from KiSwapThreadContext when a new thread is run for the first time
 	// On entry, the esp points to a PKSTART_FRAME
+	
+	PKTHREAD Thread = KeGetCurrentThread();
+	KSTART_FRAME StartFrame = *reinterpret_cast<PKSTART_FRAME>(Thread->KernelStack);
+	// drop all the way down to passive
+	KfLowerIrql(PASSIVE_LEVEL);
 
-	ASM_BEGIN
-		ASM(mov cl, PASSIVE_LEVEL);
-		ASM(call KfLowerIrql);
-		ASM(mov ecx, [KiPcr]KPCR.PrcbData.CurrentThread);
-		ASM(movzx ecx, byte ptr [ecx]KTHREAD.HasTerminated); // make sure that PsCreateSystemThreadEx actually succeeded
-		ASM(test ecx, ecx);
-		ASM(jz thread_start);
-		ASM(push 0xC0000017L); // STATUS_NO_MEMORY
-		ASM(call PsTerminateSystemThread);
-	thread_start:
-		ASM(pop ecx);
-		ASM(call ecx); // SystemRoutine should never return
-		ASM(push NORETURN_FUNCTION_RETURNED);
-		ASM(call KeBugCheckLogEip); // won't return
-	ASM_END
+	// detect PsCreateSystemThreadEx failure
+	if (Thread->HasTerminated)
+	{
+		PsTerminateSystemThread(STATUS_NO_MEMORY);
+	}
+
+	StartFrame.SystemRoutine(StartFrame.StartRoutine, StartFrame.StartContext);
+	KeBugCheckLogEip(NORETURN_FUNCTION_RETURNED);
 }
 
 // Source: Cxbx-Reloaded
