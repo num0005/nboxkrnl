@@ -327,6 +327,7 @@ struct KMUTANT {
 using PKMUTANT = KMUTANT *;
 
 struct KSTART_FRAME {
+	PVOID RetAddrFatal;
 	PKSYSTEM_ROUTINE SystemRoutine;
 	PKSTART_ROUTINE StartRoutine;
 	PVOID StartContext;
@@ -826,6 +827,14 @@ VOID KiScheduleThread(PKTHREAD Thread);
 VOID FASTCALL KeAddThreadToTailOfReadyList(PKTHREAD Thread);
 
 [[noreturn]] VOID CDECL KeBugCheckLogEip(ULONG BugCheckCode);
+// place at top of stack to catch superious returns
+[[noreturn]] VOID CDECL KeBugCheckNoReturnGuard
+(
+	ULONG_PTR BugCheckParameter1,
+	ULONG_PTR BugCheckParameter2,
+	ULONG_PTR BugCheckParameter3,
+	ULONG_PTR BugCheckParameter4
+);
 
 // no need for memory barriers on a single core/single cpu system
 #include <intrin.h>

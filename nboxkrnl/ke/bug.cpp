@@ -50,3 +50,14 @@ VOID __declspec(noinline) CDECL KeBugCheckLogEip(ULONG BugCheckCode)
 	void* caller = _ReturnAddress();
 	KeBugCheckEx(BugCheckCode, reinterpret_cast<ULONG_PTR>(caller), 0, 0, 0);
 }
+
+[[noreturn]] VOID CDECL KeBugCheckNoReturnGuard
+(
+	ULONG_PTR BugCheckParameter1,
+	ULONG_PTR BugCheckParameter2,
+	ULONG_PTR BugCheckParameter3,
+	ULONG_PTR BugCheckParameter4
+)
+{
+	KeBugCheckEx(NORETURN_FUNCTION_RETURNED, BugCheckParameter1, BugCheckParameter2, BugCheckParameter3, BugCheckParameter4);
+}

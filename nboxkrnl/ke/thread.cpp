@@ -27,13 +27,17 @@ VOID XBOXAPI KiSuspendThread(PVOID NormalContext, PVOID SystemArgument1, PVOID S
 		NULL);
 }
 
-[[noreturn]] static VOID XBOXAPI KiThreadStartup()
+static VOID CDECL KiThreadStartup
+(
+	PKSYSTEM_ROUTINE SystemRoutine, 
+	PKSTART_ROUTINE StartRoutine, 
+	PVOID StartContext
+)
 {
 	// This function is called from KiSwapThreadContext when a new thread is run for the first time
 	// On entry, the esp points to a PKSTART_FRAME
 	
 	PKTHREAD Thread = KeGetCurrentThread();
-	KSTART_FRAME StartFrame = *reinterpret_cast<PKSTART_FRAME>(Thread->KernelStack);
 	// drop all the way down to passive
 	KfLowerIrql(PASSIVE_LEVEL);
 
@@ -43,8 +47,8 @@ VOID XBOXAPI KiSuspendThread(PVOID NormalContext, PVOID SystemArgument1, PVOID S
 		PsTerminateSystemThread(STATUS_NO_MEMORY);
 	}
 
-	StartFrame.SystemRoutine(StartFrame.StartRoutine, StartFrame.StartContext);
-	KeBugCheckLogEip(NORETURN_FUNCTION_RETURNED);
+	SystemRoutine(StartRoutine, StartContext);
+	UNREACHABLE;
 }
 
 // Source: Cxbx-Reloaded
@@ -79,6 +83,7 @@ VOID KiInitializeContextThread(PKTHREAD Thread, ULONG TlsDataSize, PKSYSTEM_ROUT
 	StartFrame->StartContext = StartContext;
 	StartFrame->StartRoutine = StartRoutine;
 	StartFrame->SystemRoutine = SystemRoutine;
+	StartFrame->RetAddrFatal = &KeBugCheckNoReturnGuard; // bug check if KiThreadStartup ever returns
 
 	CtxSwitchFrame->RetAddr = KiThreadStartup;
 	CtxSwitchFrame->Eflags = 0x200; // interrupt enable flag
