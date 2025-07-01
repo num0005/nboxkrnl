@@ -4,7 +4,6 @@
 
 #include "..\kernel.hpp"
 #include "dbg.hpp"
-#include <nanoprintf.h>
 #include <string.h>
 #include <stdarg.h>
 #include <hal.hpp>
@@ -44,7 +43,7 @@ EXPORTNUM(8) ULONG CDECL DbgPrint
 		char buff[512];
 		va_list vlist;
 		va_start(vlist, Format);
-		npf_vsnprintf(buff, sizeof(buff), Format, vlist);
+		RtlVsnprintf(buff, sizeof(buff), Format, vlist);
 		va_end(vlist);
 
 		HalpWriteToDebugOutput(buff, sizeof(buff));

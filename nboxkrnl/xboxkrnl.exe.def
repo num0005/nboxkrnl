@@ -166,7 +166,7 @@ EXPORTS
     _KeWaitForSingleObject@20                 @ 159 NONAME
     @KfRaiseIrql@4                            @ 160 NONAME
     @KfLowerIrql@4                            @ 161 NONAME
-    ;KiBugCheckData                           @ 162 NONAME DATA
+    KiBugCheckData                            @ 162 NONAME DATA
     @KiUnlockDispatcherDatabase@4             @ 163 NONAME
     LaunchDataPage                            @ 164 NONAME DATA
     _MmAllocateContiguousMemory@4             @ 165 NONAME
@@ -327,9 +327,9 @@ EXPORTS
     _RtlZeroMemory@8                          @ 320 NONAME
     XboxEEPROMKey                             @ 321 NONAME DATA
     XboxHardwareInfo                          @ 322 NONAME DATA
-    ;XboxHDKey                                @ 323 NONAME DATA
+    ;XboxHDKey                                 @ 323 NONAME DATA
     XboxKrnlVersion                           @ 324 NONAME DATA
-    ;XboxSignatureKey                         @ 325 NONAME DATA
+    ;XboxSignatureKey                          @ 325 NONAME DATA
     XeImageFileName                           @ 326 NONAME DATA
     _XeLoadSection@4                          @ 327 NONAME
     _XeUnloadSection@4                        @ 328 NONAME
@@ -357,18 +357,18 @@ EXPORTS
     _XcCryptService@8                         @ 350 NONAME
     _XcUpdateCrypto@8                         @ 351 NONAME
     _RtlRip@12                                @ 352 NONAME
-    ;XboxLANKey                               @ 353 NONAME DATA
-    ;XboxAlternateSignatureKeys               @ 354 NONAME DATA
-    ;XePublicKeyData                          @ 355 NONAME DATA
+    ;XboxLANKey                                @ 353 NONAME DATA
+    ;XboxAlternateSignatureKeys                @ 354 NONAME DATA
+    ;XePublicKeyData                           @ 355 NONAME DATA
     HalBootSMCVideoMode                       @ 356 NONAME DATA
     ;IdexChannelObject                        @ 357 NONAME DATA
     _HalIsResetOrShutdownPending@0            @ 358 NONAME
     _IoMarkIrpMustComplete@4                  @ 359 NONAME
     _HalInitiateShutdown@0                    @ 360 NONAME
-    ;RtlSnprintf                              @ 361 NONAME
-    ;RtlSprintf                               @ 362 NONAME
-    ;RtlVsnprintf                             @ 363 NONAME
-    ;RtlVsprintf                              @ 364 NONAME
+    RtlSnprintf                               @ 361 NONAME
+    RtlSprintf                                @ 362 NONAME
+    RtlVsnprintf                              @ 363 NONAME
+    RtlVsprintf                               @ 364 NONAME
     _HalEnableSecureTrayEject@0               @ 365 NONAME
     _HalWriteSMCScratchRegister@4             @ 366 NONAME
     _MmDbgAllocateMemory@8                    @ 374 NONAME

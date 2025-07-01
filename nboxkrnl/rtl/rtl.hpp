@@ -369,6 +369,37 @@ EXPORTNUM(320) DLLEXPORT VOID XBOXAPI RtlZeroMemory
 	const CHAR *Message
 );
 
+
+EXPORTNUM(361) int CDECL RtlSnprintf
+(
+	IN PCHAR       string,
+	IN SIZE_T      count,
+	IN const char* format,
+	...
+);
+
+EXPORTNUM(362) int CDECL RtlSprintf
+(
+	IN PCHAR string,
+	IN const char* format,
+	...
+);
+
+EXPORTNUM(363) int CDECL RtlVsnprintf
+(
+	IN PCHAR string,
+	IN SIZE_T count,
+	IN const char* format,
+	va_list ap
+);
+
+EXPORTNUM(364) int CDECL RtlVsprintf
+(
+	IN PCHAR string,
+	IN const char* format,
+	va_list ap
+);
+
 #ifdef __cplusplus
 }
 #endif

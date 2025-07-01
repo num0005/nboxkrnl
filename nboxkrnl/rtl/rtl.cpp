@@ -11,7 +11,7 @@
 #include "..\mm\mm.hpp"
 #include <string.h>
 #include <assert.h>
-#include <nanoprintf.h>
+#include <stdarg.h>
 
 #define TICKSPERSEC        10000000
 #define TICKSPERMSEC       10000
@@ -547,7 +547,7 @@ VOID CDECL RipWithMsg(const char *Func, const char *Msg, ...)
 	char buff[512];
 	va_list vlist;
 	va_start(vlist, Msg);
-	npf_vsnprintf(buff, sizeof(buff), Msg, vlist);
+	RtlVsnprintf(buff, sizeof(buff), Msg, vlist);
 	va_end(vlist);
 
 	RtlRip(const_cast<PCHAR>(Func), nullptr, const_cast<PCHAR>(buff));

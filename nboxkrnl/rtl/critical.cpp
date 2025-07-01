@@ -6,7 +6,6 @@
 #include "..\mm\mm.hpp"
 #include <string.h>
 #include <assert.h>
-#include <nanoprintf.h>
 
 NTSTATUS NTAPI RtlpWaitForCriticalSection(PRTL_CRITICAL_SECTION CriticalSection)
 {
