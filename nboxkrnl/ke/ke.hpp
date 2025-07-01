@@ -32,6 +32,9 @@
 #define APC_LEVEL 1
 #define PASSIVE_LEVEL 0
 
+ // SMP: this is is changed on SMP NT kernels, try to not assume SYNCH is always DISPATCH 
+#define SYNCH_LEVEL DISPATCH_LEVEL
+
 #define IRQL_OFFSET_FOR_IRQ 4
 #define DISPATCH_LENGTH 22
 
@@ -44,6 +47,11 @@
 #define MUTANT_LIMIT 0x80000000
 
 #define MAX_TIMER_DPCS 16
+
+#define MAXIMUM_SUSPEND_COUNT 0x7F
+
+#define IO_NO_INCREMENT        0
+#define THREAD_ALERT_INCREMENT 2
 
 // These macros (or equivalent assembly code) should be used to access the members of KiPcr when the irql is below dispatch level, to make sure that
 // the accesses are atomic and thus thread-safe
@@ -545,8 +553,9 @@ inline PKPRCB KeGetCurrentPrcb(VOID)
 #define KeGetPcr()              (&KiPcr)
 inline PKPRCB KeGetCurrentPrcb(VOID)
 {
-	return KeGetPcr()->Prcb;
+	return &KeGetPcr()->PrcbData;
 }
+
 #endif
 
 #ifdef __cplusplus
@@ -581,7 +590,10 @@ EXPORTNUM(99) DLLEXPORT NTSTATUS XBOXAPI KeDelayExecutionThread
 
 EXPORTNUM(101) DLLEXPORT VOID XBOXAPI KeEnterCriticalRegion();
 
-EXPORTNUM(103) DLLEXPORT KIRQL XBOXAPI KeGetCurrentIrql();
+inline EXPORTNUM(103) DLLEXPORT KIRQL XBOXAPI KeGetCurrentIrql()
+{
+	return KeGetPcr()->Irql;
+}
 
 inline EXPORTNUM(104) DLLEXPORT PKTHREAD XBOXAPI KeGetCurrentThread(VOID)
 {

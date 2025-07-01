@@ -8,11 +8,6 @@
 #include "halp.hpp"
 
 
-EXPORTNUM(103) KIRQL XBOXAPI KeGetCurrentIrql()
-{
-	return KeGetPcr()->Irql;
-}
-
 EXPORTNUM(129) KIRQL XBOXAPI KeRaiseIrqlToDpcLevel()
 {
 	return KfRaiseIrql(DISPATCH_LEVEL);
