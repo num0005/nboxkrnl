@@ -142,6 +142,10 @@ VOID XBOXAPI HalpSwIntApc()
 	_disable();
 
 	Pcr->Irql = OldIrql; // restore IRQL
+
+	// stop the compiler from reordering changes around the IRQL lower 
+	KeMemoryBarrier();
+
 	HalpCheckUnmaskedInt();
 }
 

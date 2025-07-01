@@ -40,8 +40,14 @@ EXPORTNUM(160) KIRQL FASTCALL KfRaiseIrql
 	}
 	#endif
 
-		/* Set new IRQL */
+	// don't reorder operations past IRQL raise
+	KeMemoryBarrierWithoutFence();
+
+	/* Set new IRQL */
 	Pcr->Irql = NewIrql;
+
+	// don't reorder operations past IRQL raise
+	KeMemoryBarrierWithoutFence();
 
 	/* Return old IRQL */
 	return CurrentIrql;
@@ -68,11 +74,41 @@ EXPORTNUM(161) VOID FASTCALL KfLowerIrql
 	ULONG EFlags = __readeflags();
 	_disable();
 
+	// don't reorder operations past IRQL lower
+	KeMemoryBarrierWithoutFence();
+
 	/* Set old IRQL */
 	Pcr->Irql = OldIrql;
 
+	// don't reorder operations past IRQL lower
+	KeMemoryBarrierWithoutFence();
+
 	/* Check for pending software interrupts */
 	HalpCheckUnmaskedInt();
+
+	#if 0
+	DWORD PendingIrqlMask = HalpPendingInt & HalpIrqlMasks[KeGetCurrentIrql()];
+	if (PendingIrqlMask && !(HalpIntInProgress & ACTIVE_IRQ_MASK))
+	{
+		ULONG PendingIrql;
+		/* Check if pending IRQL affects hardware state */
+		RtlpBitScanReverse(&PendingIrql, PendingIrqlMask);
+		if (PendingIrql > DISPATCH_LEVEL)
+		{
+			/* Set new PIC mask */
+			PIC_MASK Mask;
+			Mask.Both = HalpPendingInt & 0xFFFF;
+			__outbyte(PIC_MASTER_DATA, Mask.Master);
+			__outbyte(PIC_SLAVE_DATA, Mask.Slave);
+
+			/* Clear IRR bit and set in progress bit*/
+			HalpPendingInt ^= (1 << PendingIrql);
+		}
+
+		 /* Now handle pending interrupt */
+		SwIntHandlers[PendingIrql]();
+	}
+	#endif
 
 	/* Restore interrupt state */
 	__writeeflags(EFlags);

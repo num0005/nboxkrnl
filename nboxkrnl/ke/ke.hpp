@@ -33,7 +33,7 @@
 #define APC_LEVEL 1
 #define PASSIVE_LEVEL 0
 
- // SMP: this is is changed on SMP NT kernels, try to not assume SYNCH is always DISPATCH 
+// SMP: this is is changed on SMP NT kernels, try to not assume SYNCH is always DISPATCH 
 #define SYNCH_LEVEL DISPATCH_LEVEL
 
 #define IRQL_OFFSET_FOR_IRQ 4
@@ -535,7 +535,7 @@ struct KPCR
 	NT_TIB NtTib;
 	KPCR* SelfPcr;
 	KPRCB* Prcb;
-	KIRQL Irql;
+	volatile KIRQL Irql;
 	KPRCB PrcbData;
 };
 using PKPCR = KPCR*;
