@@ -19,8 +19,12 @@ VOID XBOXAPI KiSuspendNop(PKAPC Apc, PKNORMAL_ROUTINE *NormalRoutine, PVOID *Nor
 
 VOID XBOXAPI KiSuspendThread(PVOID NormalContext, PVOID SystemArgument1, PVOID SystemArgument)
 {
-	// TODO
-	RIP_UNIMPLEMENTED();
+	/* Non-alertable kernel-mode suspended wait */
+	KeWaitForSingleObject(&KeGetCurrentThread()->SuspendSemaphore,
+		Suspended,
+		KernelMode,
+		FALSE,
+		NULL);
 }
 
 [[noreturn]] static VOID __declspec(naked) XBOXAPI KiThreadStartup()
