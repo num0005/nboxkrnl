@@ -1,5 +1,5 @@
 #include  "hal.hpp"
-#include  "halp_nxbx.h"
+#include  "halp_nxbx.hpp"
 #include "ex.hpp"
 #include "halp_nxbx_emuio.hpp"
 
