@@ -559,6 +559,8 @@ inline PKPRCB KeGetCurrentPrcb(VOID)
 
 #endif
 
+BOOLEAN FASTCALL KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

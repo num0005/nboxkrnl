@@ -8,7 +8,7 @@
 #include "rtl.hpp"
 
 
-static BOOLEAN KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment)
+BOOLEAN FASTCALL KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment)
 {
 	BOOLEAN Inserted = FALSE;
 	PKTHREAD Thread = Apc->Thread;
@@ -68,6 +68,8 @@ VOID XBOXAPI KiExecuteApcQueue()
 	// This function delivers all normal/special kernel APCs for the current thread. Note that user APCs are never delivered here, because those require the target thread
 	// to be waiting. If the current thread is waiting, then it surely cannot execute this code either
 	// NOTE: on entry, IRQL must be at APC_LEVEL
+
+	ASSERT_IRQL_EQUAL(APC_LEVEL);
 
 	KIRQL OldIrql = KeRaiseIrqlToSynchLevel();
 	PKTHREAD Thread = KeGetCurrentThread();
