@@ -227,10 +227,16 @@ VOID HalpCheckUnmaskedInt()
 {
 	// On entry, interrupts must be disabled
 	CHECK_INTERRUPTS_DISABLED("checking unmasked int");
-	
-	DWORD PendingIrqlMask = HalpPendingInt & HalpIrqlMasks[KeGetPcr()->Irql];
-	if (PendingIrqlMask && !(HalpIntInProgress & ACTIVE_IRQ_MASK))
+
+	while (TRUE)
 	{
+		/* Check for pending software interrupts and compare with current IRQL */
+		DWORD PendingIrqlMask = HalpPendingInt & HalpIrqlMasks[KeGetCurrentIrql()];
+		if (!PendingIrqlMask)
+			break; // exit if there is no pending interrupts at current level
+		if (HalpIntInProgress & ACTIVE_IRQ_MASK)
+			break; // exit if the there is an in-service delayed interrupt
+
 		ULONG PendingIrql;
 		/* Check if pending IRQL affects hardware state */
 		RtlpBitScanReverse(&PendingIrql, PendingIrqlMask);
@@ -242,12 +248,25 @@ VOID HalpCheckUnmaskedInt()
 			__outbyte(PIC_MASTER_DATA, Mask.Master);
 			__outbyte(PIC_SLAVE_DATA, Mask.Slave);
 
-			/* Clear IRR bit and set */
-			HalpPendingInt ^= (1 << PendingIrql);
-		}
+			/* Clear IRR bit and set in progress bit*/
+			const INT PendingIRQMask = (1 << PendingIrql);
+			HalpIntInProgress |= PendingIRQMask;
+			HalpPendingInt    ^= PendingIRQMask;
 
-		 /* Now handle pending interrupt */
-		SwIntHandlers[PendingIrql]();
+			/* Handle delayed hardware interrupt */
+			SwIntHandlers[PendingIrql]();
+
+			/* clear in-progress bit */
+			HalpIntInProgress ^= PendingIRQMask;
+			/* keep looping */
+		}
+		else
+		{
+			/* No need to loop checking for hardware interrupts */
+			SwIntHandlers[PendingIrql]();
+			// all done
+			break;
+		}
 	}
 }
 
