@@ -197,8 +197,8 @@ enum KWAIT_REASON {
 	WrRendezvous = 20,
 	WrFsCacheIn = 21,
 	WrFsCacheOut = 22,
-	Spare4 = 23,
-	Spare5 = 24,
+	WrDispatchInt = 23,
+	WrQuantumEnd = 24,
 	Spare6 = 25,
 	WrKernel = 26,
 	MaximumWaitReason = 27
@@ -505,7 +505,7 @@ struct KPRCB
 	LIST_ENTRY DpcListHead;
 	ULONG DpcRoutineActive;
 	PVOID DpcStack;
-	ULONG QuantumEnd;
+	volatile ULONG QuantumEnd;
 	// NOTE: if this is used with a fxsave instruction to save the float state, then this buffer must be 16-bytes aligned.
 	// At the moment, we only use the Npx area in the thread's stack
 	FX_SAVE_AREA NpxSaveArea;
@@ -570,6 +570,7 @@ extern "C" {
 	ULONG BugCheckCode
 );
 
+// This routine terminates the system. It should be used when a failure is not expected, for example those caused by bugs
 [[noreturn]] EXPORTNUM(96) DLLEXPORT VOID XBOXAPI KeBugCheckEx
 (
 	ULONG BugCheckCode,
@@ -734,6 +735,7 @@ EXPORTNUM(145) DLLEXPORT LONG XBOXAPI KeSetEvent
 	BOOLEAN	Wait
 );
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 EXPORTNUM(148) DLLEXPORT KPRIORITY XBOXAPI KeSetPriorityThread
 (
 	PKTHREAD Thread,
@@ -755,6 +757,7 @@ EXPORTNUM(150) DLLEXPORT BOOLEAN XBOXAPI KeSetTimerEx
 	PKDPC Dpc
 );
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 EXPORTNUM(152) DLLEXPORT ULONG XBOXAPI KeSuspendThread
 (
 	PKTHREAD Thread
@@ -762,6 +765,7 @@ EXPORTNUM(152) DLLEXPORT ULONG XBOXAPI KeSuspendThread
 
 EXPORTNUM(154) DLLEXPORT extern volatile KSYSTEM_TIME KeSystemTime;
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
 EXPORTNUM(155) DLLEXPORT BOOLEAN XBOXAPI KeTestAlertThread
 (
 	KPROCESSOR_MODE AlertMode
@@ -780,6 +784,8 @@ EXPORTNUM(159) DLLEXPORT NTSTATUS XBOXAPI KeWaitForSingleObject
 	PLARGE_INTEGER Timeout
 );
 
+_IRQL_raises_(NewIrql)
+_IRQL_saves_
 EXPORTNUM(160) DLLEXPORT KIRQL FASTCALL KfRaiseIrql
 (
 	KIRQL NewIrql
@@ -788,13 +794,16 @@ EXPORTNUM(160) DLLEXPORT KIRQL FASTCALL KfRaiseIrql
 
 EXPORTNUM(161) DLLEXPORT VOID FASTCALL KfLowerIrql
 (
-	KIRQL NewIrql
+	_IRQL_restores_ KIRQL NewIrql
 );
 
+// this is called KiExitDispatcher on reactos, but we use the xbox name since we export it
 EXPORTNUM(163) DLLEXPORT VOID FASTCALL KiUnlockDispatcherDatabase
 (
 	KIRQL NewIrql
 );
+// Reactos OS name for KiUnlockDispatcherDatabase
+#define KiExitDispatcher(OldIrql) KiUnlockDispatcherDatabase(OldIrql)
 
 EXPORTNUM(321) DLLEXPORT extern XBOX_KEY_DATA XboxEEPROMKey;
 

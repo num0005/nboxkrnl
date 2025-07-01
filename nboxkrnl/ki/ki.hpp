@@ -76,6 +76,25 @@ inline constexpr size_t KiFxAreaSize = sizeof(FX_SAVE_AREA);
 extern KPROCESS KiUniqueProcess;
 extern KPROCESS KiIdleProcess;
 
+// reactos compat: no-op on uniprocessor system
+#define KiAcquirePrcbLock(PRCB)
+// reactos compat: no-op on uniprocessor system
+#define KiReleasePrcbLock(PRCB)
+// reactos compat: no-op on uniprocessor system
+#define KiCheckDeferredReadyList(PRCB)
+// reactos compat: no-op on uniprocessor system
+#define KiSetThreadSwapBusy(THREAD)
+// reactos compat: no-op on uniprocessor system
+#define KiAcquireThreadLock(THREAD)
+// reactos compat: no-op on uniprocessor system
+#define KiReleaseThreadLock(THREAD)
+
+#define KeNumberProcessors 1
+
+// SMP: change this
+#define KiAcquireDispatcherLock() KfRaiseIrql(SYNCH_LEVEL)
+#define KiReleaseDispatcherLock(OldIrql) KfLowerIrql(OldIrql)
+
 
 VOID InitializeCrt();
 [[noreturn]] VOID KiInitializeKernel();
@@ -90,6 +109,10 @@ VOID FASTCALL KiExecuteDpcQueueInDpcStack(IN PVOID DpcStack);
 PKTHREAD XBOXAPI KiQuantumEnd();
 VOID KiAdjustQuantumThread();
 NTSTATUS XBOXAPI KiSwapThread();
+BOOLEAN FASTCALL KiSwapContext(
+	IN KIRQL WaitIrql,
+	IN PKTHREAD OldThread
+);
 
 VOID KiInitializeProcess(PKPROCESS Process, KPRIORITY BasePriority, LONG ThreadQuantum);
 
@@ -114,3 +137,70 @@ _Releases_nonreentrant_lock_(SpinLock)
 VOID
 FASTCALL
 KiReleaseSpinLock(IN PKSPIN_LOCK SpinLock);
+
+template<bool AddToTail>
+inline VOID FASTCALL KiAddThreadToReadyList(PKTHREAD Thread)
+{
+	NT_ASSERT(KeGetCurrentIrql() == DISPATCH_LEVEL);
+	NT_ASSERT((Thread->Priority >= 0) && (Thread->Priority <= HIGH_PRIORITY));
+
+	Thread->State = Ready;
+	if constexpr (AddToTail)
+	{
+		InsertTailList(&KiReadyThreadLists[Thread->Priority], &Thread->WaitListEntry);
+	}
+	else
+	{
+		InsertHeadList(&KiReadyThreadLists[Thread->Priority], &Thread->WaitListEntry);
+	}
+	KiReadyThreadMask |= (1 << Thread->Priority);
+}
+
+_Requires_lock_held_(Prcb->PrcbLock)
+_Releases_lock_(Prcb->PrcbLock)
+inline
+VOID
+KiQueueReadyThread(IN PKTHREAD Thread,
+	IN PKPRCB Prcb)
+
+{
+    /* Set thread ready for execution */
+    Thread->State = Ready;
+
+    /* Save current priority and if someone had pre-empted it */
+    BOOLEAN Priority = Thread->Priority;
+    KPRIORITY Preempted = Thread->Preempted;
+
+    /* We're not pre-empting now, and set the wait time */
+    Thread->Preempted = FALSE;
+    Thread->WaitTime = KeTickCount;
+
+    /* Sanity check */
+    NT_ASSERT((Priority >= 0) && (Priority <= HIGH_PRIORITY));
+
+    /* Insert this thread in the appropriate order */
+	Preempted ? KiAddThreadToReadyList<false>(Thread) : KiAddThreadToReadyList<true>(Thread);
+
+    /* Sanity check */
+	NT_ASSERT(Priority == Thread->Priority);
+
+    /* Release the PRCB lock */
+    KiReleasePrcbLock(Prcb);
+}
+
+//
+// Returns a thread's FPU save area
+//
+inline
+PFX_SAVE_AREA
+KiGetThreadNpxArea(IN PKTHREAD Thread)
+{
+	NT_ASSERT((ULONG_PTR)Thread->StackBase % 16 == 0);
+	return (PFX_SAVE_AREA)((ULONG_PTR)Thread->StackBase - sizeof(FX_SAVE_AREA));
+}
+
+// SMP: make these lock something
+/* This is a no-op at SYNCH_LEVEL for UP systems */
+#define KiAcquireDispatcherLockAtSynchLevel() NT_ASSERT(KeGetCurrentIrql() >= SYNCH_LEVEL)
+
+#define KiReleaseDispatcherLockFromSynchLevel()

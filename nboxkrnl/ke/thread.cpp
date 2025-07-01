@@ -80,9 +80,9 @@ VOID KiInitializeContextThread(PKTHREAD Thread, ULONG TlsDataSize, PKSYSTEM_ROUT
 
 	CtxSwitchFrame->RetAddr = KiThreadStartup;
 	CtxSwitchFrame->Eflags = 0x200; // interrupt enable flag
-	CtxSwitchFrame->ExceptionList = reinterpret_cast<PVOID>(EXCEPTION_CHAIN_END);
+	CtxSwitchFrame->ExceptionList = EXCEPTION_CHAIN_END;
 
-	Thread->KernelStack = reinterpret_cast<PVOID>(CtxSwitchFrame);
+	Thread->KernelStack = CtxSwitchFrame;
 }
 
 // Source: Cxbx-Reloaded
@@ -140,21 +140,6 @@ VOID KeInitializeThread(PKTHREAD Thread, PVOID KernelStack, ULONG KernelStackSiz
 	Process->StackCount++;
 
 	KfLowerIrql(OldIrql);
-}
-
-template<bool AddToTail>
-static VOID FASTCALL KiAddThreadToReadyList(PKTHREAD Thread)
-{
-	assert(KeGetCurrentIrql() == DISPATCH_LEVEL);
-
-	Thread->State = Ready;
-	if constexpr (AddToTail) {
-		InsertTailList(&KiReadyThreadLists[Thread->Priority], &Thread->WaitListEntry);
-	}
-	else {
-		InsertHeadList(&KiReadyThreadLists[Thread->Priority], &Thread->WaitListEntry);
-	}
-	KiReadyThreadMask |= (1 << Thread->Priority);
 }
 
 VOID FASTCALL KeAddThreadToTailOfReadyList(PKTHREAD Thread)
@@ -243,6 +228,50 @@ DWORD __declspec(naked) KiSwapThreadContext()
 	deliver_apc:
 		ASM(mov eax, 1);
 		ASM(ret); // load eip for the new thread
+	ASM_END
+}
+
+BOOLEAN
+__declspec(naked)
+FASTCALL
+KiSwapContext(
+	IN KIRQL WaitIrql,
+	IN PKTHREAD OldThread
+)
+{
+	ASM_BEGIN
+		/* get new thread */
+		ASM(mov eax, [KiPcr]KPCR.PrcbData.CurrentThread);
+		/* zero extend IRQL */
+		ASM(movzx ecx, ecx)
+		/* Save all the non-volatile registers */
+		ASM(push ebx)
+		ASM(push esi)
+		ASM(push edi)
+		ASM(push ebp)
+
+		///* build frame */
+		//ASM(sub esp, 2 * 4) // ExceptionList, Eflags
+		//ASM(mov eax, [esp + 4])
+		//ASM(push eax) // NewThread
+		//ASM(push ecx) // CurrentThread
+		//ASM(push edx) // WaitIrql
+		//ASM(mov ecx, esp)
+
+		/* move arguments where KiSwapThreadContext expects them */
+		ASM(mov esi, edx) // OldThread
+		ASM(mov edi, eax) // NewThread
+		ASM(mov ebx, ecx) // WaitIrql
+		ASM(call KiSwapThreadContext)
+
+		/* Restore the registers */
+		ASM(pop ebp)
+		ASM(pop edi)
+		ASM(pop esi)
+		ASM(pop ebx)
+
+		/* return */
+		ASM(ret)
 	ASM_END
 }
 

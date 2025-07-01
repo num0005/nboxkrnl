@@ -149,64 +149,78 @@ VOID XBOXAPI HalpSwIntApc()
 	HalpCheckUnmaskedInt();
 }
 
-VOID __declspec(naked) XBOXAPI HalpSwIntDpc()
+VOID XBOXAPI HalpSwIntDpc()
 {
 	// On entry, interrupts must be disabled
+	CHECK_INTERRUPTS_DISABLED("handling DPC");
 
-	ASM_BEGIN
-		ASM(movzx eax, byte ptr [KiPcr]KPCR.Irql);
-		ASM(mov byte ptr [KiPcr]KPCR.Irql, DISPATCH_LEVEL); // raise IRQL
-		ASM(and HalpPendingInt, ~(1 << DISPATCH_LEVEL));
-		ASM(push eax);
-		ASM(lea eax, [KiPcr]KPCR.PrcbData.DpcListHead);
-		ASM(cmp eax, [eax]LIST_ENTRY.Flink);
-		ASM(jz no_dpc);
-		ASM(push [KiPcr]KPCR.NtTib.ExceptionList);
-		ASM(mov dword ptr [KiPcr]KPCR.NtTib.ExceptionList, EXCEPTION_CHAIN_END2); // dword ptr required or else MSVC will aceess ExceptionList as a byte
-		ASM(mov eax, esp);
-		ASM(mov esp, [KiPcr]KPCR.PrcbData.DpcStack); // switch to DPC stack
-		ASM(push eax);
-		ASM(call KiExecuteDpcQueue);
-		ASM(pop esp);
-		ASM(pop dword ptr [KiPcr]KPCR.NtTib.ExceptionList); // dword ptr required or else MSVC will aceess ExceptionList as a byte
-	no_dpc:
-		ASM(sti);
-		ASM(cmp [KiPcr]KPCR.PrcbData.QuantumEnd, 0);
-		ASM(jnz quantum_end);
-		ASM(mov eax, [KiPcr]KPCR.PrcbData.NextThread);
-		ASM(test eax, eax);
-		ASM(jnz thread_switch);
-		ASM(jmp end_func);
-	thread_switch:
-		ASM(push esi);
-		ASM(push edi);
-		ASM(push ebx);
-		ASM(push ebp);
-		ASM(mov edi, eax);
-		ASM(mov esi, [KiPcr]KPCR.PrcbData.CurrentThread);
-		ASM(mov ecx, esi);
-		ASM(call KeAddThreadToTailOfReadyList);
-		ASM(mov [KiPcr]KPCR.PrcbData.CurrentThread, edi);
-		ASM(mov dword ptr [KiPcr]KPCR.PrcbData.NextThread, 0); // dword ptr required or else MSVC will aceess NextThread as a byte
-		ASM(mov ebx, 1);
-		ASM(call KiSwapThreadContext); // when this returns, it means this thread was switched back again
-		ASM(pop ebp);
-		ASM(pop ebx);
-		ASM(pop edi);
-		ASM(pop esi);
-		ASM(jmp end_func);
-	quantum_end:
-		ASM(mov [KiPcr]KPCR.PrcbData.QuantumEnd, 0);
-		ASM(call KiQuantumEnd);
-		ASM(test eax, eax);
-		ASM(jnz thread_switch);
-	end_func:
-		ASM(cli);
-		ASM(pop eax);
-		ASM(mov byte ptr [KiPcr]KPCR.Irql, al); // lower IRQL
-		ASM(call HalpCheckUnmaskedInt);
-		ASM(ret);
-	ASM_END
+	// unconditionally switch to dispatch level
+	KIRQL OldIrql;
+	const PKPCR Pcr = KeGetPcr();
+	const PKPRCB Prcb = KeGetCurrentPrcb();
+	OldIrql =  Pcr->Irql;
+	Pcr->Irql = DISPATCH_LEVEL;
+
+	// clear flags
+	HalpPendingInt &= ~(1 << DISPATCH_LEVEL);
+
+	if (!IsListEmpty(&Prcb->DpcListHead))
+	{
+		/* Switch to safe execution context */
+		struct EXCEPTION_REGISTRATION_RECORD* OldHandler = Pcr->NtTib.ExceptionList;
+		Pcr->NtTib.ExceptionList = EXCEPTION_CHAIN_END;
+
+		/* Retire DPCs while under the DPC stack */
+		KiExecuteDpcQueueInDpcStack(Prcb->DpcStack);
+
+		/* Restore context */
+		Pcr->NtTib.ExceptionList = OldHandler;
+	}
+
+	/* Re-enable interrupts */
+	enable();
+	/* Check for quantum end */
+	if (Prcb->QuantumEnd)
+	{
+		/* Handle quantum end */
+		Prcb->QuantumEnd = FALSE;
+		KiQuantumEnd();
+	}
+	/* Switch thread if there is one queued up for us */
+	if (Prcb->NextThread)
+	{
+		/* Acquire the PRCB lock */
+		KiAcquirePrcbLock(Prcb);
+
+		/* Capture current thread data */
+		PKTHREAD OldThread = Prcb->CurrentThread;
+		PKTHREAD NewThread = Prcb->NextThread;
+
+		/* Set current thread's swap busy to true */
+		KiSetThreadSwapBusy(OldThread);
+
+		/* Set new thread data */
+		Prcb->NextThread = NULL;
+		Prcb->CurrentThread = NewThread;
+
+		/* The thread is now running */
+		NewThread->State = Running;
+		OldThread->WaitReason = WrDispatchInt;
+
+		/* Make the old thread ready */
+		KiQueueReadyThread(OldThread, Prcb);
+
+		//OldThread->WaitIrql = APC_LEVEL;
+
+		//KiSwapThreadContext();
+		/* Swap to the new thread */
+		KiSwapContext(APC_LEVEL, OldThread);
+	}
+
+	disable();
+	/* restore IRQL */
+	Pcr->Irql = OldIrql;
+	HalpCheckUnmaskedInt();
 }
 
 VOID HalpCheckUnmaskedInt()
