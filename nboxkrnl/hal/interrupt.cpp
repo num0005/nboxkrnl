@@ -5,7 +5,7 @@
 #include "hal.hpp"
 #include "halp.hpp"
 #include "rtl.hpp"
-#include "halp_nxbx.h"
+#include "halp_nxbx.hpp"
 #include <assert.h>
 
 typedef union _PIC_MASK
@@ -117,22 +117,32 @@ static constexpr WORD PicIRQMasksForIRQL[] = {
 	0b1111111111111011,  // IRQL 31 (HIGH)
 };
 
+// assert interrupts are disabled, in retail builds forces interrupts off, in debug builds bugchecks the kernel
+#define CHECK_INTERRUPTS_DISABLED(reason) \
+	NT_ASSERT_MESSAGE(((__readeflags() & 0x200) == 0), \
+"HAL: Interrupts must be disabled when " reason "!" ); \
+	_disable();
+ // force interrupts off
+
 VOID XBOXAPI HalpSwIntApc()
 {
 	// On entry, interrupts must be disabled
+	CHECK_INTERRUPTS_DISABLED("handling APC");
+	KIRQL OldIrql;
+	const PKPCR Pcr = KeGetPcr();
+	OldIrql =  Pcr->Irql;
+	Pcr->Irql = APC_LEVEL; // unconditionally move to APC level (reactos also does this, why not use KfRaiseIrql?)
 
-	ASM_BEGIN
-		ASM(movzx eax, byte ptr[KiPcr]KPCR.Irql);
-		ASM(mov byte ptr[KiPcr]KPCR.Irql, APC_LEVEL); // raise IRQL
-		ASM(and HalpPendingInt, ~(1 << APC_LEVEL));
-		ASM(push eax);
-		ASM(sti);
-		ASM(call KiExecuteApcQueue);
-		ASM(cli);
-		ASM(pop eax);
-		ASM(mov byte ptr[KiPcr]KPCR.Irql, al); // lower IRQL
-		ASM(call HalpCheckUnmaskedInt);
-	ASM_END
+	// clear flags
+	HalpPendingInt &=  ~(1 << APC_LEVEL);
+
+	_enable();
+	// run kernel APC (not usermode)
+	KiExecuteApcQueue();
+	_disable();
+
+	Pcr->Irql = OldIrql; // restore IRQL
+	HalpCheckUnmaskedInt();
 }
 
 VOID __declspec(naked) XBOXAPI HalpSwIntDpc()
@@ -198,8 +208,7 @@ VOID __declspec(naked) XBOXAPI HalpSwIntDpc()
 VOID HalpCheckUnmaskedInt()
 {
 	// On entry, interrupts must be disabled
-	NT_ASSERT_MESSAGE(((__readeflags() & 0x200) == 0),
-		"CRITICAL: Interrupts must be disabled when unmasking!");
+	CHECK_INTERRUPTS_DISABLED("checking unmasked int");
 	
 	DWORD PendingIrqlMask = HalpPendingInt & HalpIrqlMasks[KeGetPcr()->Irql];
 	if (PendingIrqlMask && !(HalpIntInProgress & ACTIVE_IRQ_MASK))
@@ -227,6 +236,7 @@ VOID HalpCheckUnmaskedInt()
 static ULONG FASTCALL HalpCheckMaskedIntAtIRQLLevelNonSpurious(ULONG BusInterruptLevel, ULONG Irql)
 {
 	// On entry, interrupts must be disabled
+	CHECK_INTERRUPTS_DISABLED("checking masked int");
 
 	if (BusInterruptLevel >= 8) {
 		outb(PIC_MASTER_CMD, OCW2_EOI_IRQ | 2); // send eoi to master pic
@@ -254,6 +264,7 @@ static ULONG FASTCALL HalpCheckMaskedIntAtIRQLLevelNonSpurious(ULONG BusInterrup
 static ULONG FASTCALL HalpCheckMaskedIntAtIRQLNonSpurious(ULONG BusInterruptLevel, ULONG Irql)
 {
 	// On entry, interrupts must be disabled
+	CHECK_INTERRUPTS_DISABLED("checking masked int");
 
 	if ((KIRQL)Irql <= KiPcr.Irql) {
 		// Interrupt is masked at current IRQL, dismiss it
@@ -285,6 +296,7 @@ template<KINTERRUPT_MODE InterruptMode>
 static ULONG FASTCALL HalpCheckMaskedIntAtIRQLSpurious7(ULONG BusInterruptLevel, ULONG Irql)
 {
 	// On entry, interrupts must be disabled
+	CHECK_INTERRUPTS_DISABLED("checking masked int");
 
 	outb(PIC_MASTER_CMD, OCW3_READ_ISR); // read IS register of master pic
 	if (inb(PIC_MASTER_CMD) & (1 << 7)) {
@@ -304,6 +316,7 @@ template<KINTERRUPT_MODE InterruptMode>
 static ULONG FASTCALL HalpCheckMaskedIntAtIRQLSpurious15(ULONG BusInterruptLevel, ULONG Irql)
 {
 	// On entry, interrupts must be disabled
+	CHECK_INTERRUPTS_DISABLED("checking masked int");
 
 	outb(PIC_SLAVE_CMD, OCW3_READ_ISR); // read IS register of slave pic
 	if (inb(PIC_SLAVE_CMD) & (1 << 7)) {
@@ -592,7 +605,7 @@ EXPORTNUM(48) VOID FASTCALL HalRequestSoftwareInterrupt
 )
 {
 	assert((Request == APC_LEVEL) || (Request == DISPATCH_LEVEL));
-		/* Save EFlags and disable interrupts */
+	/* Save EFlags and disable interrupts */
 	ULONG EFlags = __readeflags();
 	_disable();
 
