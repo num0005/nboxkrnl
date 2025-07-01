@@ -482,9 +482,43 @@ EXPORTNUM(140) ULONG XBOXAPI KeResumeThread
 	PKTHREAD Thread
 )
 {
-	RIP_UNIMPLEMENTED();
+	//KLOCK_QUEUE_HANDLE ApcLock;
+	ULONG PreviousCount;
+	//ASSERT_THREAD(Thread);
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
 
-	return 1;
+	/* Lock the APC Queue */
+	//KiAcquireApcLockRaiseToSynch(Thread, &ApcLock);
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
+
+	/* Save the Old Count */
+	PreviousCount = Thread->SuspendCount;
+
+	/* Check if it existed */
+	if (PreviousCount)
+	{
+		/* Decrease the suspend count */
+		Thread->SuspendCount--;
+
+		/* Check if the thrad is still suspended or not */
+		if ((!Thread->SuspendCount))
+		{
+			/* Acquire the dispatcher lock */
+			KiAcquireDispatcherLockAtSynchLevel();
+
+			/* Signal the Suspend Semaphore */
+			Thread->SuspendSemaphore.Header.SignalState++;
+			KiWaitTest(&Thread->SuspendSemaphore.Header, IO_NO_INCREMENT);
+
+			/* Release the dispatcher lock */
+			KiReleaseDispatcherLockFromSynchLevel();
+		}
+	}
+
+	/* Release APC Queue lock and return the Old State */
+	//KiReleaseApcLockFromSynchLevel(&ApcLock);
+	KiUnlockDispatcherDatabase(OldIrql);
+	return PreviousCount;
 }
 
 EXPORTNUM(148) KPRIORITY XBOXAPI KeSetPriorityThread
@@ -493,7 +527,7 @@ EXPORTNUM(148) KPRIORITY XBOXAPI KeSetPriorityThread
 	LONG Priority
 )
 {
-	KIRQL OldIrql = KeRaiseIrqlToDpcLevel();
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
 	KPRIORITY OldPriority = Thread->Priority;
 	Thread->Quantum = Thread->ApcState.Process->ThreadQuantum;
 	KiSetPriorityThread(Thread, Priority);
@@ -507,9 +541,55 @@ EXPORTNUM(152) ULONG XBOXAPI KeSuspendThread
 	PKTHREAD Thread
 )
 {
-	RIP_UNIMPLEMENTED();
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+	// SMP: add per-thread APC lock
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
 
-	return 0;
+	/* Save the Old Count */
+	ULONG PreviousCount = Thread->SuspendCount;
+
+	/* Handle the maximum */
+	if (PreviousCount == MAXIMUM_SUSPEND_COUNT)
+	{
+		/* Raise an exception */
+		KfLowerIrql(OldIrql);
+		RtlRaiseStatus(STATUS_SUSPEND_COUNT_EXCEEDED);
+	}
+
+	/* Should we bother to queue at all? */
+	if (Thread->ApcState.ApcQueueable)
+	{
+		/* Increment the suspend count */
+		Thread->SuspendCount++;
+
+		/* Check if we should suspend it */
+		if (!(PreviousCount))
+		{
+			/* Is the APC already inserted? */
+			if (!Thread->SuspendApc.Inserted)
+			{
+				/* Not inserted, insert it */
+				Thread->SuspendApc.Inserted = TRUE;
+				KiInsertQueueApc(&Thread->SuspendApc, IO_NO_INCREMENT);
+			}
+			else
+			{
+				/* Lock the dispatcher */
+				KiAcquireDispatcherLockAtSynchLevel();
+
+				/* Unsignal the semaphore, the APC was already inserted */
+				Thread->SuspendSemaphore.Header.SignalState--;
+
+				/* Release the dispatcher */
+				KiReleaseDispatcherLockFromSynchLevel();
+			}
+		}
+	}
+
+	// SMP: add per thread APC lock
+	KiUnlockDispatcherDatabase(OldIrql);
+
+	return PreviousCount;
 }
 
 EXPORTNUM(155) BOOLEAN XBOXAPI KeTestAlertThread
@@ -517,8 +597,180 @@ EXPORTNUM(155) BOOLEAN XBOXAPI KeTestAlertThread
 	KPROCESSOR_MODE AlertMode
 )
 {
-	// TODO
-	RIP_UNIMPLEMENTED();
+	PKTHREAD Thread = KeGetCurrentThread();
+	BOOLEAN OldState;
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
 
-	return FALSE;
+	/* Lock the Dispatcher Database and the APC Queue */
+	// SMP: KiAcquireApcLockRaiseToSynch here + per-thread lock
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
+
+	/* Save the old State */
+	OldState = Thread->Alerted[AlertMode];
+
+	/* Check the Thread is alerted */
+	if (OldState)
+	{
+		/* Disable alert for this mode */
+		Thread->Alerted[AlertMode] = FALSE;
+	}
+	else if ((AlertMode != KernelMode) &&
+		(!IsListEmpty(&Thread->ApcState.ApcListHead[UserMode])))
+	{
+		/* If the mode is User and the Queue isn't empty, set Pending */
+		Thread->ApcState.UserApcPending = TRUE;
+	}
+
+	/* Release Locks and return the Old State */
+	KfLowerIrql(OldIrql);
+	return OldState;
+}
+
+
+BOOLEAN NTAPI EXPORTNUM(92) KeAlertResumeThread
+(
+	IN PKTHREAD Thread
+)
+{
+	ULONG PreviousCount;
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	// SMP: add APC lock here
+	/* Lock the Dispatcher Database and the APC Queue */
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
+	KiAcquireDispatcherLockAtSynchLevel();
+
+	/* Return if Thread is already alerted. */
+	if (!Thread->Alerted[KernelMode])
+	{
+		/* If it's Blocked, unblock if it we should */
+		if ((Thread->State == Waiting) && (Thread->Alertable))
+		{
+			/* Abort the wait */
+			KiUnwaitThread(Thread, STATUS_ALERTED, THREAD_ALERT_INCREMENT);
+		}
+		else
+		{
+			/* If not, simply Alert it */
+			Thread->Alerted[KernelMode] = TRUE;
+		}
+	}
+
+	/* Save the old Suspend Count */
+	PreviousCount = Thread->SuspendCount;
+
+	/* If the thread is suspended, decrease one of the suspend counts */
+	if (PreviousCount)
+	{
+		/* Decrease count. If we are now zero, unwait it completely */
+		Thread->SuspendCount--;
+		if (!(Thread->SuspendCount))
+		{
+			/* Signal and satisfy */
+			Thread->SuspendSemaphore.Header.SignalState++;
+			KiWaitTest(&Thread->SuspendSemaphore.Header, IO_NO_INCREMENT);
+		}
+	}
+
+	/* Release Locks and return the Old State */
+	KiReleaseDispatcherLockFromSynchLevel();
+	//KiReleaseApcLockFromSynchLevel(&ApcLock);
+	KiUnlockDispatcherDatabase(OldIrql);
+	return PreviousCount;
+}
+
+BOOLEAN NTAPI EXPORTNUM(93) KeAlertThread
+(
+	IN PKTHREAD Thread,
+	IN KPROCESSOR_MODE AlertMode
+)
+{
+	BOOLEAN PreviousState;
+	//KLOCK_QUEUE_HANDLE ApcLock;
+	//ASSERT_THREAD(Thread);
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	// SMP: add APC lock here
+	/* Lock the Dispatcher Database and the APC Queue */
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
+	//KiAcquireApcLockRaiseToSynch(Thread, &ApcLock);
+	KiAcquireDispatcherLockAtSynchLevel();
+
+	/* Save the Previous State */
+	PreviousState = Thread->Alerted[AlertMode];
+
+	/* Check if it's already alerted */
+	if (!PreviousState)
+	{
+		/* Check if the thread is alertable, and blocked in the given mode */
+		if ((Thread->State == Waiting) &&
+			(Thread->Alertable) &&
+			(AlertMode <= Thread->WaitMode))
+		{
+			/* Abort the wait to alert the thread */
+			KiUnwaitThread(Thread, STATUS_ALERTED, THREAD_ALERT_INCREMENT);
+		}
+		else
+		{
+			/* Otherwise, merely set the alerted state */
+			Thread->Alerted[AlertMode] = TRUE;
+		}
+	}
+
+	/* Release the Dispatcher Lock */
+	KiReleaseDispatcherLockFromSynchLevel();
+	//KiReleaseApcLockFromSynchLevel(&ApcLock);
+	KiUnlockDispatcherDatabase(OldIrql);
+
+	/* Return the old state */
+	return PreviousState;
+}
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+VOID NTAPI EXPORTNUM(94) KeBoostPriorityThread
+(
+	IN PKTHREAD Thread,
+	IN KPRIORITY Increment
+)
+{
+	KIRQL OldIrql;
+	KPRIORITY Priority;
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	/* Lock the Dispatcher Database */
+	OldIrql = KiAcquireDispatcherLock();
+
+	/* Only threads in the dynamic range get boosts */
+	if (Thread->Priority < LOW_REALTIME_PRIORITY)
+	{
+		/* Lock the thread */
+		KiAcquireThreadLock(Thread);
+
+		/* Check again, and make sure there's not already a boost */
+		if ((Thread->Priority < LOW_REALTIME_PRIORITY) &&
+			!(Thread->PriorityDecrement))
+		{
+			/* Compute the new priority and see if it's higher */
+			Priority = Thread->BasePriority + Increment;
+			if (Priority > Thread->Priority)
+			{
+				if (Priority >= LOW_REALTIME_PRIORITY)
+				{
+					Priority = LOW_REALTIME_PRIORITY - 1;
+				}
+
+				/* Reset the quantum */
+				Thread->Quantum = Thread->ApcState.Process->ThreadQuantum;
+
+				/* Set the new Priority */
+				KiSetPriorityThread(Thread, Priority);
+			}
+		}
+
+		/* Release thread lock */
+		KiReleaseThreadLock(Thread);
+	}
+
+	/* Release the dispatcher lock */
+	KiReleaseDispatcherLock(OldIrql);
 }

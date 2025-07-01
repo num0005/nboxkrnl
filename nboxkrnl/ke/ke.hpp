@@ -566,6 +566,26 @@ BOOLEAN FASTCALL KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment);
 extern "C" {
 #endif
 
+_IRQL_requires_max_(DISPATCH_LEVEL)
+BOOLEAN NTAPI EXPORTNUM(92) KeAlertResumeThread
+(
+	IN PKTHREAD Thread
+);
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+BOOLEAN NTAPI EXPORTNUM(93) KeAlertThread
+(
+	IN PKTHREAD Thread,
+	IN KPROCESSOR_MODE AlertMode
+);
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+VOID NTAPI EXPORTNUM(94) KeBoostPriorityThread
+(
+	IN PKTHREAD Thread,
+	IN KPRIORITY Increment
+);
+
 [[noreturn]] EXPORTNUM(95) DLLEXPORT VOID XBOXAPI KeBugCheck
 (
 	ULONG BugCheckCode
