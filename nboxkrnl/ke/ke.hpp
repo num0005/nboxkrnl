@@ -6,6 +6,7 @@
 
 #include "..\types.hpp"
 #include "..\driverspecs.h"
+#include "rtl_assert.hpp"
 
 #define XBOX_KEY_LENGTH 16
 
