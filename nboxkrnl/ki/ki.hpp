@@ -67,6 +67,8 @@ inline LIST_ENTRY KiTimerTableListHead[TIMER_TABLE_SIZE];
 
 inline KDPC KiTimerExpireDpc;
 
+#define BUILD_KIDT(function) ((uint64_t)0x8 << 16) | ((uint64_t)&function & 0x0000FFFF) | (((uint64_t)&function & 0xFFFF0000) << 32) | ((uint64_t)0x8E00 << 32)
+
 extern KTSS KiTss;
 extern const KGDT KiGdt[5];
 extern KIDT KiIdt[64];
