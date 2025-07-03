@@ -160,6 +160,11 @@ inline ULONG XboxFactoryGameRegion;
 extern "C" {
 #endif
 
+EXPORTNUM(4) PSLIST_ENTRY FASTCALL InterlockedFlushSList
+(
+	_Inout_ PSLIST_HEADER SListHead
+);
+
 EXPORTNUM(12) DLLEXPORT VOID XBOXAPI ExAcquireReadWriteLockExclusive
 (
 	PERWLOCK ReadWriteLock
@@ -282,6 +287,17 @@ EXPORTNUM(54) DLLEXPORT LONG FASTCALL InterlockedExchange
 (
 	volatile PLONG Destination,
 	LONG Value
+);
+
+EXPORTNUM(57) PSLIST_ENTRY FASTCALL InterlockedPopEntrySList
+(
+	_Inout_ PSLIST_HEADER SListHead
+);
+
+EXPORTNUM(58) PSLIST_ENTRY FASTCALL InterlockedPushEntrySList
+(
+	_Inout_ PSLIST_HEADER SListHead,
+	_Inout_ __drv_aliasesMem PSLIST_ENTRY SListEntry
 );
 
 NTSTATUS

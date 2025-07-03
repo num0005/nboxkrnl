@@ -3,7 +3,53 @@
 #include "ex.hpp"
 #include <intrin.h>
 
+__int64 InterlockedCompareExchange64(_Interlocked_operand_ __int64 volatile* _Destination, __int64 _Exchange, __int64 _Comparand)
+{
+	return _InterlockedCompareExchange64(_Destination, _Exchange, _Comparand);
+}
+
+ULONGLONG InterlockedCompareExchange64(_Interlocked_operand_ ULONGLONG volatile* _Destination, ULONGLONG _Exchange, ULONGLONG _Comparand)
+{
+	return _InterlockedCompareExchange64(reinterpret_cast<volatile long long*>(_Destination), _Exchange, _Comparand);
+}
+
+
 extern "C" {
+	// source: reactos
+	EXPORTNUM(4) PSLIST_ENTRY FASTCALL InterlockedFlushSList
+	(
+		_Inout_ PSLIST_HEADER SListHead
+	)
+	{
+		SLIST_HEADER OldHeader, NewHeader;
+		ULONGLONG Compare;
+
+		/* Read the header */
+		OldHeader = *SListHead;
+
+		do
+		{
+			/* Check for empty list */
+			if (OldHeader.Next.Next == NULL)
+			{
+				return NULL;
+			}
+
+			/* Create a new header (keep the sequence number) */
+			NewHeader = OldHeader;
+			NewHeader.Next.Next = NULL;
+			NewHeader.Depth = 0;
+
+			/* Try to exchange atomically */
+			Compare = OldHeader.Alignment;
+			OldHeader.Alignment = InterlockedCompareExchange64(&SListHead->Alignment,
+				NewHeader.Alignment,
+				Compare);
+		} while (OldHeader.Alignment != Compare);
+
+		/* Return the old first entry */
+		return OldHeader.Next.Next;
+	}
 
 	EXPORTNUM(19) LARGE_INTEGER NTAPI ExInterlockedAddLargeInteger
 	(
@@ -172,4 +218,105 @@ extern "C" {
 	{
 		return _InterlockedExchangeAdd(Destination, Value);
 	}
+
+	// source: reactos
+	EXPORTNUM(57) PSLIST_ENTRY FASTCALL InterlockedPopEntrySList
+	(
+		_Inout_ PSLIST_HEADER SListHead
+	)
+	{
+		/* Disable interrupts */
+		ULONG Flags = __readeflags();
+		_disable();
+
+		SLIST_HEADER OldHeader, NewHeader;
+		ULONGLONG Compare;
+
+	restart:
+
+		/* Read the header */
+		OldHeader = *SListHead;
+
+		do
+		{
+			/* Check for empty list */
+			if (OldHeader.Next.Next == NULL)
+			{
+				return NULL;
+			}
+
+			/* Create a new header */
+			NewHeader = OldHeader;
+
+			/* HACK to let the kernel know that we are doing slist-magic */
+			//RtlpExpectSListFault = TRUE;
+
+			/* Wrapped in SEH, since OldHeader.Next.Next can already be freed */
+			//_SEH2_TRY
+			//{
+			NewHeader.Next = *OldHeader.Next.Next;
+		//}
+		//	_SEH2_EXCEPT((SListHead->Next.Next != OldHeader.Next.Next) ?
+		//		EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
+		//{
+		//	/* We got an exception and the list head changed.
+		//	   Restart the whole operation. */
+		//	RtlpExpectSListFault = FALSE;
+		//	goto restart;
+		//}
+		//_SEH2_END;
+
+		/* We are done */
+		//RtlpExpectSListFault = FALSE;
+
+		/* Adjust depth */
+			NewHeader.Depth--;
+
+			/* Try to exchange atomically */
+			Compare = OldHeader.Alignment;
+			OldHeader.Alignment = InterlockedCompareExchange64(&SListHead->Alignment,
+				NewHeader.Alignment,
+				Compare);
+		} while (OldHeader.Alignment != Compare);
+
+		__writeeflags(Flags);
+
+		return OldHeader.Next.Next;
+	}
+
+	// source: reactos
+	EXPORTNUM(58) PSLIST_ENTRY FASTCALL InterlockedPushEntrySList
+	(
+		_Inout_ PSLIST_HEADER SListHead,
+		_Inout_ __drv_aliasesMem PSLIST_ENTRY SListEntry
+	)
+	{
+		SLIST_HEADER OldHeader, NewHeader;
+		ULONGLONG Compare;
+
+		/* Read the header */
+		OldHeader = *SListHead;
+
+		do
+		{
+			/* Link the list entry */
+			SListEntry->Next = OldHeader.Next.Next;
+
+			/* Create a new header */
+			NewHeader = OldHeader;
+			NewHeader.Next.Next = SListEntry;
+			NewHeader.Depth++;
+			NewHeader.Sequence++;
+
+			/* Try to exchange atomically */
+			Compare = OldHeader.Alignment;
+			OldHeader.Alignment = InterlockedCompareExchange64(&SListHead->Alignment,
+				NewHeader.Alignment,
+				Compare);
+		} while (OldHeader.Alignment != Compare);
+
+		/* Return the old first entry */
+		return OldHeader.Next.Next;
+	}
+
 }
