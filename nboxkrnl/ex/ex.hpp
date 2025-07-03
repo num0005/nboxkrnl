@@ -205,6 +205,14 @@ EXPORTNUM(19) LARGE_INTEGER NTAPI ExInterlockedAddLargeInteger
 	IN LARGE_INTEGER Increment
 );
 
+// per https://www.geoffchappell.com/studies/windows/km/ntoskrnl/api/ex/intrlfst/addlargestatistic.htm this is not a fully thread safe API
+// but instead one intended to be very fast
+EXPORTNUM(20) VOID FASTCALL ExInterlockedAddLargeStatistic
+(
+	IN OUT PLARGE_INTEGER Addend,
+	IN ULONG Increment
+);
+
 EXPORTNUM(22) DLLEXPORT extern OBJECT_TYPE ExMutantObjectType;
 
 EXPORTNUM(23) DLLEXPORT ULONG XBOXAPI ExQueryPoolBlockSize
@@ -234,6 +242,23 @@ EXPORTNUM(27) DLLEXPORT VOID XBOXAPI ExRaiseStatus
 EXPORTNUM(28) DLLEXPORT VOID XBOXAPI ExReleaseReadWriteLock
 (
 	PERWLOCK ReadWriteLock
+);
+
+EXPORTNUM(32) PLIST_ENTRY FASTCALL ExfInterlockedInsertHeadList
+(
+	IN OUT PLIST_ENTRY ListHead,
+	IN PLIST_ENTRY ListEntry
+);
+
+EXPORTNUM(33) PLIST_ENTRY FASTCALL ExfInterlockedInsertTailList
+(
+	IN OUT PLIST_ENTRY ListHead,
+	IN PLIST_ENTRY ListEntry
+);
+
+EXPORTNUM(34) PLIST_ENTRY FASTCALL ExfInterlockedRemoveHeadList
+(
+	IN OUT PLIST_ENTRY ListHead
 );
 
 EXPORTNUM(51) DLLEXPORT LONG FASTCALL InterlockedCompareExchange

@@ -138,19 +138,24 @@ inline VOID InsertHeadList(PLIST_ENTRY pListHead, PLIST_ENTRY pEntry)
 	_EX_ListHead->Flink = pEntry;
 }
 
-// Source: Cxbx-Reloaded
-inline VOID RemoveEntryList(PLIST_ENTRY pEntry)
+
+// source: reactos
+inline BOOLEAN RemoveEntryList(PLIST_ENTRY Entry)
 {
-	PLIST_ENTRY _EX_Flink = pEntry->Flink;
-	PLIST_ENTRY _EX_Blink = pEntry->Blink;
-	_EX_Blink->Flink = _EX_Flink;
-	_EX_Flink->Blink = _EX_Blink;
+	PLIST_ENTRY OldFlink;
+	PLIST_ENTRY OldBlink;
+
+	OldFlink = Entry->Flink;
+	OldBlink = Entry->Blink;
+	OldFlink->Blink = OldBlink;
+	OldBlink->Flink = OldFlink;
+	return (BOOLEAN)(OldFlink == OldBlink); // almost free is-empty
 }
 
 // Source: Cxbx-Reloaded
-inline PLIST_ENTRY RemoveTailList(PLIST_ENTRY pListHead)
+inline PLIST_ENTRY RemoveTailList(PLIST_ENTRY ListHead)
 {
-	PLIST_ENTRY pList = pListHead->Blink;
+	PLIST_ENTRY pList = ListHead->Blink;
 	RemoveEntryList(pList);
 	return pList;
 }
