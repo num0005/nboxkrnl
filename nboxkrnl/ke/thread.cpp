@@ -282,6 +282,9 @@ KiSwapContext(
 	ASM_END
 }
 
+/*
+* Find a thread to run at at least LowPriority or higher
+*/
 static PKTHREAD XBOXAPI KiFindAndRemoveHighestPriorityThread(KPRIORITY LowPriority)
 {
 	assert(KeGetCurrentIrql() == DISPATCH_LEVEL);
@@ -290,27 +293,32 @@ static PKTHREAD XBOXAPI KiFindAndRemoveHighestPriorityThread(KPRIORITY LowPriori
 		return nullptr;
 	}
 
+	/* Get the highest priority possible */
 	KPRIORITY HighestPriority;
-	ASM_BEGIN
-		ASM(bsr eax, KiReadyThreadMask);
-		ASM(mov HighestPriority, eax);
-	ASM_END
+	BitScanReverse((PULONG)&HighestPriority, KiReadyThreadMask);
 
 	if (HighestPriority < LowPriority) {
 		return nullptr;
 	}
 
 	PLIST_ENTRY ListHead = &KiReadyThreadLists[HighestPriority];
-	assert(ListHead->Flink);
+	/* Make sure the list isn't empty at the highest priority */
+	NT_ASSERT(IsListEmpty(ListHead) == FALSE);
 
+	/* Get the first thread on the list */
 	PKTHREAD Thread = CONTAINING_RECORD(ListHead->Flink, KTHREAD, WaitListEntry);
-	RemoveEntryList(&Thread->WaitListEntry);
-	if (IsListEmpty(&KiReadyThreadLists[HighestPriority])) {
+	
+	if (RemoveEntryList(&Thread->WaitListEntry)) {
 		KiReadyThreadMask &= ~(1 << HighestPriority);
 	}
 
 	return Thread;
 }
+
+/*
+* Find a thread to run at at least LowPriority or higher
+*/
+#define KiSelectReadyThread(LowPriority) KiFindAndRemoveHighestPriorityThread(LowPriority)
 
 static VOID KiSetPriorityThread(PKTHREAD Thread, KPRIORITY NewPriority)
 {
