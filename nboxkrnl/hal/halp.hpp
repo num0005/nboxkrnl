@@ -67,15 +67,69 @@
 #define SMC_WRITE_ADDR 0x20
 #define SMC_READ_ADDR 0x21
 
-// SMC video mode values
-#define SMC_VIDEO_MODE_COMMAND   0x04
-#define SMC_VIDEO_MODE_SCART     0x00
-#define SMC_VIDEO_MODE_HDTV      0x01
-#define SMC_VIDEO_MODE_VGA       0x02
-#define SMC_VIDEO_MODE_RFU       0x03
-#define SMC_VIDEO_MODE_SVIDEO    0x04
-#define SMC_VIDEO_MODE_STANDARD  0x06
-#define SMC_VIDEO_MODE_NONE      0x07
+#define SMBUS_ADDRESS_SYSTEM_MICRO_CONTROLLER 0x20
+
+/*
+ * Hardware is a PIC16LC
+ * http://www.xbox-linux.org/wiki/PIC
+ * Directly from XEMU
+ */
+
+#define SMC_REG_VER                 0x01
+#define SMC_REG_POWER               0x02
+#define     SMC_REG_POWER_RESET         0x01
+#define     SMC_REG_POWER_CYCLE         0x40
+#define     SMC_REG_POWER_SHUTDOWN      0x80
+#define SMC_REG_TRAYSTATE           0x03
+#define     SMC_REG_TRAYSTATE_OPEN               0x10
+#define     SMC_REG_TRAYSTATE_NO_MEDIA_DETECTED  0x40
+#define     SMC_REG_TRAYSTATE_MEDIA_DETECTED     0x60
+#define     SMC_REG_TRAYSTATE_VALID_STATES_MASK  (SMC_REG_TRAYSTATE_OPEN|SMC_REG_TRAYSTATE_NO_MEDIA_DETECTED|SMC_REG_TRAYSTATE_MEDIA_DETECTED)
+#define SMC_REG_AVPACK              0x04
+#define     SMC_REG_AVPACK_SCART        0x00
+#define     SMC_REG_AVPACK_HDTV         0x01
+#define     SMC_REG_AVPACK_VGA          0x02
+#define     SMC_REG_AVPACK_RFU          0x03
+#define     SMC_REG_AVPACK_SVIDEO       0x04
+#define     SMC_REG_AVPACK_COMPOSITE    0x06
+#define     SMC_REG_AVPACK_NONE         0x07
+#define SMC_REG_FANMODE             0x05
+#define SMC_REG_FANSPEED            0x06
+#define SMC_REG_LEDMODE             0x07
+#define SMC_REG_LEDSEQ              0x08
+#define SMC_REG_CPUTEMP             0x09
+#define SMC_REG_BOARDTEMP           0x0a
+#define SMC_REG_TRAYEJECT           0x0c
+#define SMC_REG_INTACK              0x0d
+#define SMC_REG_ERROR_WRITE         0x0e
+#define SMC_REG_ERROR_READ          0x0f
+#define SMC_REG_INTSTATUS           0x11
+#define     SMC_REG_INTSTATUS_POWER         0x01
+#define     SMC_REG_INTSTATUS_TRAYCLOSED    0x02
+#define     SMC_REG_INTSTATUS_TRAYOPENING   0x04
+#define     SMC_REG_INTSTATUS_AVPACK_PLUG   0x08
+#define     SMC_REG_INTSTATUS_AVPACK_UNPLUG 0x10
+#define     SMC_REG_INTSTATUS_EJECT_BUTTON  0x20
+#define     SMC_REG_INTSTATUS_TRAYCLOSING   0x40
+#define SMC_REG_RESETONEJECT        0x19
+#define SMC_REG_INTEN               0x1a
+#define SMC_REG_SCRATCH             0x1b
+#define     SMC_REG_SCRATCH_SHORT_ANIMATION 0x04
+
+#define SMC_VERSION_LENGTH 3
+
+inline bool HalpIsDefinedTrayState(ULONG TrayState)
+{
+	switch (TrayState)
+	{
+		case SMC_REG_TRAYSTATE_OPEN:
+		case SMC_REG_TRAYSTATE_NO_MEDIA_DETECTED:
+		case SMC_REG_TRAYSTATE_MEDIA_DETECTED:
+			return true;
+		default:
+			return false;
+	}
+}
 
 
 extern KDPC HalpSmbusDpcObject;
@@ -84,6 +138,7 @@ extern BYTE HalpSmbusData[32];
 extern UCHAR HalpBlockAmount;
 extern KEVENT HalpSmbusLock;
 extern KEVENT HalpSmbusComplete;
+inline ULONG HalpSMCScratchRegister;
 
 // macro copied from reactos source code then modified to work in a header
 
@@ -179,3 +234,5 @@ VOID HalpExecuteBlockReadSmbusCycle(UCHAR SlaveAddress, UCHAR CommandCode);
 VOID HalpExecuteBlockWriteSmbusCycle(UCHAR SlaveAddress, UCHAR CommandCode, PBYTE Data);
 NTSTATUS HalpReadSMBusBlock(UCHAR SlaveAddress, UCHAR CommandCode, UCHAR ReadAmount, BYTE *Buffer);
 NTSTATUS HalpWriteSMBusBlock(UCHAR SlaveAddress, UCHAR CommandCode, UCHAR WriteAmount, BYTE *Buffer);
+// fire off if we have reason to think cached SMC tray state is invalid 
+VOID HalpInvalidateSMCTrayState();

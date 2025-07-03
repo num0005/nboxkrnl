@@ -77,6 +77,12 @@ NTSTATUS HalEmuQueryXBEPath(PSTRING XBEPath);
 extern "C" {
 #endif
 
+EXPORTNUM(9) NTSTATUS NTAPI HalReadSMCTrayState
+(
+	ULONG* State,
+	ULONG* Count
+);
+
 EXPORTNUM(38) VOID FASTCALL HalClearSoftwareInterrupt
 (
 	IN KIRQL Irql
@@ -139,6 +145,15 @@ EXPORTNUM(50) DLLEXPORT NTSTATUS XBOXAPI HalWriteSMBusValue
 );
 
 EXPORTNUM(356) DLLEXPORT extern ULONG HalBootSMCVideoMode;
+
+EXPORTNUM(365) VOID NTAPI HalEnableSecureTrayEject
+(
+);
+
+EXPORTNUM(366) NTSTATUS NTAPI HalWriteSMCScratchRegister
+(
+	IN DWORD ScratchRegister
+);
 
 extern "C"
 {

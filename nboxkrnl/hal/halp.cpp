@@ -61,9 +61,10 @@ VOID HalpInitPIT()
 VOID HalpInitSMCstate()
 {
 	ULONG BootVideoMode;
-	if (NT_SUCCESS(HalReadSMBusValue(SMC_READ_ADDR, SMC_VIDEO_MODE_COMMAND, FALSE, &BootVideoMode))) {
+	if (NT_SUCCESS(HalReadSMBusValue(SMC_READ_ADDR, SMC_REG_AVPACK, FALSE, &BootVideoMode))) {
 		HalBootSMCVideoMode = BootVideoMode;
 	}
+	HalReadSMBusValue(SMC_READ_ADDR, SMC_REG_SCRATCH, FALSE, &HalpSMCScratchRegister);
 }
 
 static BOOL HalpIsCmosUpdatingTime()
