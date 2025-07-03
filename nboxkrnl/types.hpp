@@ -10,8 +10,19 @@
 #define ASM_BEGIN __asm {
 #define ASM_END }
 
-// segment tag, not currently enabled but will eventually be used to discard INIT after boot, etc
-#define CODE_SEG(segment)
+// segment tag for code, not currently used but will eventually be used to discard INIT after boot
+#define CODE_SEG(segment) __declspec(code_seg(segment))
+
+// mark data within (STICKY_PAGE_START, STICKY_PAGE_END) as being part of the sticky page
+// TODO: should this use a data page not a bss page?
+#define STICKY_PAGE_START __pragma(bss_seg(push, STICKY, "STICKY"))
+#define STICKY_PAGE_END __pragma(bss_seg(pop, STICKY))
+
+// segment tag for initalized data, not currently used
+#define DATA_SEG(segment) __declspec(code_seg(segment)) 
+// segment tag for uninitialized data, used for sticky page
+// TODO: should sticky page be using DATA_SEG instead?
+#define BSS_SEG(segment) __declspec(bss_seg (segment)) 
 
 #include <stdint.h>
 #include <stddef.h>
