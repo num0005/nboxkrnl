@@ -10,6 +10,7 @@
  // Global list of routines executed during a reboot
 static LIST_ENTRY ShutdownRoutineList = { &ShutdownRoutineList , &ShutdownRoutineList };
 
+#define TRAY_STATE_INVALID 0xFFFF
 static DWORD CacheTrayState = TRAY_STATE_INVALID;
 static DWORD TrayStateChangedCount = 0;
 
