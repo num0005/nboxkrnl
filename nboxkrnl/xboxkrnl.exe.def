@@ -51,7 +51,7 @@ EXPORTS
     _HalGetInterruptVector@8                  @  44 NONAME
     _HalReadSMBusValue@16                     @  45 NONAME
     _HalReadWritePCISpace@24                  @  46 NONAME
-    HalRegisterShutdownNotification@8         @  47 NONAME
+    _HalRegisterShutdownNotification@8        @  47 NONAME
     @HalRequestSoftwareInterrupt@4            @  48 NONAME
     _HalReturnToFirmware@4                    @  49 NONAME
     _HalWriteSMBusValue@16                    @  50 NONAME

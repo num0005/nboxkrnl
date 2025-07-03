@@ -76,6 +76,105 @@ EXPORTNUM(337) DLLEXPORT VOID XBOXAPI XcSHAFinal
 	PUCHAR pbDigest
 );
 
+EXPORTNUM(338) void NTAPI XcRC4Key
+(
+	IN PUCHAR pbKeyStruct,
+	IN ULONG  dwKeyLength,
+	IN PUCHAR pbKey
+);
+
+EXPORTNUM(339) void NTAPI XcRC4Crypt
+(
+	IN PUCHAR pbKeyStruct,
+	IN ULONG  dwInputLength,
+	IN PUCHAR pbInput
+);
+
+EXPORTNUM(340) void NTAPI XcHMAC
+(
+	IN PBYTE  pbKeyMaterial,
+	IN ULONG  cbKeyMaterial,
+	IN PBYTE  pbData,
+	IN ULONG  cbData,
+	IN PBYTE  pbData2,
+	IN ULONG  cbData2,
+	OUT PBYTE HmacData
+);
+
+EXPORTNUM(341) ULONG NTAPI XcPKEncPublic
+(
+	IN PUCHAR pbPubKey,
+	IN PUCHAR pbInput,
+	OUT PUCHAR pbOutput
+);
+
+EXPORTNUM(342) ULONG NTAPI XcPKDecPrivate
+(
+	IN PUCHAR pbPrvKey,
+	IN PUCHAR pbInput,
+	OUT PUCHAR pbOutput
+);
+
+EXPORTNUM(343) ULONG NTAPI XcPKGetKeyLen
+(
+	OUT PUCHAR pbPubKey
+);
+
+EXPORTNUM(344) BOOLEAN NTAPI XcVerifyPKCS1Signature
+(
+	IN PUCHAR pbSig,
+	IN PUCHAR pbPubKey,
+	IN PUCHAR pbDigest
+);
+
+EXPORTNUM(345) ULONG NTAPI XcModExp
+(
+	IN LPDWORD pA,
+	IN LPDWORD pB,
+	IN LPDWORD pC,
+	IN LPDWORD pD,
+	IN ULONG   dwN
+);
+
+EXPORTNUM(346) VOID NTAPI XcDESKeyParity
+(
+	IN PUCHAR pbKey,
+	IN ULONG  dwKeyLength
+);
+
+EXPORTNUM(347) void NTAPI XcKeyTable
+(
+	IN ULONG   dwCipher,
+	OUT PUCHAR pbKeyTable,
+	IN PUCHAR  pbKey
+);
+
+EXPORTNUM(348) void NTAPI XcBlockCrypt
+(
+	IN ULONG   dwCipher,
+	OUT PUCHAR pbOutput,
+	IN PUCHAR  pbInput,
+	IN PUCHAR  pbKeyTable,
+	IN ULONG   dwOp
+);
+
+EXPORTNUM(349) void NTAPI XcBlockCryptCBC
+(
+	IN ULONG   dwCipher,
+	IN ULONG   dwInputLength,
+	OUT PUCHAR pbOutput,
+	IN PUCHAR  pbInput,
+	IN PUCHAR  pbKeyTable,
+	IN ULONG   dwOp,
+	IN PUCHAR  pbFeedback
+);
+
+EXPORTNUM(350) ULONG NTAPI XcCryptService
+(
+	IN ULONG dwOp,
+	IN PVOID pArgs
+);
+
 EXPORTNUM(351) DLLEXPORT VOID XBOXAPI XcUpdateCrypto
 (
 	PCRYPTO_VECTOR pNewVector,

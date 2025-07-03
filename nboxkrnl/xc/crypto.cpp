@@ -3,6 +3,7 @@
  */
 
 #include "xc.hpp"
+#include <rtl_assert.hpp>
 
 
  // The following are the default implementations of the crypto functions
@@ -66,6 +67,8 @@ EXPORTNUM(335) VOID XBOXAPI XcSHAInit
 	PUCHAR pbSHAContext
 )
 {
+	NT_ASSERT(UpdatedCryptoStruct.pXcSHAInit);
+
 	UpdatedCryptoStruct.pXcSHAInit(pbSHAContext);
 }
 
@@ -76,6 +79,8 @@ EXPORTNUM(336) VOID XBOXAPI XcSHAUpdate
 	ULONG dwInputLength
 )
 {
+	NT_ASSERT(UpdatedCryptoStruct.pXcSHAUpdate);
+
 	UpdatedCryptoStruct.pXcSHAUpdate(pbSHAContext, pbInput, dwInputLength);
 }
 
@@ -85,7 +90,224 @@ EXPORTNUM(337) VOID XBOXAPI XcSHAFinal
 	PUCHAR pbDigest
 )
 {
+	NT_ASSERT(UpdatedCryptoStruct.pXcSHAFinal);
+
 	UpdatedCryptoStruct.pXcSHAFinal(pbSHAContext, pbDigest);
+}
+
+// ******************************************************************
+// * 0x0152 - XcRC4Key()
+// ******************************************************************
+EXPORTNUM(338) void NTAPI XcRC4Key
+(
+	IN PUCHAR pbKeyStruct,
+	IN ULONG  dwKeyLength,
+	IN PUCHAR pbKey
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcRC4Key);
+
+	UpdatedCryptoStruct.pXcRC4Key(pbKeyStruct, dwKeyLength, pbKey);
+}
+
+// ******************************************************************
+// * 0x0153 - XcRC4Crypt
+// ******************************************************************
+EXPORTNUM(339) void NTAPI XcRC4Crypt
+(
+	IN PUCHAR pbKeyStruct,
+	IN ULONG  dwInputLength,
+	IN PUCHAR pbInput
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcRC4Crypt);
+
+	UpdatedCryptoStruct.pXcRC4Crypt(pbKeyStruct, dwInputLength, pbInput);
+}
+
+// ******************************************************************
+// * 0x0154 - XcHMAC()
+// ******************************************************************
+EXPORTNUM(340) void NTAPI XcHMAC
+(
+	IN PBYTE  pbKeyMaterial,
+	IN ULONG  cbKeyMaterial,
+	IN PBYTE  pbData,
+	IN ULONG  cbData,
+	IN PBYTE  pbData2,
+	IN ULONG  cbData2,
+	OUT PBYTE HmacData
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcHMAC);
+
+	UpdatedCryptoStruct.pXcHMAC(pbKeyMaterial, cbKeyMaterial, pbData, cbData, pbData2, cbData2, HmacData);
+}
+
+// ******************************************************************
+// * 0x0155 - XcPKEncPublic()
+// ******************************************************************
+EXPORTNUM(341) ULONG NTAPI XcPKEncPublic
+(
+	IN PUCHAR pbPubKey,
+	IN PUCHAR pbInput,
+	OUT PUCHAR pbOutput
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcPKEncPublic);
+
+	ULONG Result = UpdatedCryptoStruct.pXcPKEncPublic(pbPubKey, pbInput, pbOutput);
+
+	return Result;
+}
+
+// ******************************************************************
+// * 0x0156 - XcPKDecPrivate()
+// ******************************************************************
+EXPORTNUM(342) ULONG NTAPI XcPKDecPrivate
+(
+	IN PUCHAR pbPrvKey,
+	IN PUCHAR pbInput,
+	OUT PUCHAR pbOutput
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcPKDecPrivate);
+
+	ULONG Result = UpdatedCryptoStruct.pXcPKDecPrivate(pbPrvKey, pbInput, pbOutput);
+
+	return Result;
+}
+
+// ******************************************************************
+// * 0x0157 - XcPKGetKeyLen()
+// ******************************************************************
+EXPORTNUM(343) ULONG NTAPI XcPKGetKeyLen
+(
+	OUT PUCHAR pbPubKey
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcPKGetKeyLen);
+
+	ULONG Result = UpdatedCryptoStruct.pXcPKGetKeyLen(pbPubKey);
+
+	return Result;
+}
+
+// ******************************************************************
+// * 0x0158 - XcVerifyPKCS1Signature()
+// ******************************************************************
+EXPORTNUM(344) BOOLEAN NTAPI XcVerifyPKCS1Signature
+(
+	IN PUCHAR pbSig,
+	IN PUCHAR pbPubKey,
+	IN PUCHAR pbDigest
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcVerifyPKCS1Signature);
+
+	BOOLEAN Result = UpdatedCryptoStruct.pXcVerifyPKCS1Signature(pbSig, pbPubKey, pbDigest);
+
+	return Result;
+}
+
+// ******************************************************************
+// * 0x0159 - XcModExp()
+// ******************************************************************
+EXPORTNUM(345) ULONG NTAPI XcModExp
+(
+	IN LPDWORD pA,
+	IN LPDWORD pB,
+	IN LPDWORD pC,
+	IN LPDWORD pD,
+	IN ULONG   dwN
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcModExp);
+
+	ULONG ret = UpdatedCryptoStruct.pXcModExp(pA, pB, pC, pD, dwN);
+
+	return ret;
+}
+
+// ******************************************************************
+// * 0x015A - XcDESKeyParity()
+// ******************************************************************
+EXPORTNUM(346) VOID NTAPI XcDESKeyParity
+(
+	IN PUCHAR pbKey,
+	IN ULONG  dwKeyLength
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcDESKeyParity);
+
+	UpdatedCryptoStruct.pXcDESKeyParity(pbKey, dwKeyLength);
+}
+
+// ******************************************************************
+// * 0x015B - XcKeyTable()
+// ******************************************************************
+EXPORTNUM(347) void NTAPI XcKeyTable
+(
+	IN ULONG   dwCipher,
+	OUT PUCHAR pbKeyTable,
+	IN PUCHAR  pbKey
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcKeyTable);
+
+	UpdatedCryptoStruct.pXcKeyTable(dwCipher, pbKeyTable, pbKey);
+}
+
+// ******************************************************************
+// * 0x015C - XcBlockCrypt()
+// ******************************************************************
+EXPORTNUM(348) void NTAPI XcBlockCrypt
+(
+	IN ULONG   dwCipher,
+	OUT PUCHAR pbOutput,
+	IN PUCHAR  pbInput,
+	IN PUCHAR  pbKeyTable,
+	IN ULONG   dwOp
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcBlockCrypt);
+
+	UpdatedCryptoStruct.pXcBlockCrypt(dwCipher, pbOutput, pbInput, pbKeyTable, dwOp);
+}
+
+// ******************************************************************
+// * 0x015D - XcBlockCryptCBC()
+// ******************************************************************
+EXPORTNUM(349) void NTAPI XcBlockCryptCBC
+(
+	IN ULONG   dwCipher,
+	IN ULONG   dwInputLength,
+	OUT PUCHAR pbOutput,
+	IN PUCHAR  pbInput,
+	IN PUCHAR  pbKeyTable,
+	IN ULONG   dwOp,
+	IN PUCHAR  pbFeedback
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcBlockCryptCBC);
+
+	UpdatedCryptoStruct.pXcBlockCryptCBC(dwCipher, dwInputLength, pbOutput, pbInput, pbKeyTable, dwOp, pbFeedback);
+}
+
+// ******************************************************************
+// * 0x015E - XcCryptService()
+// ******************************************************************
+EXPORTNUM(350) ULONG NTAPI XcCryptService
+(
+	IN ULONG dwOp,
+	IN PVOID pArgs
+)
+{
+	NT_ASSERT(UpdatedCryptoStruct.pXcCryptService);
+
+	ULONG Result = UpdatedCryptoStruct.pXcCryptService(dwOp, pArgs);
+
+	return Result;
 }
 
 // Source: Cxbx-Reloaded
@@ -95,6 +317,7 @@ EXPORTNUM(351) VOID XBOXAPI XcUpdateCrypto
 	PCRYPTO_VECTOR pROMVector
 )
 {
+	NT_ASSERT(pNewVector);
 	// This function changes the default crypto function implementations with those supplied by the title (if not NULL)
 
 	if (pNewVector->pXcSHAInit)
