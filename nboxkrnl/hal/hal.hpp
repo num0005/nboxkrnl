@@ -77,6 +77,16 @@ NTSTATUS HalEmuQueryXBEPath(PSTRING XBEPath);
 extern "C" {
 #endif
 
+EXPORTNUM(38) VOID FASTCALL HalClearSoftwareInterrupt
+(
+	IN KIRQL Irql
+);
+
+EXPORTNUM(39) VOID XBOXAPI HalDisableSystemInterrupt
+(
+	ULONG BusInterruptLevel
+);
+
 EXPORTNUM(40) DLLEXPORT extern ULONG HalDiskCachePartitionCount;
 
 EXPORTNUM(43) DLLEXPORT VOID XBOXAPI HalEnableSystemInterrupt

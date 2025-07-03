@@ -582,6 +582,42 @@ VOID __declspec(naked) XBOXAPI HalpSmbusIsr()
 	ASM_END
 }
 
+EXPORTNUM(38) VOID FASTCALL HalClearSoftwareInterrupt
+(
+	IN KIRQL Irql
+)
+{
+	/* Mask out the requested bit */
+	HalpPendingInt &= ~(1 << Irql);
+}
+
+EXPORTNUM(39) VOID XBOXAPI HalDisableSystemInterrupt
+(
+	ULONG BusInterruptLevel
+)
+{
+	disable();
+
+	ULONG DataPort;
+	BYTE PicImr;
+	HalpIntDisabled |= (1 << BusInterruptLevel);
+
+	if (BusInterruptLevel > 7)
+	{
+		DataPort = PIC_SLAVE_DATA;
+		PicImr = (HalpIntDisabled >> 8) & 0xFF;
+	}
+	else
+	{
+		DataPort = PIC_MASTER_DATA;
+		PicImr = HalpIntDisabled & 0xFF;
+	}
+
+	outb(DataPort, PicImr);
+
+	enable();
+}
+
 EXPORTNUM(43) VOID XBOXAPI HalEnableSystemInterrupt
 (
 	ULONG BusInterruptLevel,
