@@ -12,6 +12,7 @@
 #define STATUS_TIMEOUT                          ((NTSTATUS)0x00000102L)
 #define STATUS_PENDING                          ((NTSTATUS)0x00000103L)
 #define STATUS_OBJECT_NAME_EXISTS               ((NTSTATUS)0x40000000L)
+#define STATUS_NO_YIELD_PERFORMED               ((NTSTATUS)0x40000024)
 #define STATUS_GUARD_PAGE_VIOLATION             ((NTSTATUS)0x80000001L)
 #define STATUS_BREAKPOINT                       ((NTSTATUS)0x80000003L)
 #define STATUS_SINGLE_STEP                      ((NTSTATUS)0x80000004L)

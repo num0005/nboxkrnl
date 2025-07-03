@@ -168,7 +168,7 @@ enum KTHREAD_STATE {
 	Transition
 };
 
-enum KINTERRUPT_MODE {
+enum KINTERRUPT_MODE: UCHAR {
 	LevelSensitive,
 	Edge
 };
@@ -199,7 +199,7 @@ enum KWAIT_REASON {
 	WrFsCacheOut = 22,
 	WrDispatchInt = 23,
 	WrQuantumEnd = 24,
-	Spare6 = 25,
+	WrYieldExecution = 25,
 	WrKernel = 26,
 	MaximumWaitReason = 27
 };
@@ -454,10 +454,19 @@ struct KINTERRUPT {
 	ULONG Irql;
 	BOOLEAN Connected;
 	BOOLEAN ShareVector;
-	UCHAR Mode;
+	KINTERRUPT_MODE Mode;
+	/*UCHAR Padding;*/
 	ULONG ServiceCount;
 	ULONG DispatchCode[DISPATCH_LENGTH];
 };
+static_assert(offsetof(KINTERRUPT, ServiceContext) == 4);
+static_assert(offsetof(KINTERRUPT, BusInterruptLevel) == 8);
+static_assert(offsetof(KINTERRUPT, Irql) == 12);
+static_assert(offsetof(KINTERRUPT, Connected) == 16);
+static_assert(offsetof(KINTERRUPT, ShareVector) == 17);
+static_assert(offsetof(KINTERRUPT, Mode) == 18);
+static_assert(offsetof(KINTERRUPT, ServiceCount) == 20);
+static_assert(offsetof(KINTERRUPT, DispatchCode) == 24);
 using PKINTERRUPT = KINTERRUPT *;
 
 #define SIZE_OF_FPU_REGISTERS        128
@@ -828,6 +837,9 @@ EXPORTNUM(163) DLLEXPORT VOID FASTCALL KiUnlockDispatcherDatabase
 (
 	KIRQL NewIrql
 );
+
+EXPORTNUM(238) NTSTATUS NTAPI NtYieldExecution(VOID);
+
 // Reactos OS name for KiUnlockDispatcherDatabase
 #define KiExitDispatcher(OldIrql) KiUnlockDispatcherDatabase(OldIrql)
 

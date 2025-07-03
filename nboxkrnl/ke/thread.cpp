@@ -782,3 +782,85 @@ VOID NTAPI EXPORTNUM(94) KeBoostPriorityThread
 	/* Release the dispatcher lock */
 	KiReleaseDispatcherLock(OldIrql);
 }
+
+#define KiGetCurrentReadySummary() KiReadyThreadMask
+
+/*
+ * @implemented
+ */
+
+EXPORTNUM(238) NTSTATUS NTAPI NtYieldExecution(VOID)
+{
+	NTSTATUS Status;
+	KIRQL OldIrql;
+	PKPRCB Prcb;
+	PKTHREAD Thread, NextThread;
+
+	/* NB: No instructions (other than entry code) should preceed this line */
+
+	/* Fail if there's no ready summary, exit fast to avoid wasting time getting a lock */
+	if (!KiGetCurrentReadySummary()) return STATUS_NO_YIELD_PERFORMED;
+
+	/* Now get the current thread, set the status... */
+	Status = STATUS_NO_YIELD_PERFORMED;
+	Thread = KeGetCurrentThread();
+
+	/* Raise IRQL to synch and get the KPRCB now */
+	OldIrql = KeRaiseIrqlToSynchLevel();
+	Prcb = KeGetCurrentPrcb();
+
+	/* Now check if there's still a ready summary */
+	if (KiGetCurrentReadySummary())
+	{
+		/* Acquire thread and PRCB lock */
+		KiAcquireThreadLock(Thread);
+		KiAcquirePrcbLock(Prcb);
+
+		/* Find a new thread to run if none was selected */
+		if (!Prcb->NextThread) Prcb->NextThread = KiSelectReadyThread(1);
+
+		/* Make sure we still have a next thread to schedule */
+		NextThread = Prcb->NextThread;
+		if (NextThread)
+		{
+			/* Reset quantum and recalculate priority */
+			Thread->Quantum = Thread->ApcState.Process->ThreadQuantum;
+			Thread->Priority = KiComputeNewPriority(Thread, 1);
+
+			/* Release the thread lock */
+			KiReleaseThreadLock(Thread);
+
+			/* Set context swap busy */
+			KiSetThreadSwapBusy(Thread);
+
+			/* Set the new thread as running */
+			Prcb->NextThread = NULL;
+			Prcb->CurrentThread = NextThread;
+			NextThread->State = Running;
+
+			/* Setup a yield wait and queue the thread */
+			Thread->WaitReason = WrUserRequest;
+			KiQueueReadyThread(Thread, Prcb);
+
+			/* Make it wait at APC_LEVEL */
+			Thread->WaitIrql = APC_LEVEL;
+
+			/* Sanity check */
+			NT_ASSERT(OldIrql <= DISPATCH_LEVEL);
+
+			/* Swap to new thread */
+			KiSwapContext(APC_LEVEL, Thread);
+			Status = STATUS_SUCCESS;
+		}
+		else
+		{
+			/* Release the PRCB and thread lock */
+			KiReleasePrcbLock(Prcb);
+			KiReleaseThreadLock(Thread);
+		}
+	}
+
+	/* Lower IRQL and return */
+	KeLowerIrql(OldIrql);
+	return Status;
+}

@@ -191,6 +191,44 @@ KiQueueReadyThread(IN PKTHREAD Thread,
 }
 
 //
+// This routine computes the new priority for a thread. It is only valid for
+// threads with priorities in the dynamic priority range.
+//
+inline
+SCHAR
+KiComputeNewPriority(IN PKTHREAD Thread,
+                     IN SCHAR Adjustment)
+{
+    SCHAR Priority;
+
+    /* Priority sanity checks */
+    NT_ASSERT((Thread->PriorityDecrement >= 0) &&
+           (Thread->PriorityDecrement <= Thread->Priority));
+    NT_ASSERT((Thread->Priority < LOW_REALTIME_PRIORITY) ?
+            TRUE : (Thread->PriorityDecrement == 0));
+
+    /* Get the current priority */
+    Priority = Thread->Priority;
+    if (Priority < LOW_REALTIME_PRIORITY)
+    {
+        /* Decrease priority by the priority decrement */
+        Priority -= (Thread->PriorityDecrement + Adjustment);
+
+        /* Don't go out of bounds */
+        if (Priority < Thread->BasePriority) Priority = Thread->BasePriority;
+
+        /* Reset the priority decrement */
+        Thread->PriorityDecrement = 0;
+    }
+
+    /* Sanity check */
+    NT_ASSERT((Thread->BasePriority == 0) || (Priority != 0));
+
+    /* Return the new priority */
+    return Priority;
+}
+
+//
 // Returns a thread's FPU save area
 //
 inline
