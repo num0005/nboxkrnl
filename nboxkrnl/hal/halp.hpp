@@ -236,3 +236,5 @@ NTSTATUS HalpReadSMBusBlock(UCHAR SlaveAddress, UCHAR CommandCode, UCHAR ReadAmo
 NTSTATUS HalpWriteSMBusBlock(UCHAR SlaveAddress, UCHAR CommandCode, UCHAR WriteAmount, BYTE *Buffer);
 // fire off if we have reason to think cached SMC tray state is invalid 
 VOID HalpInvalidateSMCTrayState();
+_IRQL_requires_min_(DISPATCH_LEVEL)
+NTSTATUS NTAPI HalpRunShutdownRoutines();

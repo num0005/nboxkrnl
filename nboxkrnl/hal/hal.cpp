@@ -9,6 +9,7 @@
 
  // Global list of routines executed during a reboot
 static LIST_ENTRY ShutdownRoutineList = { &ShutdownRoutineList , &ShutdownRoutineList };
+static BOOLEAN ShutdownPending = FALSE;
 
 #define TRAY_STATE_INVALID 0xFFFF
 static DWORD CacheTrayState = TRAY_STATE_INVALID;
@@ -266,6 +267,54 @@ EXPORTNUM(50) NTSTATUS XBOXAPI HalWriteSMBusValue
 }
 
 EXPORTNUM(356) ULONG HalBootSMCVideoMode = SMC_REG_AVPACK_NONE;
+
+_IRQL_requires_min_(DISPATCH_LEVEL)
+NTSTATUS NTAPI HalpRunShutdownRoutines
+(
+)
+{
+	PLIST_ENTRY ListEntry = ShutdownRoutineList.Flink;
+	while (ListEntry != &ShutdownRoutineList)
+	{
+		HAL_SHUTDOWN_REGISTRATION* entry = CONTAINING_RECORD(ListEntry, HAL_SHUTDOWN_REGISTRATION, ListEntry);
+
+		entry->NotificationRoutine(entry);
+
+		ListEntry = ListEntry->Flink;
+	}
+
+	return STATUS_SUCCESS;
+}
+
+EXPORTNUM(358) BOOLEAN NTAPI HalIsResetOrShutdownPending()
+{
+	return ShutdownPending;
+}
+
+// ******************************************************************
+// * 0x0168 - HalInitiateShutdown()
+// ******************************************************************
+// Source:Dxbx
+EXPORTNUM(360) NTSTATUS NTAPI HalInitiateShutdown
+(
+)
+{
+	KIRQL OldIrql = KeRaiseIrqlToDpcLevel();
+
+	ShutdownPending = TRUE;
+
+	// run shutdown routines
+	HalpRunShutdownRoutines();
+
+	HalWriteSMBusValue(SMBUS_ADDRESS_SYSTEM_MICRO_CONTROLLER, SMC_REG_POWER, 0, SMC_REG_POWER_SHUTDOWN);
+	// todo: should the kernel be shutdown more gracefully?
+	while (true)
+	{
+		_disable();
+		__halt();
+	}
+}
+
 
 EXPORTNUM(365) VOID NTAPI HalEnableSecureTrayEject
 (
