@@ -9,4 +9,22 @@ extern "C"
 	(
 		IN  PVOID   Address
 	);
+
+	EXPORTNUM(2) void NTAPI AvSendTVEncoderOption
+	(
+		IN  PVOID  RegisterBase,
+		IN  ULONG  Option,
+		IN  ULONG  Param,
+		OUT ULONG* Result
+	);
+
+	EXPORTNUM(3) ULONG NTAPI AvSetDisplayMode
+	(
+		IN  PVOID   RegisterBase,
+		IN  ULONG   Step,
+		IN  ULONG   Mode,
+		IN  ULONG   Format,
+		IN  ULONG   Pitch,
+		IN  ULONG   FrameBuffer
+	);
 }
