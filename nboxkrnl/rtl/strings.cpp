@@ -892,3 +892,24 @@ EXPORTNUM(315) NTSTATUS NTAPI RtlUpcaseUnicodeToMultiByteN
 
 	return STATUS_SUCCESS;
 }
+
+EXPORTNUM (317) VOID NTAPI RtlUpperString
+(
+	PSTRING DestinationString,
+	const STRING* SourceString
+)
+{
+	USHORT Length = SourceString->Length;
+	if (Length > DestinationString->MaximumLength)
+		Length = DestinationString->MaximumLength;
+
+	PCHAR Src = SourceString->Buffer;
+	PCHAR Dest = DestinationString->Buffer;
+	DestinationString->Length = Length;
+
+	while (Length)
+	{
+		*Dest++ = RtlUpperChar(*Src++);
+		Length--;
+	}
+}

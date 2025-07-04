@@ -294,6 +294,26 @@ EXPORTNUM(305) DLLEXPORT VOID XBOXAPI RtlTimeToTimeFields
 	PTIME_FIELDS TimeFields
 );
 
+/*++
+ * RtlTryEnterCriticalSection
+ *
+ *     Attemps to gain ownership of the critical section without waiting.
+ *
+ * Params:
+ *     CriticalSection - Critical section to attempt acquiring.
+ *
+ * Returns:
+ *     TRUE if the critical section has been acquired, FALSE otherwise.
+ *
+ * Remarks:
+ *     None
+ *
+ *--*/
+EXPORTNUM(306) BOOLEAN NTAPI RtlTryEnterCriticalSection
+(
+	PRTL_CRITICAL_SECTION CriticalSection
+);
+
 EXPORTNUM(308) NTSTATUS NTAPI RtlUnicodeStringToAnsiString(
 	IN OUT PANSI_STRING AnsiDest,
 	IN const PUNICODE_STRING UniSource,
@@ -348,6 +368,12 @@ EXPORTNUM(315) NTSTATUS NTAPI RtlUpcaseUnicodeToMultiByteN
 EXPORTNUM(316) DLLEXPORT CHAR XBOXAPI RtlUpperChar
 (
 	CHAR Character
+);
+
+EXPORTNUM(317) VOID NTAPI RtlUpperString
+(
+	PSTRING DestinationString,
+	const STRING* SourceString
 );
 
 EXPORTNUM(319) DLLEXPORT ULONG XBOXAPI RtlWalkFrameChain

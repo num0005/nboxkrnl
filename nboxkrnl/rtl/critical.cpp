@@ -133,3 +133,45 @@ end_func:
 	ASM_END
 }
 
+/*++
+ * RtlTryEnterCriticalSection
+ *
+ *     Attemps to gain ownership of the critical section without waiting.
+ *
+ * Params:
+ *     CriticalSection - Critical section to attempt acquiring.
+ *
+ * Returns:
+ *     TRUE if the critical section has been acquired, FALSE otherwise.
+ *
+ * Remarks:
+ *     None
+ *
+ *--*/
+EXPORTNUM(306) BOOLEAN NTAPI RtlTryEnterCriticalSection
+(
+	PRTL_CRITICAL_SECTION CriticalSection
+)
+{
+	PKTHREAD Thread = KeGetCurrentThread();
+	/* Try to take control */
+	if (InterlockedCompareExchange(&CriticalSection->LockCount, 0, -1) == -1)
+	{
+		/* It's ours */
+		CriticalSection->OwningThread = Thread;
+		CriticalSection->RecursionCount = 1;
+		return TRUE;
+	}
+	else if (CriticalSection->OwningThread == Thread)
+	{
+		/* It's already ours */
+		InterlockedIncrement(&CriticalSection->LockCount);
+		CriticalSection->RecursionCount++;
+		return TRUE;
+	}
+
+	/* It's not ours */
+	return FALSE;
+}
+
+
