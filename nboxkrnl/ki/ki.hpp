@@ -99,7 +99,7 @@ extern KPROCESS KiIdleProcess;
 
 
 VOID InitializeCrt();
-[[noreturn]] VOID KiInitializeKernel();
+CODE_SEG("INIT") VOID KiInitializeKernel();
 VOID KiInitSystem();
 [[noreturn]] void KiIdleLoop();
 DWORD KiSwapThreadContext();
@@ -111,6 +111,12 @@ VOID FASTCALL KiExecuteDpcQueueInDpcStack(IN PVOID DpcStack);
 PKTHREAD XBOXAPI KiQuantumEnd();
 VOID KiAdjustQuantumThread();
 NTSTATUS XBOXAPI KiSwapThread();
+inline NTSTATUS XBOXAPI KiSwapThread(PKTHREAD Thread, PKPRCB Prcb)
+{
+    NT_ASSERT(Prcb->NextThread);
+    Prcb->NextThread = Thread;
+    return KiSwapThread();
+}
 BOOLEAN FASTCALL KiSwapContext(
 	IN KIRQL WaitIrql,
 	IN PKTHREAD OldThread
@@ -120,8 +126,17 @@ VOID KiInitializeProcess(PKPROCESS Process, KPRIORITY BasePriority, LONG ThreadQ
 
 VOID XBOXAPI KiTimerExpiration(PKDPC Dpc, PVOID DeferredContext, PVOID SystemArgument1, PVOID SystemArgument2);
 BOOLEAN KiInsertTimer(PKTIMER Timer, LARGE_INTEGER DueTime);
+#if  0
+inline BOOLEAN KxInsertTimer(PKTIMER Timer, ULONG Hand)
+{
+    NT_ASSERT(Timer);
+    return KiInsertTimer(Timer, *(LARGE_INTEGER*)(&Timer->DueTime));
+};
+#endif
 BOOLEAN KiReinsertTimer(PKTIMER Timer, ULARGE_INTEGER DueTime);
 VOID KiRemoveTimer(PKTIMER Timer);
+// reactos wrapper
+#define KxRemoveTreeTimer(Timer) KiRemoveTimer(Timer)
 ULONG KiComputeTimerTableIndex(ULONGLONG DueTime);
 PLARGE_INTEGER KiRecalculateTimerDueTime(PLARGE_INTEGER OriginalTime, PLARGE_INTEGER DueTime, PLARGE_INTEGER NewTime);
 VOID KiTimerListExpire(PLIST_ENTRY ExpiredListHead, KIRQL OldIrql);
@@ -129,6 +144,30 @@ VOID KiTimerListExpire(PLIST_ENTRY ExpiredListHead, KIRQL OldIrql);
 
 VOID KiWaitTest(PVOID Object, KPRIORITY Increment);
 VOID KiUnwaitThread(PKTHREAD Thread, LONG_PTR WaitStatus, KPRIORITY Increment);
+
+VOID FASTCALL KiActivateWaiterQueue(IN PKQUEUE Queue);
+LONG FASTCALL KiInsertQueue
+(
+    IN PKQUEUE Queue,
+    IN PLIST_ENTRY Entry,
+    IN BOOLEAN Head
+);
+
+inline PLARGE_INTEGER KiRecalculateDueTime
+(
+    IN PLARGE_INTEGER OriginalDueTime,
+    IN PLARGE_INTEGER DueTime,
+    IN OUT PLARGE_INTEGER NewDueTime
+)
+{
+    /* Don't do anything for absolute waits */
+    if (OriginalDueTime->QuadPart >= 0) return OriginalDueTime;
+
+    /* Otherwise, query the interrupt time and recalculate */
+    NewDueTime->QuadPart = KeQueryInterruptTime();
+    NewDueTime->QuadPart -= DueTime->QuadPart;
+    return NewDueTime;
+}
 
 _Acquires_nonreentrant_lock_(SpinLock)
 VOID
@@ -188,6 +227,87 @@ KiQueueReadyThread(IN PKTHREAD Thread,
 
     /* Release the PRCB lock */
     KiReleasePrcbLock(Prcb);
+}
+
+inline VOID FASTCALL KiReadyThread
+(
+    IN PKTHREAD Thread
+)
+{
+    /* Sanity checks */
+    NT_ASSERT((Thread->Priority >= 0) && (Thread->Priority <= HIGH_PRIORITY));
+
+    /*
+    * Reactos checks here for priority adjustments but I do no believe the XBOX has similar logic
+    */
+
+    /* Clear thread preemption status and save current values */
+    KPRIORITY OldPriority = Thread->Priority;
+
+    /* Get the PRCB and lock it */
+    PKPRCB Prcb = KeGetCurrentPrcb();
+    KiAcquirePrcbLock(Prcb);
+
+    /*
+    * Reactos checks here if the processor is idle (no threads queued)
+    * 
+    * Not sure what exactly that does
+    */
+
+    /* Get the next scheduled thread */
+    PKTHREAD NextThread = Prcb->NextThread;
+    if (NextThread)
+    {
+        /* Sanity check */
+        NT_ASSERT(NextThread->State == Standby);
+
+        /* Check if priority changed */
+        if (OldPriority > NextThread->Priority)
+        {
+            /* Preempt the thread */
+            NextThread->Preempted = TRUE;
+
+            /* Put this one as the next one */
+            Thread->State = Standby;
+            Prcb->NextThread = Thread;
+            Thread->Preempted = FALSE; // clear preempted flag
+
+            /* Set it in ready mode */
+            NextThread->State = Ready;
+            KiReleasePrcbLock(Prcb);
+            KiReadyThread(NextThread);
+            return;
+        }
+    }
+    else
+    {
+        /* Set the next thread as the current thread */
+        NextThread = Prcb->CurrentThread;
+        if (OldPriority > NextThread->Priority)
+        {
+            /* Preempt it if it's already running */
+            if (NextThread->State == Running) NextThread->Preempted = TRUE;
+
+            /* Set the thread on standby and as the next thread */
+            Thread->State = Standby;
+            Prcb->NextThread = Thread;
+            Thread->Preempted = FALSE; // clear preempted flag
+
+            /* Release the lock */
+            KiReleasePrcbLock(Prcb);
+
+            return;
+        }
+    }
+
+    /* Sanity check */
+    NT_ASSERT((OldPriority >= 0) && (OldPriority <= HIGH_PRIORITY));
+
+    /* Sanity check */
+    NT_ASSERT(OldPriority == Thread->Priority);
+
+    /* Set this thread as ready (and release lock) */
+    KiQueueReadyThread(Thread, Prcb);
 }
 
 //

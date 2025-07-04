@@ -180,7 +180,7 @@ inline PLIST_ENTRY RemoveHeadList(PLIST_ENTRY pListHead)
 }
 
 struct SINGLE_LIST_ENTRY {
-	struct _SINGLE_LIST_ENTRY *Next;
+	struct SINGLE_LIST_ENTRY *Next;
 };
 using SLIST_ENTRY = SINGLE_LIST_ENTRY;
 using PSINGLE_LIST_ENTRY = SINGLE_LIST_ENTRY *;

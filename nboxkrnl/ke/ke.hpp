@@ -697,11 +697,44 @@ EXPORTNUM(97) BOOLEAN NTAPI KeCancelTimer(
 	IN OUT PKTIMER Timer
 );
 
+EXPORTNUM(111) VOID NTAPI KeInitializeQueue
+(
+	IN PKQUEUE Queue,
+	IN ULONG Count OPTIONAL
+);
+
 EXPORTNUM(113) DLLEXPORT VOID XBOXAPI KeInitializeTimerEx
 (
 	PKTIMER Timer,
 	TIMER_TYPE Type
 );
+
+EXPORTNUM(116) LONG NTAPI KeInsertHeadQueue
+(
+	IN PKQUEUE Queue,
+	IN PLIST_ENTRY Entry
+);
+
+EXPORTNUM(117) LONG NTAPI KeInsertQueue
+(
+	IN PKQUEUE Queue,
+	IN PLIST_ENTRY Entry
+);
+
+/*
+ * @implemented
+ *
+ * Returns number of entries in the queue
+ */
+inline LONG NTAPI KeReadStateQueue
+(
+	IN PKQUEUE Queue
+)
+{
+	/* Returns the Signal State */
+	//ASSERT_QUEUE(Queue);
+	return Queue->Header.SignalState;
+}
 
 EXPORTNUM(118) DLLEXPORT BOOLEAN XBOXAPI KeInsertQueueApc
 (
@@ -758,9 +791,21 @@ EXPORTNUM(132) DLLEXPORT LONG XBOXAPI KeReleaseSemaphore
 	BOOLEAN Wait
 );
 
+EXPORTNUM(136) PLIST_ENTRY NTAPI KeRemoveQueue
+(
+	IN PKQUEUE Queue,
+	IN KPROCESSOR_MODE WaitMode,
+	IN PLARGE_INTEGER Timeout OPTIONAL
+);
+
 EXPORTNUM(140) DLLEXPORT ULONG XBOXAPI KeResumeThread
 (
 	PKTHREAD Thread
+);
+
+EXPORTNUM(141) PLIST_ENTRY NTAPI KeRundownQueue
+(
+	IN PKQUEUE Queue
 );
 
 EXPORTNUM(145) DLLEXPORT LONG XBOXAPI KeSetEvent

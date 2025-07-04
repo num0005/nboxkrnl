@@ -57,8 +57,16 @@ VOID FASTCALL KiCheckExpiredTimers(DWORD OldKeTickCount)
 
 VOID KiRemoveTimer(PKTIMER Timer)
 {
+	NT_ASSERT(KeGetCurrentIrql() >= DISPATCH_LEVEL);
+
 	Timer->Header.Inserted = FALSE;
 	RemoveEntryList(&Timer->TimerListEntry);
+	
+	// reactos does something slighty different here, they seem to group timers by their hand value
+	// in KiTimerTableListHead
+	// it seems to be an optimization?
+	// 
+	// See KxRemoveTreeTimer
 }
 
 // Source: Cxbx-Reloaded

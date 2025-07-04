@@ -155,6 +155,7 @@ void InitializeCrt()
 	}
 }
 
+CODE_SEG("INIT")
 VOID KiInitializeKernel()
 {
 	KiPcr.SelfPcr = &KiPcr;
