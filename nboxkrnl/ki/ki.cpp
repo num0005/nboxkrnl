@@ -5,6 +5,7 @@
 #include "ki.hpp"
 #include "..\kernel.hpp"
 #include "rtl.hpp"
+#include <hal.hpp>
 
 
 KPCR KiPcr = { 0 };
@@ -56,7 +57,72 @@ VOID KiInitializeProcess(PKPROCESS Process, KPRIORITY BasePriority, LONG ThreadQ
 	Process->ThreadQuantum = ThreadQuantum;
 }
 
-VOID KiIdleLoopThread()
+
+[[noreturn]] void KiIdleLoop()
 {
-	RIP_UNIMPLEMENTED();
+    PKPRCB Prcb = KeGetCurrentPrcb();
+    PKTHREAD OldThread, NewThread;
+
+    /* Now loop forever */
+    while (TRUE)
+    {
+        /* Start of the idle loop: disable interrupts */
+        _enable();
+        YieldProcessor();
+        YieldProcessor();
+        _disable();
+
+        
+        Prcb->DpcListHead.Flink;
+        /* Check for pending timers, pending DPCs, or pending ready threads */
+ 
+       // if ((Prcb->DpcData[0].DpcQueueDepth) ||
+        //    (Prcb->TimerRequest) ||
+       //     (Prcb->DeferredReadyListHead.Next))
+        // just guessing this is close enough?
+        if (!IsListEmpty(&Prcb->DpcListHead))
+        {
+            /* Quiesce the DPC software interrupt */
+            HalClearSoftwareInterrupt(DISPATCH_LEVEL);
+
+            /* Handle it */
+            KiExecuteDpcQueue();
+        }
+
+        /* Check if a new thread is scheduled for execution */
+        if (Prcb->NextThread)
+        {
+            /* Enable interrupts */
+            _enable();
+
+            /* Capture current thread data */
+            OldThread = Prcb->CurrentThread;
+            NewThread = Prcb->NextThread;
+
+            /* Set new thread data */
+            Prcb->NextThread = NULL;
+            Prcb->CurrentThread = NewThread;
+
+            /* The thread is now running */
+            NewThread->State = Running;
+
+            #ifdef CONFIG_SMP
+                        /* Do the swap at SYNCH_LEVEL */
+            KfRaiseIrql(SYNCH_LEVEL);
+            #endif
+
+                        /* Switch away from the idle thread */
+            KiSwapContext(APC_LEVEL, OldThread);
+
+            #ifdef CONFIG_SMP
+                        /* Go back to DISPATCH_LEVEL */
+            KeLowerIrql(DISPATCH_LEVEL);
+            #endif
+        }
+        else
+        {
+            /* Continue staying idle. Note the HAL returns with interrupts on */
+            //Prcb->PowerState.IdleFunction(&Prcb->PowerState);
+        }
+    }
 }

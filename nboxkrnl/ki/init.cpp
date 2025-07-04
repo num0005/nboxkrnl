@@ -206,5 +206,16 @@ VOID KiInitializeKernel()
 		KeBugCheckEx(INIT_FAILURE, PS_FAILURE, 0, 0, 0);
 	}
 
-	KiIdleLoopThread(); // won't return
+	// source: reactos
+	PKTHREAD Thread = KeGetCurrentThread();
+	Thread->Priority = 0;
+
+	/* Force interrupts enabled and lower IRQL back to DISPATCH_LEVEL */
+	_enable();
+	KeLowerIrql(DISPATCH_LEVEL);
+
+	/* Set the right wait IRQL */
+	Thread->WaitIrql = DISPATCH_LEVEL;
+
+	KiIdleLoop(); // won't return
 }
