@@ -20,6 +20,17 @@ struct HAL_SHUTDOWN_REGISTRATION {
 };
 using PHAL_SHUTDOWN_REGISTRATION = HAL_SHUTDOWN_REGISTRATION *;
 
+typedef enum _RETURN_FIRMWARE
+{
+	ReturnFirmwareHalt          = 0x0,
+	ReturnFirmwareReboot        = 0x1,
+	ReturnFirmwareQuickReboot   = 0x2,
+	ReturnFirmwareHard          = 0x3,
+	ReturnFirmwareFatal         = 0x4,
+	ReturnFirmwareAll           = 0x5
+}
+RETURN_FIRMWARE, * LPRETURN_FIRMWARE;
+
 void HalpWriteToDebugOutput(char* buffer, size_t max_length = 0);
 
 #include <intrin.h>
@@ -134,6 +145,11 @@ EXPORTNUM(47) DLLEXPORT VOID XBOXAPI HalRegisterShutdownNotification
 EXPORTNUM(48) DLLEXPORT VOID FASTCALL HalRequestSoftwareInterrupt
 (
 	KIRQL Request
+);
+
+EXPORTNUM(49) void ATTRIB_NORETURN NTAPI HalReturnToFirmware
+(
+	RETURN_FIRMWARE Routine
 );
 
 EXPORTNUM(50) DLLEXPORT NTSTATUS XBOXAPI HalWriteSMBusValue

@@ -292,6 +292,61 @@ EXPORTNUM(358) BOOLEAN NTAPI HalIsResetOrShutdownPending()
 }
 
 // ******************************************************************
+// * 0x0031 - HalReturnToFirmware()
+// ******************************************************************
+EXPORTNUM(49) void ATTRIB_NORETURN NTAPI HalReturnToFirmware
+(
+	RETURN_FIRMWARE Routine
+)
+{
+	bool is_reboot = false;
+
+	switch (Routine)
+	{
+	case ReturnFirmwareHalt:
+		HalpShutdownSystem();
+		break;
+
+	case ReturnFirmwareReboot:
+		RIP_UNIMPLEMENTED();
+		break;
+
+	case ReturnFirmwareQuickReboot:
+	{
+		// BOOT_QUICK_REBOOT
+		HalpRunShutdownRoutines();
+		RIP_UNIMPLEMENTED();
+		break;
+	};
+
+	case ReturnFirmwareHard:
+		RIP_UNIMPLEMENTED();
+		break;
+
+	case ReturnFirmwareFatal:
+	{
+		SMC_REG_SCRATCH_SHORT_ANIMATION;
+		HalWriteSMBusValue(SMBUS_ADDRESS_SYSTEM_MICRO_CONTROLLER, SMC_REG_SCRATCH, 0, SMC_REG_SCRATCH_DISPLAY_FATAL_ERROR);
+		is_reboot = true;
+
+		//g_VMManager.SavePersistentMemory();
+
+		//CxbxLaunchNewXbe(szFilePath_Xbe);
+		break;
+	}
+
+	case ReturnFirmwareAll:
+		RIP_UNIMPLEMENTED();
+		break;
+
+	default:
+		RIP_UNIMPLEMENTED();
+	}
+
+	HalpShutdownSystem();
+}
+
+// ******************************************************************
 // * 0x0168 - HalInitiateShutdown()
 // ******************************************************************
 // Source:Dxbx
