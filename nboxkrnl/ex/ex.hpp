@@ -155,6 +155,18 @@ static_assert(sizeof(XBOX_EEPROM) == 256);
 inline XBOX_EEPROM CachedEeprom;
 inline ULONG XboxFactoryGameRegion;
 
+// ******************************************************************
+// * XBOX_REFURB_INFO
+// ******************************************************************
+// Source : DXBX (Xbox Refurb Info)
+typedef struct _XBOX_REFURB_INFO
+{
+	DWORD Signature;
+	DWORD PowerCycleCount;
+	FILETIME FirstBootTime;
+}
+XBOX_REFURB_INFO, * PXBOX_REFURB_INFO;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -234,6 +246,13 @@ EXPORTNUM(24) DLLEXPORT NTSTATUS XBOXAPI ExQueryNonVolatileSetting
 	PSIZE_T ResultLength
 );
 
+EXPORTNUM(25) NTSTATUS NTAPI ExReadWriteRefurbInfo
+(
+	IN OUT PXBOX_REFURB_INFO	pRefurbInfo,
+	IN ULONG	dwBufferSize,
+	IN BOOLEAN	bIsWriteMode
+);
+
 EXPORTNUM(26) DLLEXPORT VOID XBOXAPI ExRaiseException
 (
 	PEXCEPTION_RECORD ExceptionRecord
@@ -247,6 +266,17 @@ EXPORTNUM(27) DLLEXPORT VOID XBOXAPI ExRaiseStatus
 EXPORTNUM(28) DLLEXPORT VOID XBOXAPI ExReleaseReadWriteLock
 (
 	PERWLOCK ReadWriteLock
+);
+
+// ******************************************************************
+// * 0x001D - ExSaveNonVolatileSetting()
+// ******************************************************************
+EXPORTNUM(29) NTSTATUS NTAPI ExSaveNonVolatileSetting
+(
+	IN  DWORD			   ValueIndex,
+	IN  DWORD			   Type,
+	IN  PVOID			   Value,
+	IN  SIZE_T			   ValueLength
 );
 
 EXPORTNUM(32) PLIST_ENTRY FASTCALL ExfInterlockedInsertHeadList

@@ -367,3 +367,14 @@ using PIMAGE_SECTION_HEADER = IMAGE_SECTION_HEADER *;
 
 typedef ULONG KSPIN_LOCK;  // winnt ntndis
 typedef KSPIN_LOCK* PKSPIN_LOCK;
+
+// ******************************************************************
+// * FILETIME
+// ******************************************************************
+// Source : DXBX
+typedef struct _FILETIME
+{
+	DWORD dwLowDateTime;
+	DWORD dwHighDateTime;
+}
+FILETIME, * PFILETIME;

@@ -9,6 +9,13 @@
 #include "rtl.hpp"
 #include <string.h>
 #include <hal.hpp>
+#include <nt.hpp>
+#include <obp.hpp>
+#include <hdd/hdd.hpp>
+
+// from DXBX, from NASMX Project, nasmx\inc\xbox\kernel.inc
+#define XBOX_REFURB_INFO_SECTOR_INDEX 3
+#define REFURB_INFO_SIGNATURE 'RFRB'
 
 #define XC_END_MARKER (XC_VALUE_INDEX)-1
 
@@ -195,6 +202,75 @@ EXPORTNUM(24) NTSTATUS XBOXAPI ExQueryNonVolatileSetting
 	else {
 		Status = STATUS_OBJECT_NAME_NOT_FOUND;
 	}
+
+	return Status;
+}
+
+INITIALIZE_STATIC_OBJECT_STRING(HDDPartion0, "\\Device\\Harddisk0\\Partition0");
+
+EXPORTNUM(25) NTSTATUS NTAPI ExReadWriteRefurbInfo
+(
+	IN OUT PXBOX_REFURB_INFO	pRefurbInfo,
+	IN ULONG	dwBufferSize,
+	IN BOOLEAN	bIsWriteMode
+)
+{
+	// verify parameters are valid
+
+	if (!pRefurbInfo)
+		return STATUS_INVALID_PARAMETER;
+	if (dwBufferSize < sizeof(XBOX_REFURB_INFO))
+		return STATUS_INVALID_PARAMETER_2;
+	
+	// open partion as file
+
+	OBJECT_ATTRIBUTES ObjectAttributes;
+	InitializeObjectAttributes(&ObjectAttributes, &HDDPartion0, OBJ_CASE_INSENSITIVE, nullptr);
+	
+	ACCESS_MASK Access = GENERIC_READ | SYNCHRONIZE;
+	if (bIsWriteMode)
+		Access |= GENERIC_WRITE;
+
+	HANDLE ConfigPartitionHandle = 0;
+	IO_STATUS_BLOCK IoStatusBlock;
+	
+	NTSTATUS Status = NtOpenFile(
+		&ConfigPartitionHandle, 
+		GENERIC_READ,
+		&ObjectAttributes,
+		&IoStatusBlock,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		FILE_SYNCHRONOUS_IO_ALERT);
+
+	if (!NT_SUCCESS(Status))
+		return Status;
+
+	LARGE_INTEGER ByteOffset;
+	ByteOffset.QuadPart = XBOX_REFURB_INFO_SECTOR_INDEX * HDD_SECTOR_SIZE;
+
+	NT_ASSERT(pRefurbInfo != nullptr);
+
+	XBOX_REFURB_INFO RefurbInfoDisk;
+	if (bIsWriteMode)
+	{
+		RefurbInfoDisk = *pRefurbInfo;
+		RefurbInfoDisk.Signature = REFURB_INFO_SIGNATURE;
+		Status = NtWriteFile(ConfigPartitionHandle, 0, NULL, NULL, &IoStatusBlock, &RefurbInfoDisk, sizeof(RefurbInfoDisk), &ByteOffset);
+	}
+	else
+	{
+		Status = NtReadFile(ConfigPartitionHandle, 0, NULL, NULL, &IoStatusBlock, &RefurbInfoDisk, sizeof(RefurbInfoDisk), &ByteOffset);
+		if (NT_SUCCESS(Status))
+		{
+			// Check if the data is valid
+			if (RefurbInfoDisk.Signature == REFURB_INFO_SIGNATURE)
+				*pRefurbInfo = RefurbInfoDisk;
+			else
+				*pRefurbInfo = {}; // zero out structure if it's not
+		}
+	}
+
+	NtClose(ConfigPartitionHandle);
 
 	return Status;
 }

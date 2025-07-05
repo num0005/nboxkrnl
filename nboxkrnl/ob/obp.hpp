@@ -45,6 +45,14 @@
         ObString##Buffer                                       \
     }
 
+#define INITIALIZE_STATIC_OBJECT_STRING(ObString, String, ...) \
+    static CHAR ObString##Buffer[] = String;                          \
+    __VA_ARGS__ static OBJECT_STRING ObString = {                     \
+        sizeof(String) - sizeof(CHAR),                         \
+        sizeof(String),                                        \
+        ObString##Buffer                                       \
+    }
+
  // Macros to ensure thread safety
 #define ObLock() KeRaiseIrqlToDpcLevel()
 #define ObUnlock(Irql) KfLowerIrql(Irql)
