@@ -8,6 +8,7 @@
 #include "ob.hpp"
 #include "rtl.hpp"
 #include <string.h>
+#include <hal.hpp>
 
 #define XC_END_MARKER (XC_VALUE_INDEX)-1
 
@@ -80,6 +81,70 @@ EXPORTNUM(22) OBJECT_TYPE ExMutantObjectType = {
 	'atuM'
 };
 
+static void EepromCRC(ULONG* Checsum, long dataLen)
+{
+	// clear CRC
+	RtlZeroMemory(Checsum, sizeof(*Checsum));
+
+	unsigned char* crc =  reinterpret_cast<unsigned char*>(Checsum);
+	unsigned char* data = &crc[sizeof(*Checsum)];
+
+	for (int pos=0; pos < 4; ++pos)
+	{
+		unsigned short CRCPosVal = 0xFFFF;
+		for (unsigned long l=pos; l < dataLen; l+=4)
+		{
+			// remap to source position
+			unsigned long source_index;
+			if (l == 0)
+				source_index = dataLen - 1;
+			else
+				source_index = l + 1;
+
+			// read low and high part of short (0 out of bounds)
+
+			unsigned short LowValue = 0;
+			if (source_index < dataLen)
+				LowValue = data[source_index];
+
+			source_index++;
+
+			unsigned short HighValue = 0;
+			if (source_index < dataLen)
+				HighValue = data[source_index];
+
+			unsigned short Value = (HighValue << 8) | LowValue;
+
+			CRCPosVal -= Value;
+		}
+		CRCPosVal &= 0xFF00;
+		crc[pos] = (unsigned char)(CRCPosVal >> 8);
+	}
+}
+
+void ExpMakeEEPROMValid(XBOX_EEPROM &eeprom)
+{
+	CachedEeprom;
+	constexpr long ChecksumLength = sizeof(ULONG);
+
+	static_assert(sizeof(eeprom.FactorySettings.Checksum) == ChecksumLength);
+	static_assert(offsetof(XBOX_FACTORY_SETTINGS, Checksum) == 0);
+	static_assert(sizeof(eeprom.UserSettings.Checksum) == ChecksumLength);
+	static_assert(offsetof(XBOX_USER_SETTINGS, Checksum) == 0);
+
+	constexpr long FactoryDataSize = sizeof(eeprom.FactorySettings) - ChecksumLength;
+	constexpr long UserDataSize = sizeof(eeprom.UserSettings) - ChecksumLength;
+
+	EepromCRC(
+		&eeprom.FactorySettings.Checksum,
+		FactoryDataSize
+	);
+	EepromCRC(
+		&eeprom.UserSettings.Checksum,
+		UserDataSize
+	);
+}
+
 // Source: Cxbx-Reloaded
 EXPORTNUM(24) NTSTATUS XBOXAPI ExQueryNonVolatileSetting
 (
@@ -132,4 +197,64 @@ EXPORTNUM(24) NTSTATUS XBOXAPI ExQueryNonVolatileSetting
 	}
 
 	return Status;
+}
+
+// ******************************************************************
+// * 0x001D - ExSaveNonVolatileSetting()
+// ******************************************************************
+EXPORTNUM(29) NTSTATUS NTAPI ExSaveNonVolatileSetting
+(
+	IN  DWORD			   ValueIndex,
+	IN  DWORD			   Type,
+	IN  PVOID			   Value,
+	IN  SIZE_T			   ValueLength
+)
+{
+	PVOID ValueAddr = nullptr;
+	INT ValueType;
+	SIZE_T ActualLength;
+
+	// Don't allow writing to the eeprom encrypted area
+	if (ValueIndex == XC_ENCRYPTED_SECTION)
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+
+	// if it's not a DEVKIT we check if the value is within the permitted range
+	if (HalQueryConsoleType() != ConsoleType::CONSOLE_DEVKIT &&
+		!(ValueIndex <= XC_MAX_OS || ValueIndex > XC_MAX_FACTORY))
+	{
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	const EepromInfo* Info = ExpFindEepromInfo((XC_VALUE_INDEX)ValueIndex);
+	if (Info)
+	{
+		ValueAddr = (PVOID)((PUCHAR)&CachedEeprom + Info->ValueOffset);
+		ValueType = Info->ValueType;
+		ActualLength = Info->ValueLength;
+	}
+
+	// look-up failed for whatever reason
+	if (!ValueAddr)
+		return STATUS_OBJECT_NAME_NOT_FOUND;
+
+	// data is too long
+	if (ValueLength > ActualLength)
+		return STATUS_INVALID_PARAMETER;
+
+	// not done by retail kernel
+#if DBG
+	if (ValueType != Type)
+		return STATUS_INVALID_PARAMETER;
+#endif
+
+	RtlEnterCriticalSectionAndRegion(&ExpEepromLock);
+
+	memset(ValueAddr, 0, ValueLength);
+	memcpy(ValueAddr, Value, ValueLength);
+	ExpMakeEEPROMValid(CachedEeprom);
+	// TODO: write out eeprom
+
+	RtlLeaveCriticalSectionAndRegion(&ExpEepromLock);
+
+	return STATUS_SUCCESS;
 }
