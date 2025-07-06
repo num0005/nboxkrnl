@@ -32,6 +32,8 @@ extern "C" {
 
 EXPORTNUM(35) DLLEXPORT ULONG XBOXAPI FscGetCacheSize();
 
+EXPORTNUM(36) void NTAPI FscInvalidateIdleBlocks();
+
 EXPORTNUM(37) DLLEXPORT NTSTATUS XBOXAPI FscSetCacheSize
 (
 	ULONG NumberOfCachePages

@@ -53,7 +53,7 @@ static PFSCACHE_ELEMENT FscFindElement(PFSCACHE_EXTENSION CacheExtension, ULONG 
 
 static PFSCACHE_ELEMENT FscFindElement(PVOID CacheBuffer)
 {
-	assert(KeGetCurrentIrql() == DISPATCH_LEVEL);
+	ASSERT_IRQL_EQUAL(DISPATCH_LEVEL);
 
 	PMMPTE Pte = GetPteAddress(CacheBuffer);
 	PXBOX_PFN Pfn = GetPfnElement(Pte->Hw >> PAGE_SHIFT);
@@ -63,7 +63,7 @@ static PFSCACHE_ELEMENT FscFindElement(PVOID CacheBuffer)
 
 static PFSCACHE_ELEMENT FscAllocateFreeElement()
 {
-	assert(KeGetCurrentIrql() == DISPATCH_LEVEL);
+	ASSERT_IRQL_EQUAL(DISPATCH_LEVEL);
 
 	PLIST_ENTRY Entry = FscCacheElementListHead.Flink;
 	while (Entry != &FscCacheElementListHead) {
@@ -345,6 +345,14 @@ EXPORTNUM(35) ULONG XBOXAPI FscGetCacheSize()
 	return FscCurrNumberOfCachePages;
 }
 
+// ******************************************************************
+// * 0x0024 - FscInvalidateIdleBlocks()
+// ******************************************************************
+EXPORTNUM(36) void XBOXAPI FscInvalidateIdleBlocks()
+{
+	RIP_UNIMPLEMENTED();
+}
+
 EXPORTNUM(37) NTSTATUS XBOXAPI FscSetCacheSize
 (
 	ULONG NumberOfCachePages
@@ -371,3 +379,4 @@ EXPORTNUM(37) NTSTATUS XBOXAPI FscSetCacheSize
 
 	return Status;
 }
+
