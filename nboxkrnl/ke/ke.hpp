@@ -318,6 +318,13 @@ struct KDEVICE_QUEUE {
 };
 using PKDEVICE_QUEUE = KDEVICE_QUEUE *;
 
+typedef struct _KDEVICE_QUEUE_ENTRY
+{
+	LIST_ENTRY DeviceListEntry;
+	ULONG SortKey;
+	BOOLEAN Inserted;
+} KDEVICE_QUEUE_ENTRY, * PKDEVICE_QUEUE_ENTRY, * RESTRICTED_POINTER PRKDEVICE_QUEUE_ENTRY;
+
 struct KMUTANT {
 	DISPATCHER_HEADER Header;
 	LIST_ENTRY MutantListEntry;
@@ -709,6 +716,19 @@ EXPORTNUM(113) DLLEXPORT VOID XBOXAPI KeInitializeTimerEx
 	TIMER_TYPE Type
 );
 
+EXPORTNUM(114) BOOLEAN NTAPI KeInsertByKeyDeviceQueue
+(
+	IN PKDEVICE_QUEUE DeviceQueue,
+	IN PKDEVICE_QUEUE_ENTRY DeviceQueueEntry,
+	IN ULONG SortKey
+);
+
+EXPORTNUM(115) BOOLEAN NTAPI KeInsertDeviceQueue
+(
+	IN PKDEVICE_QUEUE DeviceQueue,
+	IN PKDEVICE_QUEUE_ENTRY DeviceQueueEntry
+);
+
 EXPORTNUM(116) LONG NTAPI KeInsertHeadQueue
 (
 	IN PKQUEUE Queue,
@@ -789,6 +809,23 @@ EXPORTNUM(132) DLLEXPORT LONG XBOXAPI KeReleaseSemaphore
 	KPRIORITY Increment,
 	LONG Adjustment,
 	BOOLEAN Wait
+);
+
+EXPORTNUM(133) PKDEVICE_QUEUE_ENTRY NTAPI KeRemoveByKeyDeviceQueue
+(
+	IN PKDEVICE_QUEUE DeviceQueue,
+	IN ULONG SortKey
+);
+
+EXPORTNUM(134) PKDEVICE_QUEUE_ENTRY NTAPI KeRemoveDeviceQueue
+(
+	IN PKDEVICE_QUEUE DeviceQueue
+);
+
+EXPORTNUM(135) BOOLEAN NTAPI KeRemoveEntryDeviceQueue
+(
+	IN PKDEVICE_QUEUE DeviceQueue,
+	IN PKDEVICE_QUEUE_ENTRY DeviceQueueEntry
 );
 
 EXPORTNUM(136) PLIST_ENTRY NTAPI KeRemoveQueue
@@ -942,6 +979,12 @@ static inline VOID KeRaiseIrql(KIRQL NewIrql,
 
 void NTAPI KeInitializeSpinLock(PKSPIN_LOCK SpinLock);
 
+PKDEVICE_QUEUE_ENTRY NTAPI KeRemoveByKeyDeviceQueueIfBusy
+(
+	IN PKDEVICE_QUEUE DeviceQueue,
+	IN ULONG SortKey
+);
+
 _Requires_lock_not_held_(*SpinLock)
 _Acquires_lock_(*SpinLock)
 _IRQL_requires_max_(DISPATCH_LEVEL)
@@ -990,3 +1033,10 @@ KeTryToAcquireSpinLockAtDpcLevel(
 	_Inout_ _Requires_lock_not_held_(*_Curr_)
 	_When_(return != 0, _Acquires_lock_(*_Curr_))
 	PKSPIN_LOCK SpinLock);
+
+// SMP: change this
+struct KLOCK_QUEUE_HANDLE
+{
+	KIRQL OldIRQL;
+};
+
