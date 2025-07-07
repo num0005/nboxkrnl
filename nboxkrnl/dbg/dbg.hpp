@@ -24,7 +24,7 @@ EXPORTNUM(7) void NTAPI DbgLoadImageSymbols
 	ULONG_PTR ProcessId
 );
 
-EXPORTNUM(8) DLLEXPORT ULONG CDECL DbgPrint
+EXPORTNUM(8) ULONG CDECL DbgPrint
 (
 	const CHAR *Format,
 	...

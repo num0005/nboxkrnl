@@ -177,30 +177,30 @@ EXPORTNUM(4) PSLIST_ENTRY FASTCALL InterlockedFlushSList
 	_Inout_ PSLIST_HEADER SListHead
 );
 
-EXPORTNUM(12) DLLEXPORT VOID XBOXAPI ExAcquireReadWriteLockExclusive
+EXPORTNUM(12) VOID XBOXAPI ExAcquireReadWriteLockExclusive
 (
 	PERWLOCK ReadWriteLock
 );
 
-EXPORTNUM(13) DLLEXPORT VOID XBOXAPI ExAcquireReadWriteLockShared
+EXPORTNUM(13) VOID XBOXAPI ExAcquireReadWriteLockShared
 (
 	PERWLOCK ReadWriteLock
 );
 
-EXPORTNUM(14) DLLEXPORT PVOID XBOXAPI ExAllocatePool
+EXPORTNUM(14) PVOID XBOXAPI ExAllocatePool
 (
 	SIZE_T NumberOfBytes
 );
 
-EXPORTNUM(15) DLLEXPORT PVOID XBOXAPI ExAllocatePoolWithTag
+EXPORTNUM(15) PVOID XBOXAPI ExAllocatePoolWithTag
 (
 	SIZE_T NumberOfBytes,
 	ULONG Tag
 );
 
-EXPORTNUM(16) DLLEXPORT extern OBJECT_TYPE ExEventObjectType;
+EXPORTNUM(16) extern OBJECT_TYPE ExEventObjectType;
 
-EXPORTNUM(17) DLLEXPORT VOID XBOXAPI ExFreePool
+EXPORTNUM(17) VOID XBOXAPI ExFreePool
 (
 	PVOID P
 );
@@ -211,7 +211,7 @@ VOID XBOXAPI ExFreePoolWithTag
 	ULONG Tag
 );
 
-EXPORTNUM(18) DLLEXPORT VOID XBOXAPI ExInitializeReadWriteLock
+EXPORTNUM(18) VOID XBOXAPI ExInitializeReadWriteLock
 (
 	PERWLOCK ReadWriteLock
 );
@@ -230,14 +230,14 @@ EXPORTNUM(20) VOID FASTCALL ExInterlockedAddLargeStatistic
 	IN ULONG Increment
 );
 
-EXPORTNUM(22) DLLEXPORT extern OBJECT_TYPE ExMutantObjectType;
+EXPORTNUM(22) extern OBJECT_TYPE ExMutantObjectType;
 
-EXPORTNUM(23) DLLEXPORT ULONG XBOXAPI ExQueryPoolBlockSize
+EXPORTNUM(23) ULONG XBOXAPI ExQueryPoolBlockSize
 (
 	PVOID PoolBlock
 );
 
-EXPORTNUM(24) DLLEXPORT NTSTATUS XBOXAPI ExQueryNonVolatileSetting
+EXPORTNUM(24) NTSTATUS XBOXAPI ExQueryNonVolatileSetting
 (
 	DWORD ValueIndex,
 	DWORD *Type,
@@ -253,17 +253,17 @@ EXPORTNUM(25) NTSTATUS NTAPI ExReadWriteRefurbInfo
 	IN BOOLEAN	bIsWriteMode
 );
 
-EXPORTNUM(26) DLLEXPORT VOID XBOXAPI ExRaiseException
+EXPORTNUM(26) VOID XBOXAPI ExRaiseException
 (
 	PEXCEPTION_RECORD ExceptionRecord
 );
 
-EXPORTNUM(27) DLLEXPORT VOID XBOXAPI ExRaiseStatus
+EXPORTNUM(27) VOID XBOXAPI ExRaiseStatus
 (
 	NTSTATUS Status
 );
 
-EXPORTNUM(28) DLLEXPORT VOID XBOXAPI ExReleaseReadWriteLock
+EXPORTNUM(28) VOID XBOXAPI ExReleaseReadWriteLock
 (
 	PERWLOCK ReadWriteLock
 );
@@ -296,24 +296,24 @@ EXPORTNUM(34) PLIST_ENTRY FASTCALL ExfInterlockedRemoveHeadList
 	IN OUT PLIST_ENTRY ListHead
 );
 
-EXPORTNUM(51) DLLEXPORT LONG FASTCALL InterlockedCompareExchange
+EXPORTNUM(51) LONG FASTCALL InterlockedCompareExchange
 (
 	volatile PLONG Destination,
 	LONG  Exchange,
 	LONG  Comparand
 );
 
-EXPORTNUM(52) DLLEXPORT LONG FASTCALL InterlockedDecrement
+EXPORTNUM(52) LONG FASTCALL InterlockedDecrement
 (
 	volatile PLONG Addend
 );
 
-EXPORTNUM(53) DLLEXPORT LONG FASTCALL InterlockedIncrement
+EXPORTNUM(53) LONG FASTCALL InterlockedIncrement
 (
 	volatile PLONG Addend
 );
 
-EXPORTNUM(54) DLLEXPORT LONG FASTCALL InterlockedExchange
+EXPORTNUM(54) LONG FASTCALL InterlockedExchange
 (
 	volatile PLONG Destination,
 	LONG Value

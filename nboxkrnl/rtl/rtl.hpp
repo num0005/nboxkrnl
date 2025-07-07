@@ -37,7 +37,7 @@ using PRTL_CRITICAL_SECTION = RTL_CRITICAL_SECTION *;
 extern "C" {
 #endif
 
-EXPORTNUM(264) DLLEXPORT VOID XBOXAPI RtlAssert
+EXPORTNUM(264) VOID XBOXAPI RtlAssert
 (
 	PVOID FailedAssertion,
 	PVOID FileName,
@@ -45,12 +45,12 @@ EXPORTNUM(264) DLLEXPORT VOID XBOXAPI RtlAssert
 	PCHAR Message
 );
 
-EXPORTNUM(265) DLLEXPORT VOID XBOXAPI RtlCaptureContext
+EXPORTNUM(265) VOID XBOXAPI RtlCaptureContext
 (
 	PCONTEXT ContextRecord
 );
 
-EXPORTNUM(266) DLLEXPORT USHORT XBOXAPI RtlCaptureStackBackTrace
+EXPORTNUM(266) USHORT XBOXAPI RtlCaptureStackBackTrace
 (
 	ULONG FramesToSkip,
 	ULONG FramesToCapture,
@@ -58,17 +58,17 @@ EXPORTNUM(266) DLLEXPORT USHORT XBOXAPI RtlCaptureStackBackTrace
 	PULONG BackTraceHash
 );
 
-EXPORTNUM(277) DLLEXPORT VOID XBOXAPI RtlEnterCriticalSection
+EXPORTNUM(277) VOID XBOXAPI RtlEnterCriticalSection
 (
 	PRTL_CRITICAL_SECTION CriticalSection
 );
 
-EXPORTNUM(278) DLLEXPORT VOID XBOXAPI RtlEnterCriticalSectionAndRegion
+EXPORTNUM(278) VOID XBOXAPI RtlEnterCriticalSectionAndRegion
 (
 	PRTL_CRITICAL_SECTION CriticalSection
 );
 
-EXPORTNUM(279) DLLEXPORT BOOLEAN XBOXAPI RtlEqualString
+EXPORTNUM(279) BOOLEAN XBOXAPI RtlEqualString
 (
 	PSTRING String1,
 	PSTRING String2,
@@ -82,7 +82,7 @@ EXPORTNUM(280) BOOLEAN NTAPI RtlEqualUnicodeString
 	IN BOOLEAN CaseInSensitive
 );
 
-EXPORTNUM(281) DLLEXPORT LARGE_INTEGER XBOXAPI RtlExtendedIntegerMultiply
+EXPORTNUM(281) LARGE_INTEGER XBOXAPI RtlExtendedIntegerMultiply
 (
 	LARGE_INTEGER Multiplicand,
 	LONG Multiplier
@@ -95,21 +95,21 @@ EXPORTNUM(282) LARGE_INTEGER NTAPI RtlExtendedLargeIntegerDivide
 	IN OUT PULONG Remainder OPTIONAL
 );
 
-EXPORTNUM(283) DLLEXPORT LARGE_INTEGER XBOXAPI RtlExtendedMagicDivide
+EXPORTNUM(283) LARGE_INTEGER XBOXAPI RtlExtendedMagicDivide
 (
 	LARGE_INTEGER Dividend,
 	LARGE_INTEGER MagicDivisor,
 	CCHAR ShiftCount
 );
 
-EXPORTNUM(285) DLLEXPORT VOID XBOXAPI RtlFillMemoryUlong
+EXPORTNUM(285) VOID XBOXAPI RtlFillMemoryUlong
 (
 	PVOID Destination,
 	SIZE_T Length,
 	ULONG Pattern
 );
 
-EXPORTNUM(289) DLLEXPORT VOID XBOXAPI RtlInitAnsiString
+EXPORTNUM(289) VOID XBOXAPI RtlInitAnsiString
 (
 	PANSI_STRING DestinationString,
 	PCSZ SourceString
@@ -216,7 +216,7 @@ EXPORTNUM(290) void NTAPI RtlInitUnicodeString
 	IN     PCWSTR         SourceString
 );
 
-EXPORTNUM(291) DLLEXPORT VOID XBOXAPI RtlInitializeCriticalSection
+EXPORTNUM(291) VOID XBOXAPI RtlInitializeCriticalSection
 (
 	PRTL_CRITICAL_SECTION CriticalSection
 );
@@ -235,17 +235,17 @@ EXPORTNUM(293) NTSTATUS NTAPI RtlIntegerToUnicodeString(
 	IN OUT PUNICODE_STRING String
 );
 
-EXPORTNUM(294) DLLEXPORT VOID XBOXAPI RtlLeaveCriticalSection
+EXPORTNUM(294) VOID XBOXAPI RtlLeaveCriticalSection
 (
 	PRTL_CRITICAL_SECTION CriticalSection
 );
 
-EXPORTNUM(295) DLLEXPORT VOID XBOXAPI RtlLeaveCriticalSectionAndRegion
+EXPORTNUM(295) VOID XBOXAPI RtlLeaveCriticalSectionAndRegion
 (
 	PRTL_CRITICAL_SECTION CriticalSection
 );
 
-EXPORTNUM(297) DLLEXPORT VOID XBOXAPI RtlMapGenericMask
+EXPORTNUM(297) VOID XBOXAPI RtlMapGenericMask
 (
 	PACCESS_MASK AccessMask,
 	PGENERIC_MAPPING GenericMapping
@@ -267,28 +267,28 @@ EXPORTNUM(300) NTSTATUS NTAPI RtlMultiByteToUnicodeSize
 	_In_ ULONG       MbSize
 );
 
-EXPORTNUM(301) DLLEXPORT ULONG XBOXAPI RtlNtStatusToDosError
+EXPORTNUM(301) ULONG XBOXAPI RtlNtStatusToDosError
 (
 	NTSTATUS Status
 );
 
-EXPORTNUM(302) DLLEXPORT VOID XBOXAPI RtlRaiseException
+EXPORTNUM(302) VOID XBOXAPI RtlRaiseException
 (
 	PEXCEPTION_RECORD ExceptionRecord
 );
 
-EXPORTNUM(303) DLLEXPORT VOID XBOXAPI RtlRaiseStatus
+EXPORTNUM(303) VOID XBOXAPI RtlRaiseStatus
 (
 	NTSTATUS Status
 );
 
-EXPORTNUM(304) DLLEXPORT BOOLEAN XBOXAPI RtlTimeFieldsToTime
+EXPORTNUM(304) BOOLEAN XBOXAPI RtlTimeFieldsToTime
 (
 	PTIME_FIELDS TimeFields,
 	PLARGE_INTEGER Time
 );
 
-EXPORTNUM(305) DLLEXPORT VOID XBOXAPI RtlTimeToTimeFields
+EXPORTNUM(305) VOID XBOXAPI RtlTimeToTimeFields
 (
 	PLARGE_INTEGER Time,
 	PTIME_FIELDS TimeFields
@@ -341,7 +341,7 @@ EXPORTNUM(311) NTSTATUS NTAPI RtlUnicodeToMultiByteSize
 	_In_ ULONG UnicodeSize
 );
 
-EXPORTNUM(312) DLLEXPORT VOID XBOXAPI RtlUnwind
+EXPORTNUM(312) VOID XBOXAPI RtlUnwind
 (
 	PVOID TargetFrame,
 	PVOID TargetIp,
@@ -365,7 +365,7 @@ EXPORTNUM(315) NTSTATUS NTAPI RtlUpcaseUnicodeToMultiByteN
 	_In_ ULONG UnicodeSize
 );
 
-EXPORTNUM(316) DLLEXPORT CHAR XBOXAPI RtlUpperChar
+EXPORTNUM(316) CHAR XBOXAPI RtlUpperChar
 (
 	CHAR Character
 );
@@ -376,14 +376,14 @@ EXPORTNUM(317) VOID NTAPI RtlUpperString
 	const STRING* SourceString
 );
 
-EXPORTNUM(319) DLLEXPORT ULONG XBOXAPI RtlWalkFrameChain
+EXPORTNUM(319) ULONG XBOXAPI RtlWalkFrameChain
 (
 	PVOID *Callers,
 	ULONG Count,
 	ULONG Flags
 );
 
-EXPORTNUM(320) DLLEXPORT VOID XBOXAPI RtlZeroMemory
+EXPORTNUM(320) VOID XBOXAPI RtlZeroMemory
 (
 	PVOID Destination,
 	SIZE_T Length
@@ -443,7 +443,7 @@ inline UCHAR RtlpBitScanReverse(ULONG *Index, ULONG Mask)
 
 extern "C" {
 
-	USHORT inline DLLEXPORT FASTCALL RtlUshortByteSwap
+	EXPORTNUM(318) USHORT inline FASTCALL RtlUshortByteSwap
 	(
 		IN USHORT Source
 	)
@@ -451,7 +451,7 @@ extern "C" {
 		return _byteswap_ushort(Source);
 	}
 
-	ULONG inline DLLEXPORT FASTCALL RtlUlongByteSwap
+	EXPORTNUM(307) ULONG inline FASTCALL RtlUlongByteSwap
 	(
 		IN ULONG Source
 	)
@@ -459,17 +459,10 @@ extern "C" {
 		return _byteswap_ulong(Source);
 	}
 
-	ULONGLONG inline DLLEXPORT FASTCALL RtlUlonglongByteSwap
-	(
-		IN ULONGLONG Source)
-	{
-		return _byteswap_uint64(Source);
-	}
-
 	// ******************************************************************
 	// * 0x0128 - RtlLowerChar()
 	// ******************************************************************
-	inline EXPORTNUM(296) DLLEXPORT CHAR NTAPI RtlLowerChar
+	inline EXPORTNUM(296) CHAR NTAPI RtlLowerChar
 	(
 		CHAR Character
 	)
@@ -494,7 +487,7 @@ extern "C" {
 	//#define tolower RtlLowerChar
 
 	// Source: Cxbx-Reloaded
-	inline EXPORTNUM(316) DLLEXPORT CHAR XBOXAPI RtlUpperChar
+	inline EXPORTNUM(316) CHAR XBOXAPI RtlUpperChar
 	(
 		CHAR Character
 	)
@@ -522,7 +515,7 @@ extern "C" {
 
 	// from reactos nlsboot.c
 	// basic latin-only implementation, should be replaced with a full unicode implementation if that's actually needed
-	inline EXPORTNUM(313) DLLEXPORT WCHAR NTAPI RtlUpcaseUnicodeChar
+	inline EXPORTNUM(313) WCHAR NTAPI RtlUpcaseUnicodeChar
 	(
 			_In_ WCHAR Source
 	)
@@ -539,7 +532,7 @@ extern "C" {
 	}
 
 
-	inline EXPORTNUM(275) DLLEXPORT WCHAR NTAPI RtlDowncaseUnicodeChar
+	inline EXPORTNUM(275) WCHAR NTAPI RtlDowncaseUnicodeChar
 	(
 			_In_ WCHAR Source
 	)
@@ -560,7 +553,7 @@ extern "C" {
 		return Source + (short)Offset;
 	}
 
-	inline EXPORTNUM(284) DLLEXPORT void NTAPI RtlFillMemory
+	inline EXPORTNUM(284) void NTAPI RtlFillMemory
 	(
 		IN void* Destination,
 		IN DWORD Length,
@@ -570,7 +563,7 @@ extern "C" {
 		memset(Destination, Fill, Length);
 	}
 
-	inline EXPORTNUM(298) DLLEXPORT void NTAPI RtlMoveMemory
+	inline EXPORTNUM(298) void NTAPI RtlMoveMemory
 	(
 		PVOID       Destination,
 		const VOID* Source,

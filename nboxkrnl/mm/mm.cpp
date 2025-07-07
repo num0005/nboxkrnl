@@ -25,7 +25,7 @@ EXPORTNUM(102) MMGLOBALDATA MmGlobalData = {
 };
 
 
-static DWORD ConvertPteToXboxPermissions(ULONG PteMask)
+static DWORD MiConvertPteToProtect(ULONG PteMask)
 {
 	// This routine assumes that the pte has valid protection bits. If it doesn't, it can produce invalid
 	// access permissions
@@ -714,7 +714,7 @@ EXPORTNUM(179) ULONG NTAPI MmQueryAddressProtect
 				|| ((PointerPte->Hw != 0)
 				&& ((ULONG)VirtualAddress <= HIGHEST_USER_ADDRESS)))
 			{
-				Protect = ConvertPteToXboxPermissions(PointerPte->Hw);
+				Protect = MiConvertPteToProtect(PointerPte->Hw);
 			}
 			else
 			{
@@ -723,7 +723,7 @@ EXPORTNUM(179) ULONG NTAPI MmQueryAddressProtect
 		}
 		else
 		{
-			Protect = ConvertPteToXboxPermissions(PointerPde->Hw); // large page, query it immediately
+			Protect = MiConvertPteToProtect(PointerPde->Hw); // large page, query it immediately
 		}
 	}
 	else

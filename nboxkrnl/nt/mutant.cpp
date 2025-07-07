@@ -6,7 +6,7 @@
 #include "ex.hpp"
 
 
-EXPORTNUM(192) DLLEXPORT NTSTATUS XBOXAPI NtCreateMutant
+EXPORTNUM(192) NTSTATUS XBOXAPI NtCreateMutant
 (
 	PHANDLE MutantHandle,
 	POBJECT_ATTRIBUTES ObjectAttributes,

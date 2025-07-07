@@ -131,7 +131,7 @@ EXPORTNUM(255) NTSTATUS XBOXAPI PsCreateSystemThreadEx
 	return Status;
 }
 
-EXPORTNUM(258) DLLEXPORT VOID XBOXAPI PsTerminateSystemThread
+EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
 (
 	NTSTATUS ExitStatus
 )

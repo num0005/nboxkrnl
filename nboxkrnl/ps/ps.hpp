@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-EXPORTNUM(254) DLLEXPORT NTSTATUS XBOXAPI PsCreateSystemThread
+EXPORTNUM(254) NTSTATUS XBOXAPI PsCreateSystemThread
 (
 	PHANDLE ThreadHandle,
 	PHANDLE ThreadId,
@@ -23,7 +23,7 @@ EXPORTNUM(254) DLLEXPORT NTSTATUS XBOXAPI PsCreateSystemThread
 	BOOLEAN DebuggerThread
 );
 
-EXPORTNUM(255) DLLEXPORT NTSTATUS XBOXAPI PsCreateSystemThreadEx
+EXPORTNUM(255) NTSTATUS XBOXAPI PsCreateSystemThreadEx
 (
 	PHANDLE ThreadHandle,
 	SIZE_T ThreadExtensionSize,
@@ -37,12 +37,12 @@ EXPORTNUM(255) DLLEXPORT NTSTATUS XBOXAPI PsCreateSystemThreadEx
 	PKSYSTEM_ROUTINE SystemRoutine
 );
 
-EXPORTNUM(258) DLLEXPORT VOID XBOXAPI PsTerminateSystemThread
+EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
 (
 	NTSTATUS ExitStatus
 );
 
-EXPORTNUM(259) DLLEXPORT extern OBJECT_TYPE PsThreadObjectType;
+EXPORTNUM(259) extern OBJECT_TYPE PsThreadObjectType;
 
 #ifdef __cplusplus
 }

@@ -104,21 +104,21 @@ EXPORTNUM(39) VOID XBOXAPI HalDisableSystemInterrupt
 	ULONG BusInterruptLevel
 );
 
-EXPORTNUM(40) DLLEXPORT extern ULONG HalDiskCachePartitionCount;
+EXPORTNUM(40) extern ULONG HalDiskCachePartitionCount;
 
-EXPORTNUM(43) DLLEXPORT VOID XBOXAPI HalEnableSystemInterrupt
+EXPORTNUM(43) VOID XBOXAPI HalEnableSystemInterrupt
 (
 	ULONG BusInterruptLevel,
 	KINTERRUPT_MODE InterruptMode
 );
 
-EXPORTNUM(44) DLLEXPORT ULONG XBOXAPI HalGetInterruptVector
+EXPORTNUM(44) ULONG XBOXAPI HalGetInterruptVector
 (
 	ULONG BusInterruptLevel,
 	PKIRQL Irql
 );
 
-EXPORTNUM(45) DLLEXPORT NTSTATUS XBOXAPI HalReadSMBusValue
+EXPORTNUM(45) NTSTATUS XBOXAPI HalReadSMBusValue
 (
 	UCHAR SlaveAddress,
 	UCHAR CommandCode,
@@ -126,7 +126,7 @@ EXPORTNUM(45) DLLEXPORT NTSTATUS XBOXAPI HalReadSMBusValue
 	ULONG *DataValue
 );
 
-EXPORTNUM(46) DLLEXPORT VOID XBOXAPI HalReadWritePCISpace
+EXPORTNUM(46) VOID XBOXAPI HalReadWritePCISpace
 (
 	ULONG BusNumber,
 	ULONG SlotNumber,
@@ -136,13 +136,13 @@ EXPORTNUM(46) DLLEXPORT VOID XBOXAPI HalReadWritePCISpace
 	BOOLEAN WritePCISpace
 );
 
-EXPORTNUM(47) DLLEXPORT VOID XBOXAPI HalRegisterShutdownNotification
+EXPORTNUM(47) VOID XBOXAPI HalRegisterShutdownNotification
 (
 	PHAL_SHUTDOWN_REGISTRATION ShutdownRegistration,
 	BOOLEAN Register
 );
 
-EXPORTNUM(48) DLLEXPORT VOID FASTCALL HalRequestSoftwareInterrupt
+EXPORTNUM(48) VOID FASTCALL HalRequestSoftwareInterrupt
 (
 	KIRQL Request
 );
@@ -152,7 +152,7 @@ EXPORTNUM(49) void ATTRIB_NORETURN NTAPI HalReturnToFirmware
 	RETURN_FIRMWARE Routine
 );
 
-EXPORTNUM(50) DLLEXPORT NTSTATUS XBOXAPI HalWriteSMBusValue
+EXPORTNUM(50) NTSTATUS XBOXAPI HalWriteSMBusValue
 (
 	UCHAR SlaveAddress,
 	UCHAR CommandCode,
@@ -160,7 +160,7 @@ EXPORTNUM(50) DLLEXPORT NTSTATUS XBOXAPI HalWriteSMBusValue
 	ULONG DataValue
 );
 
-EXPORTNUM(356) DLLEXPORT extern ULONG HalBootSMCVideoMode;
+EXPORTNUM(356) extern ULONG HalBootSMCVideoMode;
 
 EXPORTNUM(358) BOOLEAN NTAPI HalIsResetOrShutdownPending();
 
@@ -181,32 +181,32 @@ extern "C"
 {
 	// helper functions that map to intrinics that are exported by the xbox kernel
 	// marked as inline in case we want to use them anywhere interally to the kernel
-	inline EXPORTNUM(329) DLLEXPORT void XBOXAPI READ_PORT_BUFFER_UCHAR(IN DWORD Port, IN PUCHAR Buffer, IN ULONG Count)
+	inline EXPORTNUM(329) void XBOXAPI READ_PORT_BUFFER_UCHAR(IN DWORD Port, IN PUCHAR Buffer, IN ULONG Count)
 	{
 		__inbytestring(Port, Buffer, Count);
 	}
 
-	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI READ_PORT_BUFFER_USHORT(IN DWORD Port, IN PUSHORT Buffer, IN ULONG Count)
+	inline EXPORTNUM(331) void XBOXAPI READ_PORT_BUFFER_USHORT(IN DWORD Port, IN PUSHORT Buffer, IN ULONG Count)
 	{
 		__inwordstring(Port, Buffer, Count);
 	}
 
-	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI READ_PORT_BUFFER_ULONG(IN DWORD Port, IN PULONG Buffer, IN ULONG Count)
+	inline EXPORTNUM(331) void XBOXAPI READ_PORT_BUFFER_ULONG(IN DWORD Port, IN PULONG Buffer, IN ULONG Count)
 	{
 		__indwordstring(Port, Buffer, Count);
 	}
 
-	inline EXPORTNUM(332) DLLEXPORT void XBOXAPI WRITE_PORT_BUFFER_UCHAR(IN DWORD Port, OUT PUCHAR Buffer, IN ULONG Count)
+	inline EXPORTNUM(332) void XBOXAPI WRITE_PORT_BUFFER_UCHAR(IN DWORD Port, OUT PUCHAR Buffer, IN ULONG Count)
 	{
 		__outbytestring(Port, Buffer, Count);
 	}
 
-	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI WRITE_PORT_BUFFER_USHORT(IN DWORD Port, OUT PUSHORT Buffer, IN ULONG Count)
+	inline EXPORTNUM(331) void XBOXAPI WRITE_PORT_BUFFER_USHORT(IN DWORD Port, OUT PUSHORT Buffer, IN ULONG Count)
 	{
 		__outwordstring(Port, Buffer, Count);
 	}
 
-	inline EXPORTNUM(331) DLLEXPORT void XBOXAPI WRITE_PORT_BUFFER_ULONG(IN DWORD Port, OUT PULONG Buffer, IN ULONG Count)
+	inline EXPORTNUM(331) void XBOXAPI WRITE_PORT_BUFFER_ULONG(IN DWORD Port, OUT PULONG Buffer, IN ULONG Count)
 	{
 		__outdwordstring(Port, Buffer, Count);
 	}

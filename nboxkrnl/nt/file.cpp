@@ -194,7 +194,7 @@ EXPORTNUM(218) NTSTATUS XBOXAPI NtQueryVolumeInformationFile
 	return IopSynchronousService(DeviceObject, Irp, FileObject, TRUE, IsSynchronousIo);
 }
 
-EXPORTNUM(219) DLLEXPORT NTSTATUS XBOXAPI NtReadFile
+EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 (
 	HANDLE FileHandle,
 	HANDLE Event,
@@ -279,7 +279,7 @@ EXPORTNUM(219) DLLEXPORT NTSTATUS XBOXAPI NtReadFile
 	return IopSynchronousService(DeviceObject, Irp, FileObject, TRUE, IsSynchronousIo);
 }
 
-EXPORTNUM(232) DLLEXPORT VOID XBOXAPI NtUserIoApcDispatcher
+EXPORTNUM(232) VOID XBOXAPI NtUserIoApcDispatcher
 (
 	PVOID ApcContext,
 	PIO_STATUS_BLOCK IoStatusBlock,

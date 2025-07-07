@@ -1,7 +1,7 @@
 #pragma once
 #include "..\types.hpp"
 
-extern "C" [[noreturn]] EXPORTNUM(352) DLLEXPORT void XBOXAPI RtlRip
+extern "C" [[noreturn]] EXPORTNUM(352) void XBOXAPI RtlRip
 (
 	const CHAR * ApiName,
 	const CHAR * Expression,

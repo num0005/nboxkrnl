@@ -137,7 +137,7 @@ EXPORTNUM(99) NTSTATUS XBOXAPI KeDelayExecutionThread
 }
 
 // Source: partially from Cxbx-Reloaded
-EXPORTNUM(159) DLLEXPORT NTSTATUS XBOXAPI KeWaitForSingleObject
+EXPORTNUM(159) NTSTATUS XBOXAPI KeWaitForSingleObject
 (
 	PVOID Object,
 	KWAIT_REASON WaitReason,

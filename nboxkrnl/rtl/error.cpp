@@ -1,7 +1,7 @@
 /*
  * Alexandre Julliard     Copyright (c) 2000
  * Andriy Palamarchuk     Copyright (c) 2002
- * André Hentschel		  Copyright (c) 2010
+ * Andrï¿½ Hentschel		  Copyright (c) 2010
  */
 
 #include "rtl.hpp"
@@ -18,7 +18,7 @@ struct error_table {
 extern const struct error_table error_table[20];
 
 // Source: ReactOS
-EXPORTNUM(301) DLLEXPORT ULONG XBOXAPI RtlNtStatusToDosError
+EXPORTNUM(301) ULONG XBOXAPI RtlNtStatusToDosError
 (
 	NTSTATUS Status
 )

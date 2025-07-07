@@ -44,8 +44,8 @@
 static inline void DPRINT(const char* fmt, ...) {};
 #define RESTRICTED_POINTER
 
-#define EXPORTNUM(n) 
 #define DLLEXPORT __declspec(dllexport)
+#define EXPORTNUM(n) DLLEXPORT
 
 
 using VOID = void;

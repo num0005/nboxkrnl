@@ -137,9 +137,9 @@ inline ConsoleType XboxType;
 extern "C" {
 #endif
 
-EXPORTNUM(322) DLLEXPORT extern XBOX_HARDWARE_INFO XboxHardwareInfo;
+EXPORTNUM(322) extern XBOX_HARDWARE_INFO XboxHardwareInfo;
 
-EXPORTNUM(324) DLLEXPORT extern XBOX_KRNL_VERSION XboxKrnlVersion;
+EXPORTNUM(324) extern XBOX_KRNL_VERSION XboxKrnlVersion;
 
 #ifdef __cplusplus
 }

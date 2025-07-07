@@ -635,7 +635,7 @@ EXPORTNUM(155) BOOLEAN XBOXAPI KeTestAlertThread
 }
 
 
-BOOLEAN NTAPI EXPORTNUM(92) KeAlertResumeThread
+EXPORTNUM(92) BOOLEAN NTAPI KeAlertResumeThread
 (
 	IN PKTHREAD Thread
 )
@@ -687,7 +687,7 @@ BOOLEAN NTAPI EXPORTNUM(92) KeAlertResumeThread
 	return PreviousCount;
 }
 
-BOOLEAN NTAPI EXPORTNUM(93) KeAlertThread
+EXPORTNUM(93) BOOLEAN NTAPI KeAlertThread
 (
 	IN PKTHREAD Thread,
 	IN KPROCESSOR_MODE AlertMode
@@ -735,7 +735,7 @@ BOOLEAN NTAPI EXPORTNUM(93) KeAlertThread
 }
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-VOID NTAPI EXPORTNUM(94) KeBoostPriorityThread
+EXPORTNUM(94) VOID NTAPI KeBoostPriorityThread
 (
 	IN PKTHREAD Thread,
 	IN KPRIORITY Increment

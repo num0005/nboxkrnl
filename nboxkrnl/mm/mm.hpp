@@ -151,14 +151,14 @@ using PHYSICAL_ADDRESS = ULONG;
 extern "C" {
 #endif
 
-EXPORTNUM(102) DLLEXPORT extern MMGLOBALDATA MmGlobalData;
+EXPORTNUM(102) extern MMGLOBALDATA MmGlobalData;
 
-EXPORTNUM(165) DLLEXPORT PVOID XBOXAPI MmAllocateContiguousMemory
+EXPORTNUM(165) PVOID XBOXAPI MmAllocateContiguousMemory
 (
 	ULONG NumberOfBytes
 );
 
-EXPORTNUM(166) DLLEXPORT PVOID XBOXAPI MmAllocateContiguousMemoryEx
+EXPORTNUM(166) PVOID XBOXAPI MmAllocateContiguousMemoryEx
 (
 	ULONG NumberOfBytes,
 	PHYSICAL_ADDRESS LowestAcceptableAddress,
@@ -167,25 +167,25 @@ EXPORTNUM(166) DLLEXPORT PVOID XBOXAPI MmAllocateContiguousMemoryEx
 	ULONG ProtectionType
 );
 
-EXPORTNUM(167) DLLEXPORT PVOID XBOXAPI MmAllocateSystemMemory
+EXPORTNUM(167) PVOID XBOXAPI MmAllocateSystemMemory
 (
 	ULONG NumberOfBytes,
 	ULONG Protect
 );
 
-EXPORTNUM(168) DLLEXPORT PVOID XBOXAPI MmClaimGpuInstanceMemory
+EXPORTNUM(168) PVOID XBOXAPI MmClaimGpuInstanceMemory
 (
 	SIZE_T NumberOfBytes,
 	SIZE_T *NumberOfPaddingBytes
 );
 
-EXPORTNUM(169) DLLEXPORT PVOID XBOXAPI MmCreateKernelStack
+EXPORTNUM(169) PVOID XBOXAPI MmCreateKernelStack
 (
 	ULONG NumberOfBytes,
 	BOOLEAN DebuggerThread
 );
 
-EXPORTNUM(170) DLLEXPORT VOID XBOXAPI MmDeleteKernelStack
+EXPORTNUM(170) VOID XBOXAPI MmDeleteKernelStack
 (
 	PVOID StackBase,
 	PVOID StackLimit
@@ -196,7 +196,7 @@ EXPORTNUM(171) void NTAPI MmFreeContiguousMemory
 	IN PVOID BaseAddress
 );
 
-EXPORTNUM(172) DLLEXPORT ULONG XBOXAPI MmFreeSystemMemory
+EXPORTNUM(172) ULONG XBOXAPI MmFreeSystemMemory
 (
 	PVOID BaseAddress,
 	ULONG NumberOfBytes
@@ -237,12 +237,12 @@ EXPORTNUM(179) ULONG NTAPI MmQueryAddressProtect
 	IN PVOID VirtualAddress
 );
 
-EXPORTNUM(180) DLLEXPORT SIZE_T XBOXAPI MmQueryAllocationSize
+EXPORTNUM(180) SIZE_T XBOXAPI MmQueryAllocationSize
 (
 	PVOID BaseAddress
 );
 
-EXPORTNUM(181) DLLEXPORT NTSTATUS XBOXAPI MmQueryStatistics
+EXPORTNUM(181) NTSTATUS XBOXAPI MmQueryStatistics
 (
 	PMM_STATISTICS MemoryStatistics
 );

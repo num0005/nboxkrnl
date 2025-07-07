@@ -582,33 +582,43 @@ BOOLEAN FASTCALL KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment);
 extern "C" {
 #endif
 
+
+/*
+ * @implemented
+ */
+EXPORTNUM(121) inline BOOLEAN NTAPI KeIsExecutingDpc(VOID)
+{
+    /* Return if the Dpc Routine is active */
+    return KeGetCurrentPrcb()->DpcRoutineActive != 0;
+}
+
 _IRQL_requires_max_(DISPATCH_LEVEL)
-BOOLEAN NTAPI EXPORTNUM(92) KeAlertResumeThread
+EXPORTNUM(92) BOOLEAN NTAPI KeAlertResumeThread
 (
 	IN PKTHREAD Thread
 );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-BOOLEAN NTAPI EXPORTNUM(93) KeAlertThread
+EXPORTNUM(93) BOOLEAN NTAPI KeAlertThread
 (
 	IN PKTHREAD Thread,
 	IN KPROCESSOR_MODE AlertMode
 );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-VOID NTAPI EXPORTNUM(94) KeBoostPriorityThread
+EXPORTNUM(94) VOID NTAPI KeBoostPriorityThread
 (
 	IN PKTHREAD Thread,
 	IN KPRIORITY Increment
 );
 
-[[noreturn]] EXPORTNUM(95) DLLEXPORT VOID XBOXAPI KeBugCheck
+[[noreturn]] EXPORTNUM(95) VOID XBOXAPI KeBugCheck
 (
 	ULONG BugCheckCode
 );
 
 // This routine terminates the system. It should be used when a failure is not expected, for example those caused by bugs
-[[noreturn]] EXPORTNUM(96) DLLEXPORT VOID XBOXAPI KeBugCheckEx
+[[noreturn]] EXPORTNUM(96) VOID XBOXAPI KeBugCheckEx
 (
 	ULONG BugCheckCode,
 	ULONG_PTR BugCheckParameter1,
@@ -617,12 +627,12 @@ VOID NTAPI EXPORTNUM(94) KeBoostPriorityThread
 	ULONG_PTR BugCheckParameter4
 );
 
-EXPORTNUM(98) DLLEXPORT BOOLEAN XBOXAPI KeConnectInterrupt
+EXPORTNUM(98) BOOLEAN XBOXAPI KeConnectInterrupt
 (
 	PKINTERRUPT  InterruptObject
 );
 
-EXPORTNUM(99) DLLEXPORT NTSTATUS XBOXAPI KeDelayExecutionThread
+EXPORTNUM(99) NTSTATUS XBOXAPI KeDelayExecutionThread
 (
 	KPROCESSOR_MODE WaitMode,
 	BOOLEAN Alertable,
@@ -634,19 +644,19 @@ EXPORTNUM(100) BOOLEAN XBOXAPI KeDisconnectInterrupt
 	PKINTERRUPT  InterruptObject
 );
 
-EXPORTNUM(101) DLLEXPORT VOID XBOXAPI KeEnterCriticalRegion();
+EXPORTNUM(101) VOID XBOXAPI KeEnterCriticalRegion();
 
-inline EXPORTNUM(103) DLLEXPORT KIRQL XBOXAPI KeGetCurrentIrql()
+inline EXPORTNUM(103) KIRQL XBOXAPI KeGetCurrentIrql()
 {
 	return KeGetPcr()->Irql;
 }
 
-inline EXPORTNUM(104) DLLEXPORT PKTHREAD XBOXAPI KeGetCurrentThread(VOID)
+inline EXPORTNUM(104) PKTHREAD XBOXAPI KeGetCurrentThread(VOID)
 {
 	return KeGetCurrentPrcb()->CurrentThread;
 }
 
-EXPORTNUM(105) DLLEXPORT VOID XBOXAPI KeInitializeApc
+EXPORTNUM(105) VOID XBOXAPI KeInitializeApc
 (
 	PKAPC Apc,
 	PKTHREAD Thread,
@@ -657,26 +667,26 @@ EXPORTNUM(105) DLLEXPORT VOID XBOXAPI KeInitializeApc
 	PVOID NormalContext
 );
 
-EXPORTNUM(106) DLLEXPORT VOID XBOXAPI KeInitializeDeviceQueue
+EXPORTNUM(106) VOID XBOXAPI KeInitializeDeviceQueue
 (
 	PKDEVICE_QUEUE DeviceQueue
 );
 
-EXPORTNUM(107) DLLEXPORT VOID XBOXAPI KeInitializeDpc
+EXPORTNUM(107) VOID XBOXAPI KeInitializeDpc
 (
 	PKDPC Dpc,
 	PKDEFERRED_ROUTINE DeferredRoutine,
 	PVOID DeferredContext
 );
 
-EXPORTNUM(108) DLLEXPORT VOID XBOXAPI KeInitializeEvent
+EXPORTNUM(108) VOID XBOXAPI KeInitializeEvent
 (
 	PKEVENT Event,
 	EVENT_TYPE Type,
 	BOOLEAN SignalState
 );
 
-EXPORTNUM(109) DLLEXPORT VOID XBOXAPI KeInitializeInterrupt
+EXPORTNUM(109) VOID XBOXAPI KeInitializeInterrupt
 (
 	PKINTERRUPT Interrupt,
 	PKSERVICE_ROUTINE ServiceRoutine,
@@ -687,13 +697,13 @@ EXPORTNUM(109) DLLEXPORT VOID XBOXAPI KeInitializeInterrupt
 	BOOLEAN ShareVector
 );
 
-EXPORTNUM(110) DLLEXPORT VOID XBOXAPI KeInitializeMutant
+EXPORTNUM(110) VOID XBOXAPI KeInitializeMutant
 (
 	PKMUTANT Mutant,
 	BOOLEAN InitialOwner
 );
 
-EXPORTNUM(112) DLLEXPORT VOID XBOXAPI KeInitializeSemaphore
+EXPORTNUM(112) VOID XBOXAPI KeInitializeSemaphore
 (
 	PKSEMAPHORE Semaphore,
 	LONG Count,
@@ -710,7 +720,7 @@ EXPORTNUM(111) VOID NTAPI KeInitializeQueue
 	IN ULONG Count OPTIONAL
 );
 
-EXPORTNUM(113) DLLEXPORT VOID XBOXAPI KeInitializeTimerEx
+EXPORTNUM(113) VOID XBOXAPI KeInitializeTimerEx
 (
 	PKTIMER Timer,
 	TIMER_TYPE Type
@@ -756,7 +766,7 @@ inline LONG NTAPI KeReadStateQueue
 	return Queue->Header.SignalState;
 }
 
-EXPORTNUM(118) DLLEXPORT BOOLEAN XBOXAPI KeInsertQueueApc
+EXPORTNUM(118) BOOLEAN XBOXAPI KeInsertQueueApc
 (
 	PKAPC Apc,
 	PVOID SystemArgument1,
@@ -764,33 +774,40 @@ EXPORTNUM(118) DLLEXPORT BOOLEAN XBOXAPI KeInsertQueueApc
 	KPRIORITY Increment
 );
 
-EXPORTNUM(119) DLLEXPORT BOOLEAN XBOXAPI KeInsertQueueDpc
+EXPORTNUM(119) BOOLEAN XBOXAPI KeInsertQueueDpc
 (
 	PKDPC Dpc,
 	PVOID SystemArgument1,
 	PVOID SystemArgument2
 );
 
-EXPORTNUM(120) DLLEXPORT extern volatile KSYSTEM_TIME KeInterruptTime;
+EXPORTNUM(120) extern volatile KSYSTEM_TIME KeInterruptTime;
 
-EXPORTNUM(122) DLLEXPORT VOID XBOXAPI KeLeaveCriticalRegion();
+EXPORTNUM(122) VOID XBOXAPI KeLeaveCriticalRegion();
 
-EXPORTNUM(125) DLLEXPORT ULONGLONG XBOXAPI KeQueryInterruptTime();
+EXPORTNUM(123) LONG NTAPI KePulseEvent
+(
+	IN PKEVENT Event,
+	IN KPRIORITY Increment,
+	IN BOOLEAN Wait
+);
 
-EXPORTNUM(126) DLLEXPORT ULONGLONG XBOXAPI KeQueryPerformanceCounter();
+EXPORTNUM(125) ULONGLONG XBOXAPI KeQueryInterruptTime();
 
-EXPORTNUM(127) DLLEXPORT ULONGLONG XBOXAPI KeQueryPerformanceFrequency();
+EXPORTNUM(126) ULONGLONG XBOXAPI KeQueryPerformanceCounter();
 
-EXPORTNUM(128) DLLEXPORT VOID XBOXAPI KeQuerySystemTime
+EXPORTNUM(127) ULONGLONG XBOXAPI KeQueryPerformanceFrequency();
+
+EXPORTNUM(128) VOID XBOXAPI KeQuerySystemTime
 (
 	PLARGE_INTEGER CurrentTime
 );
 
-EXPORTNUM(129) DLLEXPORT KIRQL XBOXAPI KeRaiseIrqlToDpcLevel();
+EXPORTNUM(129) KIRQL XBOXAPI KeRaiseIrqlToDpcLevel();
 
-EXPORTNUM(130) DLLEXPORT KIRQL XBOXAPI KeRaiseIrqlToSynchLevel();
+EXPORTNUM(130) KIRQL XBOXAPI KeRaiseIrqlToSynchLevel();
 
-EXPORTNUM(131) DLLEXPORT LONG XBOXAPI KeReleaseMutant
+EXPORTNUM(131) LONG XBOXAPI KeReleaseMutant
 (
 	PKMUTANT Mutant,
 	KPRIORITY Increment,
@@ -803,7 +820,7 @@ LONG NTAPI KeReadStateSemaphore
 	IN PKSEMAPHORE Semaphore
 );
 
-EXPORTNUM(132) DLLEXPORT LONG XBOXAPI KeReleaseSemaphore
+EXPORTNUM(132) LONG XBOXAPI KeReleaseSemaphore
 (
 	PKSEMAPHORE Semaphore,
 	KPRIORITY Increment,
@@ -835,7 +852,12 @@ EXPORTNUM(136) PLIST_ENTRY NTAPI KeRemoveQueue
 	IN PLARGE_INTEGER Timeout OPTIONAL
 );
 
-EXPORTNUM(140) DLLEXPORT ULONG XBOXAPI KeResumeThread
+EXPORTNUM(138) LONG NTAPI KeResetEvent
+(
+	IN PKEVENT Event
+);
+
+EXPORTNUM(140) ULONG XBOXAPI KeResumeThread
 (
 	PKTHREAD Thread
 );
@@ -845,7 +867,7 @@ EXPORTNUM(141) PLIST_ENTRY NTAPI KeRundownQueue
 	IN PKQUEUE Queue
 );
 
-EXPORTNUM(145) DLLEXPORT LONG XBOXAPI KeSetEvent
+EXPORTNUM(145) LONG XBOXAPI KeSetEvent
 (
 	PKEVENT Event,
 	KPRIORITY Increment,
@@ -853,20 +875,20 @@ EXPORTNUM(145) DLLEXPORT LONG XBOXAPI KeSetEvent
 );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-EXPORTNUM(148) DLLEXPORT KPRIORITY XBOXAPI KeSetPriorityThread
+EXPORTNUM(148) KPRIORITY XBOXAPI KeSetPriorityThread
 (
 	PKTHREAD Thread,
 	LONG Priority
 );
 
-EXPORTNUM(149) DLLEXPORT BOOLEAN XBOXAPI KeSetTimer
+EXPORTNUM(149) BOOLEAN XBOXAPI KeSetTimer
 (
 	PKTIMER Timer,
 	LARGE_INTEGER DueTime,
 	PKDPC Dpc
 );
 
-EXPORTNUM(150) DLLEXPORT BOOLEAN XBOXAPI KeSetTimerEx
+EXPORTNUM(150) BOOLEAN XBOXAPI KeSetTimerEx
 (
 	PKTIMER Timer,
 	LARGE_INTEGER DueTime,
@@ -875,24 +897,24 @@ EXPORTNUM(150) DLLEXPORT BOOLEAN XBOXAPI KeSetTimerEx
 );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-EXPORTNUM(152) DLLEXPORT ULONG XBOXAPI KeSuspendThread
+EXPORTNUM(152) ULONG XBOXAPI KeSuspendThread
 (
 	PKTHREAD Thread
 );
 
-EXPORTNUM(154) DLLEXPORT extern volatile KSYSTEM_TIME KeSystemTime;
+EXPORTNUM(154) extern volatile KSYSTEM_TIME KeSystemTime;
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
-EXPORTNUM(155) DLLEXPORT BOOLEAN XBOXAPI KeTestAlertThread
+EXPORTNUM(155) BOOLEAN XBOXAPI KeTestAlertThread
 (
 	KPROCESSOR_MODE AlertMode
 );
 
-EXPORTNUM(156) DLLEXPORT extern volatile DWORD KeTickCount;
+EXPORTNUM(156) extern volatile DWORD KeTickCount;
 
-EXPORTNUM(157) DLLEXPORT extern ULONG KeTimeIncrement;
+EXPORTNUM(157) extern ULONG KeTimeIncrement;
 
-EXPORTNUM(159) DLLEXPORT NTSTATUS XBOXAPI KeWaitForSingleObject
+EXPORTNUM(159) NTSTATUS XBOXAPI KeWaitForSingleObject
 (
 	PVOID Object,
 	KWAIT_REASON WaitReason,
@@ -903,19 +925,19 @@ EXPORTNUM(159) DLLEXPORT NTSTATUS XBOXAPI KeWaitForSingleObject
 
 _IRQL_raises_(NewIrql)
 _IRQL_saves_
-EXPORTNUM(160) DLLEXPORT KIRQL FASTCALL KfRaiseIrql
+EXPORTNUM(160) KIRQL FASTCALL KfRaiseIrql
 (
 	KIRQL NewIrql
 );
 
 
-EXPORTNUM(161) DLLEXPORT VOID FASTCALL KfLowerIrql
+EXPORTNUM(161) VOID FASTCALL KfLowerIrql
 (
 	_IRQL_restores_ KIRQL NewIrql
 );
 
 // this is called KiExitDispatcher on reactos, but we use the xbox name since we export it
-EXPORTNUM(163) DLLEXPORT VOID FASTCALL KiUnlockDispatcherDatabase
+EXPORTNUM(163) VOID FASTCALL KiUnlockDispatcherDatabase
 (
 	KIRQL NewIrql
 );
@@ -925,7 +947,7 @@ EXPORTNUM(238) NTSTATUS NTAPI NtYieldExecution(VOID);
 // Reactos OS name for KiUnlockDispatcherDatabase
 #define KiExitDispatcher(OldIrql) KiUnlockDispatcherDatabase(OldIrql)
 
-EXPORTNUM(321) DLLEXPORT extern XBOX_KEY_DATA XboxEEPROMKey;
+EXPORTNUM(321) extern XBOX_KEY_DATA XboxEEPROMKey;
 
 #ifdef __cplusplus
 }
