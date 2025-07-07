@@ -55,6 +55,7 @@
 #define PAGES_SPANNED_LARGE(Va, Size)       ((ULONG)((((ULONG_PTR)(Va) & (PAGE_LARGE_SIZE - 1)) + (Size) + (PAGE_LARGE_SIZE - 1)) >> PAGE_LARGE_SHIFT))
 #define CHECK_ALIGNMENT(size, alignment)    (((ULONG_PTR)(size) % (alignment)) == 0)
 #define BYTE_OFFSET(Va)                     ((ULONG)((ULONG_PTR)(Va) & (PAGE_SIZE - 1)))
+#define BYTE_OFFSET_LARGE(Va)               ((ULONG)((ULONG_PTR)(Va) & (PAGE_LARGE_SIZE - 1)))
 
 // Memory size per system
 #define XBOX_MEMORY_SIZE                    (MiB(64))
@@ -190,10 +191,50 @@ EXPORTNUM(170) DLLEXPORT VOID XBOXAPI MmDeleteKernelStack
 	PVOID StackLimit
 );
 
+EXPORTNUM(171) void NTAPI MmFreeContiguousMemory
+(
+	IN PVOID BaseAddress
+);
+
 EXPORTNUM(172) DLLEXPORT ULONG XBOXAPI MmFreeSystemMemory
 (
 	PVOID BaseAddress,
 	ULONG NumberOfBytes
+);
+
+EXPORTNUM(173) PHYSICAL_ADDRESS NTAPI MmGetPhysicalAddress
+(
+	PVOID Address
+);
+
+EXPORTNUM(174) PHYSICAL_ADDRESS NTAPI MmIsAddressValid
+(
+	PVOID Address
+);
+
+EXPORTNUM(175) void NTAPI MmLockUnlockBufferPages
+(
+	IN PVOID	        BaseAddress,
+	IN SIZE_T			NumberOfBytes,
+	IN BOOLEAN			UnlockPages
+);
+
+EXPORTNUM(176) void NTAPI MmLockUnlockPhysicalPage
+(
+	IN ULONG_PTR PhysicalAddress,
+	IN BOOLEAN   UnlockPage
+);
+
+EXPORTNUM(178) void NTAPI MmPersistContiguousMemory
+(
+	IN PVOID   BaseAddress,
+	IN ULONG   NumberOfBytes,
+	IN BOOLEAN Persist
+);
+
+EXPORTNUM(179) ULONG NTAPI MmQueryAddressProtect
+(
+	IN PVOID VirtualAddress
 );
 
 EXPORTNUM(180) DLLEXPORT SIZE_T XBOXAPI MmQueryAllocationSize

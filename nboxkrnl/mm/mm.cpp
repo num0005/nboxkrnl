@@ -24,6 +24,29 @@ EXPORTNUM(102) MMGLOBALDATA MmGlobalData = {
 	(PVOID *)&MiLastFree
 };
 
+
+static DWORD ConvertPteToXboxPermissions(ULONG PteMask)
+{
+	// This routine assumes that the pte has valid protection bits. If it doesn't, it can produce invalid
+	// access permissions
+
+	ULONG Protect;
+
+	if (PteMask & PTE_READWRITE) { Protect = PAGE_READWRITE; }
+	else { Protect = PAGE_READONLY; }
+
+	if ((PteMask & PTE_VALID_MASK) == 0)
+	{
+		if (PteMask & PTE_GUARD) { Protect |= PAGE_GUARD; }
+		else { Protect = PAGE_NOACCESS; }
+	}
+
+	if (PteMask & PTE_CACHE_DISABLE_MASK) { Protect |= PAGE_NOCACHE; }
+	else if (PteMask & PTE_WRITE_THROUGH_MASK) { Protect |= PAGE_WRITECOMBINE; }
+
+	return Protect;
+}
+
 BOOLEAN MmInitSystem()
 {
 	ULONG RequiredPt = 2;
@@ -474,6 +497,14 @@ EXPORTNUM(170) VOID XBOXAPI MmDeleteKernelStack
 	MiFreeSystemMemory(StackBottom, StackSize);
 }
 
+EXPORTNUM(171) void NTAPI MmFreeContiguousMemory
+(
+	IN PVOID BaseAddress
+)
+{
+	RIP_UNIMPLEMENTED();
+}
+
 EXPORTNUM(172) ULONG XBOXAPI MmFreeSystemMemory
 (
 	PVOID BaseAddress,
@@ -481,6 +512,228 @@ EXPORTNUM(172) ULONG XBOXAPI MmFreeSystemMemory
 )
 {
 	return MiFreeSystemMemory(BaseAddress, NumberOfBytes);
+}
+
+EXPORTNUM(173) PHYSICAL_ADDRESS NTAPI MmGetPhysicalAddress
+(
+	PVOID Address
+)
+{
+	ULONG PAddr;
+
+	KIRQL OldIrql = MiLock();
+
+	PMMPTE PointerPte = GetPdeAddress(Address);
+	if ((PointerPte->Hw & PTE_VALID_MASK) == 0)
+	{ // invalid pde -> addr is invalid
+		PAddr = 0;
+		goto Exit;
+	}
+
+	if ((PointerPte->Hw & PTE_PAGE_LARGE_MASK) == 0)
+	{
+		PointerPte = GetPteAddress(Address);
+		if ((PointerPte->Hw & PTE_VALID_MASK) == 0)
+		{ // invalid pte -> addr is invalid
+			goto Exit;
+		}
+		PAddr = BYTE_OFFSET(Address); // valid pte -> addr is valid
+	}
+	else
+	{
+		PAddr = BYTE_OFFSET_LARGE(Address); // this is a large page, translate it immediately
+	}
+
+	PAddr += (PointerPte->Hw << PAGE_SHIFT);
+
+Exit:
+	MiUnlock(OldIrql);
+	return PAddr;
+}
+
+EXPORTNUM(174) PHYSICAL_ADDRESS NTAPI MmIsAddressValid
+(
+	PVOID Address
+)
+{
+	BOOLEAN IsValid = FALSE;
+
+	KIRQL OldIrql = MiLock();
+
+	PMMPTE PointerPte = GetPdeAddress(Address);
+	if ((PointerPte->Hw & PTE_VALID_MASK) == 0)
+	{ // invalid pde -> addr is invalid
+		IsValid = FALSE;
+		goto Exit;
+	}
+
+	if ((PointerPte->Hw & PTE_PAGE_LARGE_MASK) == 0)
+	{
+		PointerPte = GetPteAddress(Address);
+		if ((PointerPte->Hw & PTE_VALID_MASK) == 0)
+		{ // invalid pte -> addr is invalid
+			IsValid = FALSE;
+			goto Exit;
+		}
+		IsValid = TRUE;
+	}
+	else
+	{
+		IsValid = TRUE;
+	}
+
+Exit:
+	MiUnlock(OldIrql);
+	return IsValid;
+}
+
+// ******************************************************************
+// * 0x00AF - MmLockUnlockBufferPages()
+// ******************************************************************
+EXPORTNUM(175) void NTAPI MmLockUnlockBufferPages
+(
+	IN PVOID	        BaseAddress,
+	IN SIZE_T			NumberOfBytes,
+	IN BOOLEAN			UnlockPages
+)
+{
+	KIRQL OldIrql = MiLock();
+
+	if (!IS_PHYSICAL_ADDRESS(BaseAddress) && ((GetPdeAddress(BaseAddress)->Hw & PTE_PAGE_LARGE_MASK) == 0))
+	{
+		ULONG LockUnit = UnlockPages ? -PFN_LOCK_COUNT_UNIT : PFN_LOCK_COUNT_UNIT;
+
+		PMMPTE PointerPte = GetPteAddress(BaseAddress);
+		PMMPTE EndingPte = GetPteAddress((ULONG)BaseAddress + NumberOfBytes - 1);
+
+		while (PointerPte <= EndingPte)
+		{
+			assert(PointerPte->Hardware.Valid != 0);
+
+			PFN pfn = PointerPte->Hw >> PAGE_SHIFT;
+
+			if (pfn <= MiHighestPage)
+			{
+				PXBOX_PFN PfnEntry = GetPfnElement(pfn);
+
+				assert(PfnEntry->Busy.Busy != 0);
+
+				PfnEntry->Busy.LockCount += LockUnit;
+			}
+			PointerPte++;
+		}
+	}
+
+	MiUnlock(OldIrql);
+}
+
+EXPORTNUM(176) void NTAPI MmLockUnlockPhysicalPage
+(
+	IN ULONG_PTR PhysicalAddress,
+	IN BOOLEAN   UnlockPage
+)
+{
+	PFN pfn = PhysicalAddress >> PAGE_SHIFT;
+	
+	KIRQL OldIrql = MiLock();
+
+	PXBOX_PFN PfnEntry = GetPfnElement(pfn);
+
+	if (PfnEntry->Busy.BusyType != PageType::Contiguous && pfn <= MiHighestPage)
+	{
+		ULONG LockUnit = UnlockPage ? -PFN_LOCK_COUNT_UNIT : PFN_LOCK_COUNT_UNIT;
+
+		assert(PfnEntry->Busy.Busy != 0);
+
+		PfnEntry->Busy.LockCount += LockUnit;
+
+		assert(PfnEntry->Busy.LockCount < PFN_LOCK_COUNT_MAXIMUM);
+		assert(PfnEntry->Busy.LockCount > -PFN_LOCK_COUNT_MAXIMUM);
+	}
+
+	MiUnlock(OldIrql);
+}
+
+EXPORTNUM(178) void NTAPI MmPersistContiguousMemory
+(
+	IN PVOID   BaseAddress,
+	IN ULONG   NumberOfBytes,
+	IN BOOLEAN Persist
+)
+{
+	PMMPTE PointerPte;
+	PMMPTE EndingPte;
+
+	assert(IS_PHYSICAL_ADDRESS(addr)); // only contiguous memory can be made persistent
+
+	KIRQL OldIrql = MiLock();
+
+	PointerPte = GetPteAddress(BaseAddress);
+	EndingPte = GetPteAddress((CHAR*)BaseAddress + NumberOfBytes - 1);
+
+	if (Persist)
+	{
+		while (PointerPte <= EndingPte)
+		{
+			PointerPte->Hw |= PTE_PERSIST_MASK;
+			PointerPte++;
+		}
+	}
+	else
+	{
+		while (PointerPte <= EndingPte)
+		{
+			PointerPte->Hw &= ~PTE_PERSIST_MASK;
+			PointerPte++;
+		}
+	}
+
+	MiUnlock(OldIrql);
+}
+
+EXPORTNUM(179) ULONG NTAPI MmQueryAddressProtect
+(
+	IN PVOID VirtualAddress
+)
+{
+	DWORD Protect;
+
+	// This function can query any virtual address, even invalid ones, so we won't do any vma checks here
+
+	KIRQL OldIrql = MiLock();
+
+	PMMPTE PointerPde = GetPdeAddress(VirtualAddress);
+
+	if ((PointerPde->Hw & PTE_VALID_MASK) != 0)
+	{
+		if ((PointerPde->Hw & PTE_PAGE_LARGE_MASK) == 0)
+		{
+			PMMPTE PointerPte = GetPteAddress(VirtualAddress);
+
+			if (((PointerPde->Hw & PTE_VALID_MASK) != 0) 
+				|| ((PointerPte->Hw != 0)
+				&& ((ULONG)VirtualAddress <= HIGHEST_USER_ADDRESS)))
+			{
+				Protect = ConvertPteToXboxPermissions(PointerPte->Hw);
+			}
+			else
+			{
+				Protect = 0; // invalid page, return failure
+			}
+		}
+		else
+		{
+			Protect = ConvertPteToXboxPermissions(PointerPde->Hw); // large page, query it immediately
+		}
+	}
+	else
+	{
+		Protect = 0; // invalid page, return failure
+	}
+
+	MiUnlock(OldIrql);
+
+	return Protect;
 }
 
 EXPORTNUM(180) SIZE_T XBOXAPI MmQueryAllocationSize

@@ -39,6 +39,10 @@
 #define PFN_NUM_LISTS (1 << PFN_LIST_SHIFT)
 #define PFN_LIST_MASK (PFN_NUM_LISTS - 1)
 
+/* Lock count variables for the PFN database */
+#define PFN_LOCK_COUNT_UNIT             2
+#define PFN_LOCK_COUNT_MAXIMUM          0xFFFE
+
 using PFN = ULONG;
 using PFN_COUNT = ULONG;
 using PFN_NUMBER = ULONG;
