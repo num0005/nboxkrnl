@@ -593,6 +593,8 @@ using PKPCR = KPCR*;
 
 extern KPCR KiPcr;
 
+using PKFLOATING_SAVE = void*;
+
 #if defined(CONFIG_SMP)
 #define KeGetPcr()              ((KPCR *)__readfsdword(offsetof(KPCR, SelfPcr)))
 inline PKPRCB KeGetCurrentPrcb(VOID)
@@ -826,6 +828,11 @@ EXPORTNUM(123) LONG NTAPI KePulseEvent
 	IN BOOLEAN Wait
 );
 
+EXPORTNUM(124) KPRIORITY NTAPI KeQueryBasePriorityThread
+(
+	IN PKTHREAD Thread
+);
+
 EXPORTNUM(125) ULONGLONG XBOXAPI KeQueryInterruptTime();
 
 EXPORTNUM(126) ULONGLONG XBOXAPI KeQueryPerformanceCounter();
@@ -920,6 +927,11 @@ EXPORTNUM(138) LONG NTAPI KeResetEvent
 	IN PKEVENT Event
 );
 
+EXPORTNUM(139) NTSTATUS NTAPI KeRestoreFloatingPointState
+(
+	_In_ PKFLOATING_SAVE Save
+);
+
 EXPORTNUM(140) ULONG XBOXAPI KeResumeThread
 (
 	PKTHREAD Thread
@@ -928,6 +940,23 @@ EXPORTNUM(140) ULONG XBOXAPI KeResumeThread
 EXPORTNUM(141) PLIST_ENTRY NTAPI KeRundownQueue
 (
 	IN PKQUEUE Queue
+);
+
+EXPORTNUM(142) NTSTATUS NTAPI KeSaveFloatingPointState
+(
+	_Out_ PKFLOATING_SAVE Save
+);
+
+EXPORTNUM(143) LONG NTAPI KeSetBasePriorityThread
+(
+	IN PKTHREAD Thread,
+	IN LONG Increment
+);
+
+EXPORTNUM(144) BOOLEAN NTAPI KeSetDisableBoostThread
+(
+	IN OUT PKTHREAD Thread,
+	IN BOOLEAN Disable
 );
 
 EXPORTNUM(145) LONG XBOXAPI KeSetEvent
@@ -941,6 +970,12 @@ EXPORTNUM(146) VOID NTAPI KeSetEventBoostPriority
 (
 	IN PKEVENT Event,
 	IN PKTHREAD* WaitingThread OPTIONAL
+);
+
+EXPORTNUM(147) KPRIORITY NTAPI KeSetPriorityProcess
+(
+	IN PKPROCESS Process,
+	IN KPRIORITY BasePriority
 );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
@@ -965,10 +1000,32 @@ EXPORTNUM(150) BOOLEAN XBOXAPI KeSetTimerEx
 	PKDPC Dpc
 );
 
+EXPORTNUM(151) VOID NTAPI KeStallExecutionProcessor
+(
+	ULONG MicroSeconds
+);
+
 _IRQL_requires_max_(DISPATCH_LEVEL)
 EXPORTNUM(152) ULONG XBOXAPI KeSuspendThread
 (
 	PKTHREAD Thread
+);
+
+_Function_class_(KSYNCHRONIZE_ROUTINE)
+_IRQL_requires_same_
+typedef BOOLEAN
+(NTAPI KSYNCHRONIZE_ROUTINE)(
+	_In_ PVOID SynchronizeContext);
+typedef KSYNCHRONIZE_ROUTINE* PKSYNCHRONIZE_ROUTINE;
+
+/*
+ * @implemented
+ */
+EXPORTNUM(153) BOOLEAN NTAPI KeSynchronizeExecution
+(
+	IN OUT PKINTERRUPT Interrupt,
+	IN PKSYNCHRONIZE_ROUTINE SynchronizeRoutine,
+	IN PVOID SynchronizeContext OPTIONAL
 );
 
 EXPORTNUM(154) extern volatile KSYSTEM_TIME KeSystemTime;

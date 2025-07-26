@@ -12,8 +12,6 @@
 #include <assert.h>
 #include "hal.hpp"
 
-#define XBOX_ACPI_FREQUENCY 3375000 // 3.375 MHz
-
 static_assert(sizeof(IoInfoBlockOc) == 36);
 
 
@@ -68,17 +66,6 @@ EXPORTNUM(125) ULONGLONG XBOXAPI KeQueryInterruptTime()
 	}
 
 	return (ULONGLONG)InterruptTime.QuadPart;
-}
-
-EXPORTNUM(126) ULONGLONG XBOXAPI KeQueryPerformanceCounter()
-{		
-	// forward to HAL, this depends on what the target platform is (nxbx, hardware, etc)
-	return HalQueryPerformanceCounter();
-}
-
-EXPORTNUM(127) ULONGLONG XBOXAPI KeQueryPerformanceFrequency()
-{
-	return XBOX_ACPI_FREQUENCY;
 }
 
 // Source: Cxbx-Reloaded

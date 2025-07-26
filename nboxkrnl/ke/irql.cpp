@@ -185,3 +185,32 @@ EXPORTNUM(163) VOID FASTCALL KiUnlockDispatcherDatabase
 Quickie:
 	KeLowerIrql(OldIrql);
 }
+
+/*
+ * @implemented
+ */
+EXPORTNUM(153) BOOLEAN NTAPI KeSynchronizeExecution
+(
+	IN OUT PKINTERRUPT Interrupt,
+	IN PKSYNCHRONIZE_ROUTINE SynchronizeRoutine,
+	IN PVOID SynchronizeContext OPTIONAL
+)
+{
+	BOOLEAN Success;
+	KIRQL OldIrql;
+
+	/* Raise IRQL (guess, reactos uses a different INTERRUPT layout that doesn't have ) */
+	KeRaiseIrql(Interrupt->Irql,
+		&OldIrql);
+
+	// SMP: put in a lock here
+
+	/* Call the routine */
+	Success = SynchronizeRoutine(SynchronizeContext);
+
+	/* Lower IRQL */
+	KeLowerIrql(OldIrql);
+
+	/* Return status */
+	return Success;
+}

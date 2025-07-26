@@ -867,3 +867,194 @@ EXPORTNUM(238) NTSTATUS NTAPI NtYieldExecution(VOID)
 	KeLowerIrql(OldIrql);
 	return Status;
 }
+
+EXPORTNUM(147) KPRIORITY NTAPI KeSetPriorityProcess
+(
+	IN PKPROCESS Process,
+	IN KPRIORITY BasePriority
+)
+{
+	ASSERT_THREAD(Process);
+
+	// untested, but this function is useless anyways
+	Process->BasePriority = BasePriority;
+
+	return BasePriority;
+}
+
+static inline long abs(long val)
+{
+	return val < 0 ? -val : val;
+}
+
+/*
+ * @implemented
+ */
+EXPORTNUM(143) LONG NTAPI KeSetBasePriorityThread
+(
+	IN PKTHREAD Thread,
+	IN LONG Increment
+)
+{
+	KIRQL OldIrql;
+	KPRIORITY OldBasePriority, Priority, BasePriority;
+	LONG OldIncrement;
+	PKPROCESS Process;
+	ASSERT_THREAD(Thread);
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	/* Get the process */
+	Process = Thread->ApcState.Process;
+
+	/* Lock the Dispatcher Database */
+	OldIrql = KiAcquireDispatcherLock();
+
+	/* Lock the thread */
+	KiAcquireThreadLock(Thread);
+
+	/* Save the old base priority and increment */
+	OldBasePriority = Thread->BasePriority;
+	OldIncrement = OldBasePriority - Process->BasePriority;
+
+	/* If priority saturation happened, use the saturated increment */
+	if (Thread->Saturation) OldIncrement = (HIGH_PRIORITY + 1) / 2 *
+		Thread->Saturation;
+
+/* Reset the saturation value */
+	Thread->Saturation = 0;
+
+	/* Now check if saturation is being used for the new value */
+	if (abs(Increment) >= ((HIGH_PRIORITY + 1) / 2))
+	{
+		/* Check if we need positive or negative saturation */
+		Thread->Saturation = (Increment > 0) ? 1 : -1;
+	}
+
+	/* Normalize the Base Priority */
+	BasePriority = Process->BasePriority + Increment;
+	if (Process->BasePriority >= LOW_REALTIME_PRIORITY)
+	{
+		/* Check if it's too low */
+		if (BasePriority < LOW_REALTIME_PRIORITY)
+		{
+			/* Set it to the lowest real time level */
+			BasePriority = LOW_REALTIME_PRIORITY;
+		}
+
+		/* Check if it's too high */
+		if (BasePriority > HIGH_PRIORITY) BasePriority = HIGH_PRIORITY;
+
+		/* We are at real time, so use the raw base priority */
+		Priority = BasePriority;
+	}
+	else
+	{
+		/* Check if it's entering the real time range */
+		if (BasePriority >= LOW_REALTIME_PRIORITY)
+		{
+			/* Set it to the highest dynamic level */
+			BasePriority = LOW_REALTIME_PRIORITY - 1;
+		}
+
+		/* Check if it's too low and normalize it */
+		if (BasePriority <= LOW_PRIORITY) BasePriority = 1;
+
+		/* Check if Saturation is used */
+		if (Thread->Saturation)
+		{
+			/* Use the raw base priority */
+			Priority = BasePriority;
+		}
+		else
+		{
+			/* Otherwise, calculate the new priority */
+			Priority = KiComputeNewPriority(Thread, 0);
+			Priority += (BasePriority - OldBasePriority);
+
+			/* Check if it entered the real-time range */
+			if (Priority >= LOW_REALTIME_PRIORITY)
+			{
+				/* Normalize it down to the highest dynamic priority */
+				Priority = LOW_REALTIME_PRIORITY - 1;
+			}
+			else if (Priority <= LOW_PRIORITY)
+			{
+				/* It went too low, normalize it */
+				Priority = 1;
+			}
+		}
+	}
+
+	/* Finally set the new base priority */
+	Thread->BasePriority = (SCHAR)BasePriority;
+
+	/* Reset the decrements */
+	Thread->PriorityDecrement = 0;
+
+	/* Check if we're changing priority after all */
+	if (Priority != Thread->Priority)
+	{
+		/* Reset the quantum and do the actual priority modification */
+		Thread->Quantum = Process->ThreadQuantum;
+		KiSetPriorityThread(Thread, Priority);
+	}
+
+	/* Release thread lock */
+	KiReleaseThreadLock(Thread);
+
+	/* Release the dispatcher database and return old increment */
+	KiReleaseDispatcherLock(OldIrql);
+	return OldIncrement;
+}
+
+
+EXPORTNUM(144) BOOLEAN NTAPI KeSetDisableBoostThread
+(
+	IN OUT PKTHREAD Thread,
+	IN BOOLEAN Disable
+)
+{
+	ASSERT_THREAD(Thread);
+
+	BOOL OldBoostSetting = Thread->DisableBoost;
+
+	Thread->DisableBoost = Disable;
+	
+	return OldBoostSetting;
+}
+
+EXPORTNUM(124) KPRIORITY NTAPI KeQueryBasePriorityThread
+(
+	IN PKTHREAD Thread
+)
+{
+	LONG BaseIncrement;
+	KIRQL OldIrql;
+	PKPROCESS Process;
+	ASSERT_THREAD(Thread);
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	/* Raise IRQL to synch level */
+	OldIrql = KeRaiseIrqlToSynchLevel();
+
+	/* Lock the thread */
+	KiAcquireThreadLock(Thread);
+
+	/* Get the Process */
+	Process = Thread->ApcState.Process;
+
+	/* Calculate the base increment */
+	BaseIncrement = Thread->BasePriority - Process->BasePriority;
+
+	/* If saturation occured, return the saturation increment instead */
+	if (Thread->Saturation) BaseIncrement = (HIGH_PRIORITY + 1) / 2 *
+		Thread->Saturation;
+
+/* Release thread lock */
+	KiReleaseThreadLock(Thread);
+
+	/* Lower IRQl and return Increment */
+	KeLowerIrql(OldIrql);
+	return BaseIncrement;
+}
+

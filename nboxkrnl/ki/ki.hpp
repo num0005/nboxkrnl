@@ -27,6 +27,9 @@
 
 #define NUM_OF_THREAD_PRIORITIES 32
 
+#define XBOX_ACPI_FREQUENCY 3375000 // 3.375 MHz
+#define XBOX_ACPI_TICKS_PER_MS (((ULONG64)XBOX_ACPI_FREQUENCY)/1000)
+
 using KGDT = uint64_t;
 using KIDT = uint64_t;
 using KTSS = uint32_t[26];
