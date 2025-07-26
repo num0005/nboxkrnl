@@ -135,13 +135,6 @@ inline bool HalpIsDefinedTrayState(ULONG TrayState)
 }
 
 
-extern KDPC HalpSmbusDpcObject;
-extern NTSTATUS HalpSmbusStatus;
-extern BYTE HalpSmbusData[32];
-extern UCHAR HalpBlockAmount;
-extern KEVENT HalpSmbusLock;
-extern KEVENT HalpSmbusComplete;
-inline ULONG HalpSMCScratchRegister;
 
 // macro copied from reactos source code then modified to work in a header
 
@@ -190,6 +183,17 @@ HalpHwInt(12);
 HalpHwInt(13);
 HalpHwInt(14);
 HalpHwInt(15);
+
+inline KDPC HalpSmbusDpcObject;
+inline ULONG HalpSMCScratchRegister;
+inline struct SMBUS_CYCLE_INFO {
+	NTSTATUS Status;
+	BYTE Data[32];
+	UCHAR BlockAmount;
+	BOOLEAN IsWrite;
+	KEVENT EventLock;
+	KEVENT EventComplete;
+} HalpSmbusCycleInfo;
 
 VOID XBOXAPI HalpSwIntApc();
 VOID XBOXAPI HalpSwIntDpc();

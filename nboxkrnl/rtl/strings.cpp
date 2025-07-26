@@ -339,7 +339,8 @@ EXPORTNUM(267) NTSTATUS NTAPI RtlCharToInteger
 	return STATUS_SUCCESS;
 }
 
-EXPORTNUM(272) void NTAPI RtlCopyString
+// Source: Cxbx-Reloaded
+EXPORTNUM(272) void XBOXAPI RtlCopyString
 (
 	OUT PSTRING DestinationString,
 	IN PSTRING SourceString OPTIONAL

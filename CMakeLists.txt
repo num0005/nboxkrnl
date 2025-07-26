@@ -18,6 +18,21 @@ set(NBOXKRNL_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
+find_package(Git)
+if(Git_FOUND)
+ execute_process(
+  COMMAND git -C ${NBOXKRNL_ROOT_DIR} rev-parse HEAD
+  OUTPUT_VARIABLE NBOXKRNL_VERSION
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+ )
+ configure_file(
+  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/kernel_version.hpp.in" "${NBOXKRNL_ROOT_DIR}/nboxkrnl/kernel_version.hpp" @ONLY
+  NEWLINE_STYLE LF
+ )
+else ()
+ message(FATAL_ERROR "Git was not found")
+endif()
+
 add_compile_definitions(
  _PDCLIB_STATIC_DEFINE
  __STDC_NO_THREADS__
@@ -76,10 +91,11 @@ link_directories(
 
 file (GLOB HEADERS
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/kernel.hpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/kernel_version.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ntstatus.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/types.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/winerror.hpp"
- "${NBOXKRNL_ROOT_DIR}/nboxkrnl/av.hpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/av/av.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/dbg/dbg.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/ex.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/hal.hpp"
@@ -201,6 +217,7 @@ file (GLOB SOURCES
 
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/functions/string/memcmp.c"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/functions/string/memcpy.c"
+ "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/functions/string/memmove.c"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/functions/string/memset.c"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/functions/string/strcmp.c"
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/functions/string/strlen.c"
@@ -226,6 +243,7 @@ set_target_properties(nboxkrnl PROPERTIES
  /FIXED \
  /LARGEADDRESSAWARE \
  /NODEFAULTLIB \
+ /DEBUG:FULL \
  /INCREMENTAL:NO \
  /OPT:REF \
  /OPT:ICF \
@@ -246,5 +264,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} \
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} \
  /O2 \
  /MT \
+ /Zi \
  "
 )

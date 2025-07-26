@@ -9,5 +9,5 @@
 
 VOID XBOXAPI ExpDeleteMutant(PVOID Object)
 {
-	RIP_UNIMPLEMENTED();
+	KeReleaseMutant((PKMUTANT)Object, PRIORITY_BOOST_MUTANT, TRUE, FALSE);
 }

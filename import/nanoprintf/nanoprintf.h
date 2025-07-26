@@ -700,7 +700,7 @@ static int npf_bin_len(npf_uint_t u) {
   #endif
   #ifdef NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;
-    NPF_CLZ(&idx, u);
+    NPF_CLZ((unsigned int *)&idx, (unsigned int)u);
     return (int)(idx + 1);
   #endif
 #elif NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6

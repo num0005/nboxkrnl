@@ -642,7 +642,7 @@ EXPORTNUM(43) VOID XBOXAPI HalEnableSystemInterrupt
 		PicImr = HalpIntDisabled & 0xFF;
 	}
 
-	ElcrMask = inb(ElcrPort);
+	CurrElcr = inb(ElcrPort);
 
 	if (InterruptMode == Edge) {
 		CurrElcr &= ~ElcrMask;

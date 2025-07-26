@@ -15,6 +15,8 @@ static BOOLEAN ShutdownPending = FALSE;
 static DWORD CacheTrayState = TRAY_STATE_INVALID;
 static DWORD TrayStateChangedCount = 0;
 
+EXPORTNUM(356) ULONG HalBootSMCVideoMode = SMC_REG_AVPACK_NONE;
+
 VOID HalInitSystem()
 {
 	HalpInitPIC();
@@ -31,14 +33,14 @@ VOID HalInitSystem()
 	KeSetSystemTime(&SystemTime, &OldTime);
 
 	// Connect the PIT (clock) interrupt (NOTE: this will also enable interrupts)
-	KiIdt[IDT_INT_VECTOR_BASE + 0] = ((uint64_t)0x8 << 16) | ((uint64_t)&HalpClockIsr & 0x0000FFFF) | (((uint64_t)&HalpClockIsr & 0xFFFF0000) << 32) | ((uint64_t)0x8E00 << 32);
+	KiIdt[IDT_INT_VECTOR_BASE + 0] = BUILD_KIDT(HalpClockIsr);
 	HalEnableSystemInterrupt(0, Edge);
 
 	// Connect the SMBUS interrupt
-	KeInitializeEvent(&HalpSmbusLock, SynchronizationEvent, 1);
-	KeInitializeEvent(&HalpSmbusComplete, NotificationEvent, 0);
+	KeInitializeEvent(&HalpSmbusCycleInfo.EventLock, SynchronizationEvent, 1);
+	KeInitializeEvent(&HalpSmbusCycleInfo.EventComplete, NotificationEvent, 0);
 	KeInitializeDpc(&HalpSmbusDpcObject, HalpSmbusDpcRoutine, nullptr);
-	KiIdt[IDT_INT_VECTOR_BASE + 11] = ((uint64_t)0x8 << 16) | ((uint64_t)&HalpSmbusIsr & 0x0000FFFF) | (((uint64_t)&HalpSmbusIsr & 0xFFFF0000) << 32) | ((uint64_t)0x8E00 << 32);
+	KiIdt[IDT_INT_VECTOR_BASE + 11] = BUILD_KIDT(HalpSmbusIsr);
 	HalEnableSystemInterrupt(11, LevelSensitive);
 
 	HalpInitSMCstate();
@@ -129,17 +131,18 @@ EXPORTNUM(45) NTSTATUS XBOXAPI HalReadSMBusValue
 )
 {
 	KeEnterCriticalRegion(); // prevent suspending this thread while we hold the smbus lock below
-	KeWaitForSingleObject(&HalpSmbusLock, Executive, KernelMode, FALSE, nullptr); // prevent concurrent smbus cycles
+	KeWaitForSingleObject(&HalpSmbusCycleInfo.EventLock, Executive, KernelMode, FALSE, nullptr); // prevent concurrent smbus cycles
 
-	HalpBlockAmount = 0;
+	HalpSmbusCycleInfo.IsWrite = FALSE;
+	HalpSmbusCycleInfo.BlockAmount = 0;
 	HalpExecuteReadSmbusCycle(SlaveAddress, CommandCode, ReadWordValue);
 
-	KeWaitForSingleObject(&HalpSmbusComplete, Executive, KernelMode, FALSE, nullptr); // wait until the cycle is completed by the dpc
+	KeWaitForSingleObject(&HalpSmbusCycleInfo.EventComplete, Executive, KernelMode, FALSE, nullptr); // wait until the cycle is completed by the dpc
 
-	NTSTATUS Status = HalpSmbusStatus;
-	*DataValue = *(PULONG)HalpSmbusData;
+	NTSTATUS Status = HalpSmbusCycleInfo.Status;
+	*DataValue = ReadWordValue ? *PUSHORT(HalpSmbusCycleInfo.Data) : *PBYTE(HalpSmbusCycleInfo.Data);
 
-	KeSetEvent(&HalpSmbusLock, 0, FALSE);
+	KeSetEvent(&HalpSmbusCycleInfo.EventLock, 0, FALSE);
 	KeLeaveCriticalRegion();
 
 	return Status;
@@ -251,22 +254,21 @@ EXPORTNUM(50) NTSTATUS XBOXAPI HalWriteSMBusValue
 )
 {
 	KeEnterCriticalRegion(); // prevent suspending this thread while we hold the smbus lock below
-	KeWaitForSingleObject(&HalpSmbusLock, Executive, KernelMode, FALSE, nullptr); // prevent concurrent smbus cycles
+	KeWaitForSingleObject(&HalpSmbusCycleInfo.EventLock, Executive, KernelMode, FALSE, nullptr); // prevent concurrent smbus cycles
 
-	HalpBlockAmount = 0;
+	HalpSmbusCycleInfo.IsWrite = TRUE;
+	HalpSmbusCycleInfo.BlockAmount = 0;
 	HalpExecuteWriteSmbusCycle(SlaveAddress, CommandCode, WriteWordValue, DataValue);
 
-	KeWaitForSingleObject(&HalpSmbusComplete, Executive, KernelMode, FALSE, nullptr); // wait until the cycle is completed by the dpc
+	KeWaitForSingleObject(&HalpSmbusCycleInfo.EventComplete, Executive, KernelMode, FALSE, nullptr); // wait until the cycle is completed by the dpc
 
-	NTSTATUS Status = HalpSmbusStatus;
+	NTSTATUS Status = HalpSmbusCycleInfo.Status;
 
-	KeSetEvent(&HalpSmbusLock, 0, FALSE);
+	KeSetEvent(&HalpSmbusCycleInfo.EventLock, 0, FALSE);
 	KeLeaveCriticalRegion();
 
 	return Status;
 }
-
-EXPORTNUM(356) ULONG HalBootSMCVideoMode = SMC_REG_AVPACK_NONE;
 
 _IRQL_requires_min_(DISPATCH_LEVEL)
 NTSTATUS NTAPI HalpRunShutdownRoutines

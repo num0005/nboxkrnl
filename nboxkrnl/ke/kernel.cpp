@@ -8,6 +8,7 @@
 #include "ki.hpp"
 #include "ex.hpp"
 #include "..\kernel.hpp"
+#include "..\kernel_version.hpp"
 #include <assert.h>
 #include "hal.hpp"
 
@@ -17,6 +18,7 @@ static_assert(sizeof(IoInfoBlockOc) == 36);
 
 
 static LONG IoHostFileHandle = FIRST_FREE_HANDLE;
+const char *NboxkrnlVersion = NBOXKRNL_VERSION;
 
 XBOX_KEY_DATA XboxCERTKey;
 
