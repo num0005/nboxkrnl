@@ -8,6 +8,7 @@
 #include "ke.hpp"
 #include "ob.hpp"
 #include "ex.hpp"
+#include "nt.hpp"
 
 
 #ifdef __cplusplus
@@ -49,3 +50,9 @@ EXPORTNUM(259) extern OBJECT_TYPE PsThreadObjectType;
 #endif
 
 BOOLEAN PsInitSystem();
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+inline PETHREAD NTAPI PsGetCurrentThread(VOID)
+{
+	return (PETHREAD)KeGetCurrentThread();
+}
