@@ -395,13 +395,14 @@ EXPORTNUM(248) NTSTATUS XBOXAPI ObReferenceObjectByPointer
 	return STATUS_OBJECT_TYPE_MISMATCH;
 }
 
-EXPORTNUM(250) VOID FASTCALL ObfDereferenceObject
+EXPORTNUM(250) ULONG FASTCALL ObfDereferenceObject
 (
 	PVOID Object
 )
 {
 	POBJECT_HEADER Obj = GetObjHeader(Object);
-	if (InterlockedDecrement(&Obj->PointerCount) == 0) {
+	ULONG NewCount = InterlockedDecrement(&Obj->PointerCount);
+	if (NewCount == 0) {
 		if (Obj->Type->DeleteProcedure) {
 			Obj->Type->DeleteProcedure(Object); // performs object-specific cleanup
 		}
@@ -414,6 +415,7 @@ EXPORTNUM(250) VOID FASTCALL ObfDereferenceObject
 			Obj->Type->FreeProcedure(Obj);
 		}
 	}
+	return NewCount;
 }
 
 EXPORTNUM(251) VOID FASTCALL ObfReferenceObject

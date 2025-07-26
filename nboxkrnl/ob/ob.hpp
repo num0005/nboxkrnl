@@ -5,6 +5,7 @@
 #pragma once
 
 #include "..\types.hpp"
+#include "rtl_assert.hpp"
 
 
 #define OB_HANDLES_PER_TABLE_SHIFT   6
@@ -194,7 +195,8 @@ EXPORTNUM(248) NTSTATUS XBOXAPI ObReferenceObjectByPointer
 
 EXPORTNUM(249) extern OBJECT_TYPE ObSymbolicLinkObjectType;
 
-EXPORTNUM(250) VOID FASTCALL ObfDereferenceObject
+// difference from xbox: function returns new count since this is free, this does not matter when it comes to calling convetions
+EXPORTNUM(250) ULONG FASTCALL ObfDereferenceObject
 (
 	PVOID Object
 );
@@ -204,6 +206,20 @@ inline static VOID ObDereferenceObject(IN PVOID Object)
 	/* Call the fastcall function */
 	ObfDereferenceObject(Object);
 }
+
+inline static VOID ObDereferenceObjectEx(IN PVOID Object, IN ULONG DecreaseBy)
+{
+	// basic implementation that ignores possible optimizations
+	while (DecreaseBy)
+	{
+		if (!ObfDereferenceObject(Object))
+			break;
+		DecreaseBy--;
+	}
+	// assert if the count given was wrong
+	NT_ASSERT(DecreaseBy == 0);
+}
+
 
 EXPORTNUM(251) VOID FASTCALL ObfReferenceObject
 (
