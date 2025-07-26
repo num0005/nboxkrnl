@@ -14,6 +14,8 @@
 #include <string.h>
 #include <assert.h>
 
+#define ASSERT_THREAD(THREAD) NT_ASSERT(THREAD != NULL)
+
 
 VOID XBOXAPI KiSuspendNop(PKAPC Apc, PKNORMAL_ROUTINE *NormalRoutine, PVOID *NormalContext, PVOID *SystemArgument1, PVOID *SystemArgument2) {}
 
@@ -549,7 +551,7 @@ EXPORTNUM(152) ULONG XBOXAPI KeSuspendThread
 	PKTHREAD Thread
 )
 {
-	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+	ASSERT_IRQL_LESS_OR_EQUAL(SYNCH_LEVEL);
 	// SMP: add per-thread APC lock
 	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
 
@@ -695,7 +697,7 @@ EXPORTNUM(93) BOOLEAN NTAPI KeAlertThread
 {
 	BOOLEAN PreviousState;
 	//KLOCK_QUEUE_HANDLE ApcLock;
-	//ASSERT_THREAD(Thread);
+	ASSERT_THREAD(Thread);
 	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
 
 	// SMP: add APC lock here
@@ -744,6 +746,7 @@ EXPORTNUM(94) VOID NTAPI KeBoostPriorityThread
 	KIRQL OldIrql;
 	KPRIORITY Priority;
 	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+	ASSERT_THREAD(Thread);
 
 	/* Lock the Dispatcher Database */
 	OldIrql = KiAcquireDispatcherLock();
