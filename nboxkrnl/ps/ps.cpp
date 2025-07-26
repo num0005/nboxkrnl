@@ -190,3 +190,73 @@ EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
 
 	KeBugCheckLogEip(NORETURN_FUNCTION_RETURNED);
 }
+
+
+EXPORTNUM(231) NTSTATUS NTAPI NtSuspendThread
+(
+	IN  HANDLE  ThreadHandle,
+	OUT PULONG  PreviousSuspendCount OPTIONAL
+)
+{
+	/* get a reference to the thread object */
+	PETHREAD Thread;
+	NTSTATUS Status = ObReferenceObjectByHandle(ThreadHandle, &PsThreadObjectType, reinterpret_cast<PVOID*>(&Thread));
+
+	if (!NT_SUCCESS(Status))
+		return Status;
+
+	// TODO: reactos uses rundown protection here, see PsSuspendThread in reactos source code
+	// essentially it seems that if we are supending another thread we need to handle the case where another thread at the same time tries to terminate the thread
+	// we just raise the IRQL to a level high enough that we cannot be preempted
+	KIRQL OldIrql = KfRaiseIrql(SYNCH_LEVEL);
+
+	/* we hold a reference now */
+
+	if (Thread != PsGetCurrentThread()) {
+		if (Thread->Tcb.HasTerminated) {
+			ObfDereferenceObject(Thread);
+			return STATUS_THREAD_IS_TERMINATING;
+		}
+	}
+
+	ULONG PrevSuspendCount = KeSuspendThread(&Thread->Tcb);
+
+	// HACK: see above
+	KfLowerIrql(OldIrql);
+
+	ObfDereferenceObject(Thread);
+	if (PrevSuspendCount == STATUS_SUSPEND_COUNT_EXCEEDED) {
+		return STATUS_SUSPEND_COUNT_EXCEEDED;
+	}
+
+	if (PreviousSuspendCount) {
+		*PreviousSuspendCount = PrevSuspendCount;
+	}
+
+	return STATUS_SUCCESS;
+}
+
+EXPORTNUM(224) NTSTATUS NTAPI NtResumeThread
+(
+	IN  HANDLE  ThreadHandle,
+	OUT PULONG  PreviousSuspendCount OPTIONAL
+)
+{
+	/*
+	* No need for rundown protection here since we don't need to avoid resuming a terminating thread (only suspending)
+	*/
+	PETHREAD Thread;
+	NTSTATUS Status = ObReferenceObjectByHandle(ThreadHandle, &PsThreadObjectType, reinterpret_cast<PVOID*>(&Thread));
+
+	if (!NT_SUCCESS(Status))
+		return Status;
+
+	ULONG PrevSuspendCount = KeResumeThread(&Thread->Tcb);
+	ObfDereferenceObject(Thread);
+
+	if (PreviousSuspendCount) {
+		*PreviousSuspendCount = PrevSuspendCount;
+	}
+
+	return STATUS_SUCCESS;
+}

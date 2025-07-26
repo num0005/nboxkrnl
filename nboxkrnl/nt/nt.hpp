@@ -133,6 +133,18 @@ EXPORTNUM(221) NTSTATUS XBOXAPI NtReleaseMutant
 	PLONG PreviousCount
 );
 
+EXPORTNUM(224) NTSTATUS NTAPI NtResumeThread
+(
+	IN  HANDLE  ThreadHandle,
+	OUT PULONG  PreviousSuspendCount OPTIONAL
+);
+
+EXPORTNUM(231) NTSTATUS NTAPI NtSuspendThread
+(
+	IN  HANDLE  ThreadHandle,
+	OUT PULONG  PreviousSuspendCount OPTIONAL
+);
+
 EXPORTNUM(232) VOID XBOXAPI NtUserIoApcDispatcher
 (
 	PVOID ApcContext,
