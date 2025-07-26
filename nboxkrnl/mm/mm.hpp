@@ -254,6 +254,13 @@ EXPORTNUM(181) NTSTATUS XBOXAPI MmQueryStatistics
 	PMM_STATISTICS MemoryStatistics
 );
 
+EXPORTNUM(182) void XBOXAPI MmSetAddressProtect
+(
+	IN PVOID BaseAddress,
+	IN ULONG NumberOfBytes,
+	IN ULONG NewProtect
+);
+
 EXPORTNUM(183) VOID NTAPI MmUnmapIoSpace
 (
 	IN PVOID BaseAddress,
