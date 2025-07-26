@@ -51,8 +51,21 @@
 
 #define MAXIMUM_SUSPEND_COUNT 0x7F
 
-#define IO_NO_INCREMENT        0
-#define THREAD_ALERT_INCREMENT 2
+#define EVENT_INCREMENT                   1
+#define IO_NO_INCREMENT                   0
+#define IO_CD_ROM_INCREMENT               1
+#define IO_DISK_INCREMENT                 1
+#define IO_KEYBOARD_INCREMENT             6
+#define IO_MAILSLOT_INCREMENT             2
+#define IO_MOUSE_INCREMENT                6
+#define IO_NAMED_PIPE_INCREMENT           2
+#define IO_NETWORK_INCREMENT              2
+#define IO_PARALLEL_INCREMENT             1
+#define IO_SERIAL_INCREMENT               2
+#define IO_SOUND_INCREMENT                8
+#define IO_VIDEO_INCREMENT                1
+#define SEMAPHORE_INCREMENT               1
+#define THREAD_ALERT_INCREMENT            2
 
 //
 // EFlags (x86)
@@ -922,6 +935,12 @@ EXPORTNUM(145) LONG XBOXAPI KeSetEvent
 	PKEVENT Event,
 	KPRIORITY Increment,
 	BOOLEAN	Wait
+);
+
+EXPORTNUM(146) VOID NTAPI KeSetEventBoostPriority
+(
+	IN PKEVENT Event,
+	IN PKTHREAD* WaitingThread OPTIONAL
 );
 
 _IRQL_requires_max_(DISPATCH_LEVEL)
