@@ -7,11 +7,16 @@
 #include "hal.hpp"
 #include "rtl.hpp"
 
+#define ASSERT_APC(APC) NT_ASSERT(APC != NULL); NT_ASSERT((APC)->ApcMode >= 0  && (APC)->ApcMode < MODE::MaximumMode);
+#define KiAcquireApcLockRaiseToSynch(Thread, ApcLock) (ApcLock)->OldIRQL = KeRaiseIrqlToSynchLevel();
+#define KiReleaseApcLock(ApcLock) KfLowerIrql((ApcLock)->OldIRQL)
+
 
 BOOLEAN FASTCALL KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment)
 {
 	BOOLEAN Inserted = FALSE;
 	PKTHREAD Thread = Apc->Thread;
+	ASSERT_APC(Apc);
 
 	if (!Apc->Inserted) {
 		if (Apc->NormalRoutine) {
@@ -19,6 +24,7 @@ BOOLEAN FASTCALL KiInsertQueueApc(PKAPC Apc, KPRIORITY Increment)
 			InsertTailList(&Thread->ApcState.ApcListHead[Apc->ApcMode], &Apc->ApcListEntry);
 		}
 		else {
+			NT_ASSERT(Apc->ApcMode == KernelMode);
 			// This is a special kernel APC. These are added at the head of ApcListHead, before all other normal kernel APCs
 			PLIST_ENTRY Entry = Thread->ApcState.ApcListHead[KernelMode].Flink;
 			while (Entry != &Thread->ApcState.ApcListHead[KernelMode]) {
@@ -156,6 +162,7 @@ EXPORTNUM(105) VOID XBOXAPI KeInitializeApc
 )
 {
 	Apc->Type = ApcObject;
+	Apc->ApcStateIndex = 0; 
 	Apc->ApcMode = ApcMode;
 	Apc->Inserted = FALSE;
 	Apc->Thread = Thread;
@@ -201,4 +208,69 @@ EXPORTNUM(122) VOID XBOXAPI KeLeaveCriticalRegion()
 		Thread->ApcState.KernelApcPending = TRUE;
 		HalRequestSoftwareInterrupt(APC_LEVEL);
 	}
+}
+
+/*++
+ * @name KeRemoveQueueApc
+ * @implemented NT4
+ *
+ *     The KeRemoveQueueApc routine removes a given APC object from the system
+ *     APC queue.
+ *
+ * @param Apc
+ *         Pointer to an initialized APC object that was queued by calling
+ *         KeInsertQueueApc.
+ *
+ * @return TRUE if the APC Object is in the APC Queue. Otherwise, no operation
+ *         is performed and FALSE is returned.
+ *
+ * @remarks If the given APC Object is currently queued, it is removed from the
+ *          queue and any calls to the registered routines are cancelled.
+ *
+ *          Callers of this routine must be running at IRQL <= DISPATCH_LEVEL.
+ *
+ *--*/
+BOOLEAN NTAPI KeRemoveQueueApc(IN PKAPC Apc)
+{
+	PKTHREAD Thread = Apc->Thread;
+	BOOLEAN Inserted;
+	KLOCK_QUEUE_HANDLE ApcLock;
+	ASSERT_APC(Apc);
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	/* Get the APC lock (this raises IRQL to SYNCH_LEVEL) */
+	KiAcquireApcLockRaiseToSynch(Thread, &ApcLock);
+
+	/* Check if it's inserted */
+	Inserted = Apc->Inserted;
+	if (Inserted)
+	{
+		/* Set it as non-inserted and get the APC state */
+		Apc->Inserted = FALSE;
+		//ApcState = Thread->ApcStatePointer[(UCHAR)Apc->ApcStateIndex];
+
+		/* Acquire the dispatcher lock and remove it from the list */
+		KiAcquireDispatcherLockAtSynchLevel();
+		if (RemoveEntryList(&Apc->ApcListEntry))
+		{
+			/* Set the correct state based on the APC Mode */
+			if (Apc->ApcMode == KernelMode)
+			{
+				/* No more pending kernel APCs */
+				Thread->ApcState.KernelApcPending = FALSE;
+			}
+			else
+			{
+				/* No more pending user APCs */
+				Thread->ApcState.UserApcPending = FALSE;
+			}
+		}
+
+		/* Release dispatcher lock */
+		KiReleaseDispatcherLockFromSynchLevel();
+	}
+
+	/* Release the lock and return */
+	KiReleaseApcLock(&ApcLock);
+	return Inserted;
 }

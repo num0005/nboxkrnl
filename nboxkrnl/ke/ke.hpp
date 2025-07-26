@@ -286,6 +286,7 @@ struct KAPC {
 	PVOID NormalContext;
 	PVOID SystemArgument1;
 	PVOID SystemArgument2;
+	// might be zero on xbox? todo: test with original software, apcstateindex is used for handling threads being attached to a different process
 	CCHAR ApcStateIndex;
 	KPROCESSOR_MODE ApcMode;
 	BOOLEAN Inserted;
@@ -851,6 +852,35 @@ EXPORTNUM(136) PLIST_ENTRY NTAPI KeRemoveQueue
 	IN KPROCESSOR_MODE WaitMode,
 	IN PLARGE_INTEGER Timeout OPTIONAL
 );
+
+EXPORTNUM(137) BOOLEAN NTAPI KeRemoveQueueDpc
+(
+	IN PKDPC Dpc
+);
+
+/*++
+ * @name KeRemoveQueueApc
+ * @implemented NT4
+ *
+ *     The KeRemoveQueueApc routine removes a given APC object from the system
+ *     APC queue.
+ *
+ * @param Apc
+ *         Pointer to an initialized APC object that was queued by calling
+ *         KeInsertQueueApc.
+ *
+ * @return TRUE if the APC Object is in the APC Queue. Otherwise, no operation
+ *         is performed and FALSE is returned.
+ *
+ * @remarks If the given APC Object is currently queued, it is removed from the
+ *          queue and any calls to the registered routines are cancelled.
+ *
+ *          Callers of this routine must be running at IRQL <= DISPATCH_LEVEL.
+ *
+ *--*/
+BOOLEAN NTAPI KeRemoveQueueApc(IN PKAPC Apc);
+
+void KeFlushQueuedDpcs();
 
 EXPORTNUM(138) LONG NTAPI KeResetEvent
 (
