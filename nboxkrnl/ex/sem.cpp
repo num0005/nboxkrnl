@@ -9,8 +9,6 @@
 
 /* INCLUDES *****************************************************************/
 
-#pragma message ( "C Preprocessor got here! 0" )
-
 #include "ke.hpp"
 #include "ex.hpp"
 
