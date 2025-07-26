@@ -10,15 +10,13 @@
 
 VOID MiFlushEntireTlb()
 {
-	ASM_BEGIN
-		ASM(mov eax, cr3);
-		ASM(mov cr3, eax);
-	ASM_END
+	/* Flush the TLB by resetting CR3 */
+	__writecr3(__readcr3());
 }
 
 VOID MiFlushTlbForPage(PVOID Addr)
 {
-	ASM(invlpg Addr);
+	__invlpg(Addr);
 }
 
 PageType MiInsertPageInFreeListNoBusy(PFN_NUMBER Pfn)

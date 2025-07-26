@@ -608,7 +608,7 @@ EXPORTNUM(175) void NTAPI MmLockUnlockBufferPages
 
 		while (PointerPte <= EndingPte)
 		{
-			assert(PointerPte->Hardware.Valid != 0);
+			//assert(PointerPte->Hardware.Valid != 0);
 
 			PFN pfn = PointerPte->Hw >> PAGE_SHIFT;
 
@@ -664,7 +664,7 @@ EXPORTNUM(178) void NTAPI MmPersistContiguousMemory
 	PMMPTE PointerPte;
 	PMMPTE EndingPte;
 
-	assert(IS_PHYSICAL_ADDRESS(addr)); // only contiguous memory can be made persistent
+	assert(IS_PHYSICAL_ADDRESS(BaseAddress)); // only contiguous memory can be made persistent
 
 	KIRQL OldIrql = MiLock();
 

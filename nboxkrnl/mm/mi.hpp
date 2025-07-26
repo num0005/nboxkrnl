@@ -127,7 +127,9 @@ enum PageType {
 
 // Various macros to manipulate PDE/PTE/PFN
 #define GetPteBlockSize(Pte) (*((PULONG)(Pte) + 1))
+/*  Maps the virtual address to the corresponding PDE */
 #define GetPdeAddress(Va) ((PMMPTE)(((((ULONG)(Va)) >> 22) << 2) + PAGE_DIRECTORY_BASE)) // (Va/4M) * 4 + PDE_BASE
+/* Maps the virtual address to the corresponding PTE */
 #define GetPteAddress(Va) ((PMMPTE)(((((ULONG)(Va)) >> 12) << 2) + PAGE_TABLES_BASE))    // (Va/4K) * 4 + PTE_BASE
 #define GetVAddrMappedByPte(Pte) ((ULONG)((ULONG_PTR)(Pte) << 10))
 #define GetPteOffset(Va) ((((ULONG)(Va)) << 10) >> 22)
@@ -147,6 +149,24 @@ enum PageType {
 #define EncodeFreePfn(PfnIdx) ((USHORT)((USHORT)(PfnIdx) >> (USHORT)PFN_LIST_SHIFT))
 #define DecodeFreePfn(PfnIdx, Idx) ((USHORT)(((USHORT)(PfnIdx) << (USHORT)PFN_LIST_SHIFT) + (USHORT)Idx))
 #define GetPfnListIdx(Pfn) ((Pfn) & PFN_LIST_MASK)
+
+/* Maps the virtual address to the corresponding PTE (reactos compat) */
+#define MiAddressToPte(Va) GetPteAddress(Va)
+
+/*  Maps the virtual address to the corresponding PDE (reactos compat) */
+#define MiAddressToPde(Va) GetPdeAddress(Va)
+
+/* Easy accessing PFN in PTE (reactos compat) */
+#define PFN_FROM_PTE(v) ((ULONG)(v) >> PAGE_SHIFT)
+
+/* ULONG
+ * ADDRESS_AND_SIZE_TO_SPAN_PAGES(
+ *     _In_ PVOID Va,
+ *     _In_ ULONG Size)
+ */
+#define ADDRESS_AND_SIZE_TO_SPAN_PAGES(_Va, _Size) \
+  ((ULONG) ((((ULONG_PTR) (_Va) & (PAGE_SIZE - 1)) \
+    + (_Size) + (PAGE_SIZE - 1)) >> PAGE_SHIFT))
 
 // Macros to ensure thread safety
 #define MiLock() KeRaiseIrqlToDpcLevel()
@@ -189,6 +209,24 @@ inline ULONG MiVirtualMemoryBytesReserved = 0;
 
 #define VadLock() RtlEnterCriticalSectionAndRegion(&MiVadLock)
 #define VadUnlock() RtlLeaveCriticalSectionAndRegion(&MiVadLock)
+
+inline PXBOX_PFN MiGetPfnEntry(IN PFN_NUMBER Pfn)
+{
+	PXBOX_PFN Page;
+	//extern RTL_BITMAP MiPfnBitMap;
+
+	/* Make sure the PFN number is valid */
+	if (Pfn > MiHighestPage) return NULL;
+
+	/* Make sure this page actually has a PFN entry */
+	//if ((MiPfnBitMap.Buffer) && !(RtlTestBit(&MiPfnBitMap, (ULONG)Pfn))) return NULL;
+
+	/* Get the entry */
+	Page = GetPfnElement(Pfn);
+
+	/* Return it */
+	return Page;
+};
 
 VOID MiFlushEntireTlb();
 VOID MiFlushTlbForPage(PVOID Addr);
