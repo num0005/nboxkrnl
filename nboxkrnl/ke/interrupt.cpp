@@ -53,7 +53,7 @@ EXPORTNUM(98) BOOLEAN XBOXAPI KeConnectInterrupt
 )
 {
 	/* Validate the settings */
-	NT_ASSERT(InterruptObject->Irql <= HIGH_LEVE);
+	NT_ASSERT(InterruptObject->Irql <= HIGH_LEVEL);
 	NT_ASSERT(InterruptObject->BusInterruptLevel < 16);
 	NT_ASSERT(IDT_INT_VECTOR_BASE + InterruptObject->BusInterruptLevel < 64);
 
@@ -80,7 +80,7 @@ EXPORTNUM(100) BOOLEAN XBOXAPI KeDisconnectInterrupt
 )
 {
 	/* Validate the settings */
-	NT_ASSERT(InterruptObject->Irql <= HIGH_LEVE);
+	NT_ASSERT(InterruptObject->Irql <= HIGH_LEVEL);
 	NT_ASSERT(InterruptObject->BusInterruptLevel < 16);
 	NT_ASSERT(IDT_INT_VECTOR_BASE + InterruptObject->BusInterruptLevel < 64);
 

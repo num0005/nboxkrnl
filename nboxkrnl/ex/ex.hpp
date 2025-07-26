@@ -330,34 +330,45 @@ EXPORTNUM(58) PSLIST_ENTRY FASTCALL InterlockedPushEntrySList
 	_Inout_ __drv_aliasesMem PSLIST_ENTRY SListEntry
 );
 
-NTSTATUS
-NTAPI
-NtCreateSemaphore(OUT PHANDLE SemaphoreHandle,
+EXPORTNUM(185) NTSTATUS NTAPI NtCancelTimer
+(
+	IN HANDLE TimerHandle,
+	OUT BOOLEAN* CurrentState OPTIONAL
+);
+
+EXPORTNUM(193) NTSTATUS NTAPI NtCreateSemaphore
+(
+	OUT PHANDLE SemaphoreHandle,
 	IN POBJECT_ATTRIBUTES ObjectAttributes OPTIONAL,
 	IN LONG InitialCount,
-	IN LONG MaximumCount);
+	IN LONG MaximumCount
+);
 
-NTSTATUS
-NTAPI
-NtOpenSemaphore(OUT PHANDLE SemaphoreHandle,
-	IN POBJECT_ATTRIBUTES ObjectAttributes);
-
-NTSTATUS
-NTAPI
-NtQuerySemaphore(IN HANDLE SemaphoreHandle,
-	OUT PSEMAPHORE_BASIC_INFORMATION BasicInfo);
-
-NTSTATUS
-NTAPI
-NtReleaseSemaphore(IN HANDLE SemaphoreHandle,
-	IN LONG ReleaseCount,
-	OUT PLONG PreviousCount OPTIONAL);
-
-NTSTATUS
-NTAPI
-NtCreateTimer(OUT PHANDLE TimerHandle,
+EXPORTNUM(194) NTSTATUS NTAPI NtCreateTimer
+(
+	OUT PHANDLE TimerHandle,
 	IN POBJECT_ATTRIBUTES ObjectAttributes OPTIONAL,
-	IN TIMER_TYPE TimerType);
+	IN TIMER_TYPE TimerType
+);
+
+NTSTATUS NTAPI NtOpenSemaphore
+(
+	OUT PHANDLE SemaphoreHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+);
+
+EXPORTNUM(214) NTSTATUS NTAPI NtQuerySemaphore
+(
+	IN HANDLE SemaphoreHandle,
+	OUT PSEMAPHORE_BASIC_INFORMATION BasicInfo
+);
+
+EXPORTNUM(222) NTSTATUS NTAPI NtReleaseSemaphore
+(
+	IN HANDLE SemaphoreHandle,
+	IN LONG ReleaseCount,
+	OUT PLONG PreviousCount OPTIONAL
+);
 
 #ifdef __cplusplus
 }
