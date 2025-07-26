@@ -54,6 +54,26 @@
 #define IO_NO_INCREMENT        0
 #define THREAD_ALERT_INCREMENT 2
 
+//
+// EFlags (x86)
+//
+#define EFLAGS_CF               0x01L
+#define EFLAGS_ZF               0x40L
+#define EFLAGS_TF               0x100L
+#define EFLAGS_INTERRUPT_MASK   0x200L
+#define EFLAGS_DF               0x400L
+#define EFLAGS_IOPL             0x3000L
+#define EFLAGS_NESTED_TASK      0x4000L
+#define EFLAGS_RF               0x10000
+#define EFLAGS_V86_MASK         0x20000
+#define EFLAGS_ALIGN_CHECK      0x40000
+#define EFLAGS_VIF              0x80000
+#define EFLAGS_VIP              0x100000
+#define EFLAGS_ID               0x200000
+#define EFLAGS_USER_SANITIZE    0x3F4DD7
+#define EFLAG_SIGN              0x8000
+#define EFLAG_ZERO              0x4000
+
 // These macros (or equivalent assembly code) should be used to access the members of KiPcr when the irql is below dispatch level, to make sure that
 // the accesses are atomic and thus thread-safe
 #define KeGetStackBase(var) \
@@ -1091,4 +1111,25 @@ struct KLOCK_QUEUE_HANDLE
 {
 	KIRQL OldIRQL;
 };
+
+/* Diable interrupts and return whether they were enabled before */
+static inline BOOLEAN KeDisableInterrupts()
+{
+	ULONG Flags;
+	BOOLEAN Return;
+
+	/* Get EFLAGS and check if the interrupt bit is set */
+	Flags = __readeflags();
+	Return = (Flags & EFLAGS_INTERRUPT_MASK) ? TRUE : FALSE;
+
+	/* Disable interrupts */
+	_disable();
+	return Return;
+}
+
+/* Restore previous interrupt state */
+static inline void KeRestoreInterrupts(BOOLEAN WereEnabled)
+{
+	if (WereEnabled) _enable();
+}
 
