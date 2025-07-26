@@ -33,6 +33,9 @@ add_compile_definitions(
  _X86_=1
 )
 
+add_compile_options("$<$<CONFIG:DEBUG>:-DDBG>")
+
+
 add_compile_options(
  /GS-
  /GR-
@@ -51,6 +54,7 @@ include_directories(
  "${NBOXKRNL_ROOT_DIR}/import/nanopdclib/platform/xbox/include"
  "${NBOXKRNL_ROOT_DIR}/import/nanoprintf"
  "${NBOXKRNL_ROOT_DIR}/import/reactos/sdk/include/vcruntime"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/av"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/dbg"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal"
@@ -75,6 +79,7 @@ file (GLOB HEADERS
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ntstatus.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/types.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/winerror.hpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/av.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/dbg/dbg.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/ex.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/hal.hpp"
@@ -101,8 +106,7 @@ file (GLOB HEADERS
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ob/obp.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ps/ps.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ps/psp.hpp"
- "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/exp_sup.hpp"
- "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/rtl.hpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/*.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xc/xc.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xe/xbe.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xe/xe.hpp"
@@ -125,17 +129,22 @@ file (GLOB HEADERS
 
 file (GLOB SOURCES
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/main.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/av/av.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/dbg/debug.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/event.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/ex.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/exinterlocked.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/exp_sup.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/mutant.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/pool.cpp"
- "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/extimer.c"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/sem.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/extimer.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ex/rwlock.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/interrupt.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/hal.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/halp.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/hal_nxbx.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/hal/hal_emuio_nxbx.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/fsc.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/io.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/iop.cpp"
@@ -157,13 +166,17 @@ file (GLOB SOURCES
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/irql.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/kernel.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/mutant.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/queue.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/semaphore.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/spinlock.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/thread.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/thunk.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/timer.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/wait.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/mm/mi.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/mm/mm.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/mm/mm_dbg.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/mm/mm_io.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/mm/vad_tree.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/nt/control.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/nt/file.cpp"
@@ -175,8 +188,11 @@ file (GLOB SOURCES
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ob/obp.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ps/ps.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ps/psp.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/compare.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/critical.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/error.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/exp_sup.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/rtlprint.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/rtl.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/strings.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xc/crypto.cpp"
@@ -218,6 +234,7 @@ set_target_properties(nboxkrnl PROPERTIES
  /IGNORE:4210 \
  /SAFESEH:NO \
  /MANIFEST:NO \
+ /DEF:\"${CMAKE_CURRENT_SOURCE_DIR}/nboxkrnl/xboxkrnl.exe.def\" \
  "
 )
 
