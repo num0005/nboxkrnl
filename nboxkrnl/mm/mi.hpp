@@ -178,6 +178,13 @@ inline bool MiLayoutDevkit;
 PFN_NUMBER MiRemoveRetailPageFromFreeList();
 PFN_NUMBER MiRemoveDevkitPageFromFreeList();
 
+// invalid value constructed so that it never gets returned
+#define MI_INVALID_PFN DecodeFreePfn(PFN_LIST_END, 0)
+
+#define MI_CHECK_PAGE_PFN_ALLOCATED(PagePfn) \
+	NT_ASSERT_MESSAGE(PagePfn != MI_INVALID_PFN, "should always find a free page."); \
+	if (PagePfn == MI_INVALID_PFN) { KeBugCheckLogEip(UNEXPECTED_OOM); }
+
 // Highest pfn available for contiguous allocations
 inline PFN MiMaxContiguousPfn = XBOX_CONTIGUOUS_MEMORY_LIMIT;
 // Highest page on the system

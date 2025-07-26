@@ -205,30 +205,32 @@ VOID MiRemoveAndZeroPageTableFromFreeList(PFN_NUMBER Pfn, PageType BusyType, PMM
 PFN_NUMBER MiRemovePageFromFreeList(PageType BusyType, PMMPTE Pte, PFN_COUNT(*AllocationRoutine)())
 {
 	PFN_NUMBER Pfn = AllocationRoutine();
+	MI_CHECK_PAGE_PFN_ALLOCATED(Pfn);
 	MiRemovePageFromFreeList(Pfn, BusyType, Pte);
 	return Pfn;
 }
 
-PFN_NUMBER MiRemoveRetailPageFromFreeList()
+static PFN_NUMBER MiRemovePageFromFreeListInRegion(PFNREGION &region)
 {
-	for (PFN_COUNT ListIdx = 0; ListIdx < PFN_NUM_LISTS; ++ListIdx) {
-		if (MiRetailRegion.FreeListHead[ListIdx].Blink != PFN_LIST_END) {
-			return DecodeFreePfn(MiRetailRegion.FreeListHead[ListIdx].Blink, ListIdx);
+	for (PFN_COUNT ListIdx = 0; ListIdx < PFN_NUM_LISTS; ++ListIdx)
+	{
+		if (region.FreeListHead[ListIdx].Blink != PFN_LIST_END)
+		{
+			return DecodeFreePfn(region.FreeListHead[ListIdx].Blink, ListIdx);
 		}
 	}
 
-	RIP_API_MSG("should always find a free page.");
+	return MI_INVALID_PFN;
+}
+
+PFN_NUMBER MiRemoveRetailPageFromFreeList()
+{
+	return MiRemovePageFromFreeListInRegion(MiRetailRegion);
 }
 
 PFN_NUMBER MiRemoveDevkitPageFromFreeList()
 {
-	for (PFN_COUNT ListIdx = 0; ListIdx < PFN_NUM_LISTS; ++ListIdx) {
-		if (MiDevkitRegion.FreeListHead[ListIdx].Blink != PFN_LIST_END) {
-			return DecodeFreePfn(MiDevkitRegion.FreeListHead[ListIdx].Blink, ListIdx);
-		}
-	}
-
-	RIP_API_MSG("should always find a free page.");
+	return MiRemovePageFromFreeListInRegion(MiDevkitRegion);
 }
 
 PFN_NUMBER MiRemoveAnyPageFromFreeList()
@@ -236,10 +238,11 @@ PFN_NUMBER MiRemoveAnyPageFromFreeList()
 	// The caller should have already checked that we have enough free pages available
 	assert(MiTotalPagesAvailable);
 
-	MiRemoveRetailPageFromFreeList();
-	MiRemoveDevkitPageFromFreeList();
+	PFN_NUMBER Page = MiRemoveRetailPageFromFreeList();
+	if (Page == MI_INVALID_PFN)
+		Page = MiRemoveDevkitPageFromFreeList();
 
-	RIP_API_MSG("should always find a free page.");
+	return Page;
 }
 
 BOOLEAN MiConvertPageToPtePermissions(ULONG Protect, PMMPTE Pte)
@@ -433,6 +436,7 @@ static PMMPTE MiReservePtes(PPTEREGION PteRegion, ULONG NumberOfPtes)
 	ULONG Start4MiBlock = PteRegion->Next4MiBlock;
 	for (ULONG PtsCommitted = 0; PtsCommitted < NumberOfPts; ++PtsCommitted) {
 		PFN_NUMBER PtPfn = PteRegion->AllocationRoutine();
+		MI_CHECK_PAGE_PFN_ALLOCATED(PtPfn);
 		ULONG PtAddr = PtPfn << PAGE_SHIFT;
 		PMMPTE PtPde = GetPdeAddress(PteRegion->Next4MiBlock);
 

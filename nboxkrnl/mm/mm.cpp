@@ -370,6 +370,8 @@ EXPORTNUM(166) PVOID XBOXAPI MmAllocateContiguousMemoryEx
 			PMMPTE Pde = GetPteAddress(Pte);
 			if ((Pde->Hw & PTE_VALID_MASK) == 0) {
 				PFN_NUMBER PageTablePfn = MiRemoveRetailPageFromFreeList();
+				MI_CHECK_PAGE_PFN_ALLOCATED(PageTablePfn);
+
 				WritePte(Pde, ValidKernelPdeBits | SetPfn(ConvertPfnToContiguous(PageTablePfn)));
 				MiRemoveAndZeroPageTableFromFreeList(PageTablePfn, VirtualPageTable, Pde);
 			}
@@ -782,4 +784,42 @@ EXPORTNUM(181) NTSTATUS XBOXAPI MmQueryStatistics
 	MiUnlock(OldIrql);
 
 	return STATUS_SUCCESS;
+}
+
+// source: cxbx-reloaded
+EXPORTNUM(182) void XBOXAPI MmSetAddressProtect
+(
+	IN PVOID BaseAddress,
+	IN ULONG NumberOfBytes,
+	IN ULONG NewProtect
+)
+{
+	MMPTE NewPermsPte;
+
+	NT_ASSERT(IS_PHYSICAL_ADDRESS(BaseAddress) || IS_SYSTEM_ADDRESS(BaseAddress));
+
+	if (!NumberOfBytes || !MiConvertPageToSystemPtePermissions(NewProtect, &NewPermsPte))
+		return;
+
+	KIRQL OldIRQL = MiLock();
+
+	PMMPTE PointerPte = GetPteAddress(BaseAddress);
+	PMMPTE EndingPte  = GetPteAddress((ULONG)BaseAddress + NumberOfBytes - 1);
+
+	while (PointerPte <= EndingPte)
+	{
+		MMPTE TempPte = *PointerPte;
+
+		if ((TempPte.Hw & PTE_SYSTEM_PROTECTION_MASK) != NewPermsPte.Hw)
+		{
+			// This zeroes the existent bit protections and applies the new ones
+			TempPte.Hw &= ~PTE_SYSTEM_PROTECTION_MASK;
+			TempPte.Hw |= NewPermsPte.Hw;
+
+			WritePte(PointerPte, TempPte.Hw);
+		}
+		PointerPte++;
+	}
+
+	MiUnlock(OldIRQL);
 }

@@ -225,6 +225,13 @@ EXPORTNUM(176) void NTAPI MmLockUnlockPhysicalPage
 	IN BOOLEAN   UnlockPage
 );
 
+EXPORTNUM(177) PVOID NTAPI MmMapIoSpace
+(
+	IN PHYSICAL_ADDRESS PhysicalAddress,
+	IN SIZE_T NumberOfBytes,
+	IN ULONG Protect
+);
+
 EXPORTNUM(178) void NTAPI MmPersistContiguousMemory
 (
 	IN PVOID   BaseAddress,
@@ -245,6 +252,12 @@ EXPORTNUM(180) SIZE_T XBOXAPI MmQueryAllocationSize
 EXPORTNUM(181) NTSTATUS XBOXAPI MmQueryStatistics
 (
 	PMM_STATISTICS MemoryStatistics
+);
+
+EXPORTNUM(183) VOID NTAPI MmUnmapIoSpace
+(
+	IN PVOID BaseAddress,
+	IN SIZE_T NumberOfBytes
 );
 
 EXPORTNUM(374) PVOID NTAPI MmDbgAllocateMemory

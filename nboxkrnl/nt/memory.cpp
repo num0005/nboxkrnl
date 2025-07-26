@@ -293,6 +293,7 @@ EXPORTNUM(184) NTSTATUS XBOXAPI NtAllocateVirtualMemory
 			PMMPTE PointerPde = GetPteAddress(PointerPte);
 			if ((PointerPde->Hw & PTE_VALID_MASK) == 0) {
 				PFN_NUMBER PageTablePfn = PfnAllocationRoutine();
+				MI_CHECK_PAGE_PFN_ALLOCATED(PageTablePfn);
 				WritePte(PointerPde, ValidKernelPdeBits | SetPfn(ConvertPfnToContiguous(PageTablePfn)));
 				MiRemoveAndZeroPageTableFromFreeList(PageTablePfn, VirtualPageTable, PointerPde);
 			}
@@ -300,6 +301,7 @@ EXPORTNUM(184) NTSTATUS XBOXAPI NtAllocateVirtualMemory
 
 		if (PointerPte->Hw == 0) {
 			PFN_NUMBER PagePfn = PfnAllocationRoutine();
+			MI_CHECK_PAGE_PFN_ALLOCATED(PagePfn);
 			WritePte(PointerPte, ValidKernelPteBits | SetPfn(ConvertPfnToContiguous(PagePfn)));
 			PageAllocationRoutine(PagePfn, BusyType, PointerPte);
 		}
