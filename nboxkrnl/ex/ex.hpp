@@ -444,6 +444,29 @@ EXPORTNUM(222) NTSTATUS NTAPI NtReleaseSemaphore
 	OUT PLONG PreviousCount OPTIONAL
 );
 
+// ******************************************************************
+// * PTIMER_APC_ROUTINE
+// ******************************************************************
+typedef VOID(NTAPI* PTIMER_APC_ROUTINE)
+(
+	IN PVOID TimerContext,
+	IN ULONG TimerLowValue,
+	IN LONG TimerHighValue
+);
+
+
+EXPORTNUM(229) NTSTATUS NTAPI NtSetTimerEx
+(
+	IN HANDLE TimerHandle,
+	IN PLARGE_INTEGER DueTime,
+	IN PTIMER_APC_ROUTINE TimerApcRoutine OPTIONAL,
+	IN KPROCESSOR_MODE ApcMode,
+	IN PVOID TimerContext OPTIONAL,
+	IN BOOLEAN WakeTimer,
+	IN LONG Period OPTIONAL,
+	OUT PBOOLEAN PreviousState OPTIONAL
+);
+
 #ifdef __cplusplus
 }
 #endif

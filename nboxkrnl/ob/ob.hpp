@@ -226,6 +226,14 @@ EXPORTNUM(251) VOID FASTCALL ObfReferenceObject
 	PVOID Object
 );
 
+inline static void XBOXAPI ObReferenceObject
+(
+	PVOID Object
+)
+{
+	ObfReferenceObject(Object);
+}
+
 BOOLEAN FASTCALL ObReferenceObjectSafe(IN PVOID Object);
 
 NTSTATUS FASTCALL ObfDuplicateObject

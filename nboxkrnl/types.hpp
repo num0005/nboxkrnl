@@ -67,6 +67,7 @@ using BOOL = bool;
 using SCHAR = CHAR;
 using CCHAR = CHAR;
 using BOOLEAN = uint8_t;
+using PBOOLEAN = BOOLEAN*;
 using USHORT = uint16_t;
 using CSHORT = int16_t;
 using WORD = uint16_t;

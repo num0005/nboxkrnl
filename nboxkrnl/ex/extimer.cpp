@@ -1,5 +1,6 @@
 #include "ex.hpp"
 #include "ke.hpp"
+#include <ps.hpp>
 
 /* GLOBALS *******************************************************************/
 
@@ -272,6 +273,212 @@ EXPORTNUM(216) NTSTATUS NTAPI NtQueryTimer
     }
 
     /* Return Status */
+    return Status;
+}
+
+VOID NTAPI ExpTimerApcKernelRoutine
+(
+    IN PKAPC Apc,
+    IN OUT PKNORMAL_ROUTINE* NormalRoutine,
+    IN OUT PVOID* NormalContext,
+    IN OUT PVOID* SystemArgument1,
+    IN OUT PVOID* SystemArguemnt2
+)
+{
+    PETIMER Timer;
+    KIRQL OldIrql;
+    ULONG DerefsToDo = 1;
+    PETHREAD Thread = PsGetCurrentThread();
+
+    /* We need to find out which Timer we are */
+    Timer = CONTAINING_RECORD(Apc, ETIMER, TimerApc);
+
+    /* Lock the Timer */
+    KeAcquireSpinLock(&Timer->Lock, &OldIrql);
+
+    #ifdef SMP
+    /* Lock the Thread's Active Timer List*/
+    KeAcquireSpinLockAtDpcLevel(&Thread->ActiveTimerListLock);
+    #endif
+
+    /* Make sure that the Timer is valid, and that it belongs to this thread */
+    if ((Timer->ApcAssociated) && (&Thread->Tcb == Timer->TimerApc.Thread))
+    {
+        /* Check if it's not periodic */
+        if (!Timer->Period)
+        {
+            /* Remove it from the Active Timers List */
+            RemoveEntryList(&Timer->ActiveTimerListEntry);
+
+            /* Disable it */
+            Timer->ApcAssociated = FALSE;
+            DerefsToDo++;
+        }
+    }
+    else
+    {
+        /* Clear the normal routine */
+        *NormalRoutine = NULL;
+    }
+
+    /* Release locks */
+    #ifdef SMP
+    KeReleaseSpinLockFromDpcLevel(&Thread->ActiveTimerListLock);
+    #endif
+    KeReleaseSpinLock(&Timer->Lock, OldIrql);
+
+    /* Dereference as needed */
+    ObDereferenceObjectEx(Timer, DerefsToDo);
+}
+
+EXPORTNUM(229) NTSTATUS NTAPI NtSetTimerEx
+(
+    IN HANDLE TimerHandle,
+    IN PLARGE_INTEGER DueTime,
+    IN PTIMER_APC_ROUTINE TimerApcRoutine OPTIONAL,
+    IN KPROCESSOR_MODE ApcMode,
+    IN PVOID TimerContext OPTIONAL,
+    IN BOOLEAN WakeTimer,
+    IN LONG Period OPTIONAL,
+    OUT PBOOLEAN PreviousState OPTIONAL
+)
+{
+    PETIMER Timer;
+    KIRQL OldIrql;
+    BOOLEAN State;
+    PETHREAD Thread = PsGetCurrentThread();
+   
+    PETHREAD TimerThread;
+    ULONG DerefsToDo = 1;
+    NTSTATUS Status = STATUS_SUCCESS;
+    PAGED_CODE();
+
+    /* Check for a valid Period */
+    if (Period < 0) return STATUS_INVALID_PARAMETER_6;
+
+    LARGE_INTEGER TimerDueTime = *DueTime;
+
+    /* Get the Timer Object */
+    Status = ObReferenceObjectByHandle(TimerHandle, &ExTimerObjectType, (PVOID*)&Timer);
+
+/*
+ * Tell the user we don't support Wake Timers...
+ * when we have the ability to use/detect the Power Management
+ * functionality required to support them, make this check dependent
+ * on the actual PM capabilities
+ */
+    if (NT_SUCCESS(Status) && WakeTimer)
+    {
+        Status = STATUS_TIMER_RESUME_IGNORED;
+    }
+
+    /* Check status */
+    if (NT_SUCCESS(Status))
+    {
+        /* Lock the Timer */
+        KeAcquireSpinLock(&Timer->Lock, &OldIrql);
+
+        /* Cancel Running Timer */
+        if (Timer->ApcAssociated)
+        {
+            /* Get the Thread. */
+            TimerThread = CONTAINING_RECORD(Timer->TimerApc.Thread,
+                ETHREAD,
+                Tcb);
+
+            #ifdef SMP
+            /* Lock its active list */
+            KeAcquireSpinLockAtDpcLevel(&TimerThread->ActiveTimerListLock);
+            #endif
+
+            /* Remove it */
+            RemoveEntryList(&Timer->ActiveTimerListEntry);
+            Timer->ApcAssociated = FALSE;
+
+            #ifdef SMP
+            /* Unlock the list */
+            KeReleaseSpinLockFromDpcLevel(&TimerThread->ActiveTimerListLock);
+            #endif
+
+            /* Cancel the Timer */
+            KeCancelTimer(&Timer->KeTimer);
+            KeRemoveQueueDpc(&Timer->TimerDpc);
+            if (KeRemoveQueueApc(&Timer->TimerApc)) DerefsToDo++;
+            DerefsToDo++;
+        }
+        else
+        {
+            /* If timer was disabled, we still need to cancel it */
+            KeCancelTimer(&Timer->KeTimer);
+        }
+
+        /* Read the State */
+        State = KeReadStateTimer(&Timer->KeTimer);
+
+        /* Handle Wake Timers */
+        Timer->WakeTimer = WakeTimer;
+        KeAcquireSpinLockAtDpcLevel(&ExpWakeListLock);
+        if ((WakeTimer) && !(Timer->WakeTimerListEntry.Flink))
+        {
+            /* Insert it into the list */
+            InsertTailList(&ExpWakeList, &Timer->WakeTimerListEntry);
+        }
+        else if (!(WakeTimer) && (Timer->WakeTimerListEntry.Flink))
+        {
+            /* Remove it from the list */
+            RemoveEntryList(&Timer->WakeTimerListEntry);
+            Timer->WakeTimerListEntry.Flink = NULL;
+        }
+        KeReleaseSpinLockFromDpcLevel(&ExpWakeListLock);
+
+        /* Set up the APC Routine if specified */
+        Timer->Period = Period;
+        if (TimerApcRoutine)
+        {
+            /* Initialize the APC */
+            KeInitializeApc(&Timer->TimerApc,
+                &Thread->Tcb,
+                ExpTimerApcKernelRoutine,
+                (PKRUNDOWN_ROUTINE)NULL,
+                (PKNORMAL_ROUTINE)TimerApcRoutine,
+                ApcMode,
+                TimerContext);
+
+            /* Lock the Thread's Active List and Insert */
+            #ifdef SMP
+            KeAcquireSpinLockAtDpcLevel(&Thread->ActiveTimerListLock);
+            #endif
+            InsertTailList(&Thread->ActiveTimerListHead,
+                &Timer->ActiveTimerListEntry);
+            Timer->ApcAssociated = TRUE;
+            #ifdef SMP
+            KeReleaseSpinLockFromDpcLevel(&Thread->ActiveTimerListLock);
+            #endif
+
+            /* One less dereference to do */
+            DerefsToDo--;
+        }
+
+       /* Enable and Set the Timer */
+        KeSetTimerEx(&Timer->KeTimer,
+            TimerDueTime,
+            Period,
+            TimerApcRoutine ? &Timer->TimerDpc : NULL);
+
+        /* Unlock the Timer */
+        KeReleaseSpinLock(&Timer->Lock, OldIrql);
+
+        /* Dereference if it was previously enabled */
+        if (DerefsToDo) ObDereferenceObjectEx(Timer, DerefsToDo);
+
+        /* Check if we need to return the State */
+        if (PreviousState)
+        {
+            *PreviousState = State;
+        }
+    }
+
+    /* Return to Caller */
     return Status;
 }
 

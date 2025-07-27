@@ -436,6 +436,10 @@ struct ETHREAD {
 	HANDLE UniqueThread;
 	PVOID StartAddress;
 	LIST_ENTRY IrpList;
+#ifdef SMP
+	KSPIN_LOCK ActiveTimerListLock;
+#endif
+	LIST_ENTRY ActiveTimerListHead;
 };
 using PETHREAD = ETHREAD *;
 
