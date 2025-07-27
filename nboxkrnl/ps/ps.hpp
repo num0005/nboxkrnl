@@ -38,12 +38,29 @@ EXPORTNUM(255) NTSTATUS XBOXAPI PsCreateSystemThreadEx
 	PKSYSTEM_ROUTINE SystemRoutine
 );
 
+typedef struct _PS_STATISTICS
+{
+	ULONG Length;
+	ULONG ThreadCount;
+	ULONG HandleCount;
+}
+PS_STATISTICS, * PPS_STATISTICS;
+
+// ******************************************************************
+// * 0x0100 - PsQueryStatistics() - source CXBX-reloaded
+// ******************************************************************
+EXPORTNUM(256) NTSTATUS NTAPI PsQueryStatistics
+(
+	IN OUT PPS_STATISTICS ProcessStatistics
+);
+
 EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
 (
 	NTSTATUS ExitStatus
 );
 
 EXPORTNUM(259) extern OBJECT_TYPE PsThreadObjectType;
+
 
 #ifdef __cplusplus
 }

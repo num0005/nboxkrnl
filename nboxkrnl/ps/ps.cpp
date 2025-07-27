@@ -357,3 +357,30 @@ Quit:
 	ObDereferenceObject(Thread);
 	return Status;
 }
+
+// ******************************************************************
+// * 0x0100 - PsQueryStatistics() - source CXBX-reloaded
+// ******************************************************************
+EXPORTNUM(256) NTSTATUS NTAPI PsQueryStatistics
+(
+	IN OUT PPS_STATISTICS ProcessStatistics
+)
+{
+	NT_ASSERT(ProcessStatistics);
+
+	NTSTATUS Status;
+
+	if (ProcessStatistics && ProcessStatistics->Length == sizeof(PS_STATISTICS))
+	{
+		ProcessStatistics->ThreadCount = KiUniqueProcess.StackCount;
+		ProcessStatistics->HandleCount = ObpObjectHandleTable.HandleCount;
+		
+		Status = STATUS_SUCCESS;
+	}
+	else
+	{
+		Status = STATUS_INVALID_PARAMETER;
+	}
+
+	return Status;
+}
