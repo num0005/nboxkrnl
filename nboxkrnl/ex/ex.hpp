@@ -152,6 +152,15 @@ typedef struct _ETIMER
 
 static_assert(sizeof(XBOX_EEPROM) == 256);
 
+//
+// Information Structures for NtQueryEvent
+//
+typedef struct _EVENT_BASIC_INFORMATION
+{
+	EVENT_TYPE EventType;
+	LONG EventState;
+} EVENT_BASIC_INFORMATION, * PEVENT_BASIC_INFORMATION;
+
 inline XBOX_EEPROM CachedEeprom;
 inline ULONG XboxFactoryGameRegion;
 
@@ -336,6 +345,19 @@ EXPORTNUM(185) NTSTATUS NTAPI NtCancelTimer
 	OUT BOOLEAN* CurrentState OPTIONAL
 );
 
+EXPORTNUM(186) NTSTATUS NTAPI NtClearEvent
+(
+	IN HANDLE EventHandle
+);
+
+EXPORTNUM(189) NTSTATUS NTAPI NtCreateEvent
+(
+	OUT PHANDLE EventHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes  OPTIONAL,
+	IN EVENT_TYPE EventType,
+	IN BOOLEAN InitialState
+);
+
 EXPORTNUM(193) NTSTATUS NTAPI NtCreateSemaphore
 (
 	OUT PHANDLE SemaphoreHandle,
@@ -351,10 +373,46 @@ EXPORTNUM(194) NTSTATUS NTAPI NtCreateTimer
 	IN TIMER_TYPE TimerType
 );
 
+NTSTATUS NTAPI NtOpenEvent
+(
+	OUT PHANDLE EventHandle,
+	IN ACCESS_MASK DesiredAccess,
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+);
+
 NTSTATUS NTAPI NtOpenSemaphore
 (
 	OUT PHANDLE SemaphoreHandle,
 	IN POBJECT_ATTRIBUTES ObjectAttributes
+);
+
+EXPORTNUM(205) NTSTATUS NTAPI NtPulseEvent
+(
+	IN HANDLE EventHandle,
+	OUT PLONG PreviousState OPTIONAL
+);
+
+EXPORTNUM(209) NTSTATUS NTAPI NtQueryEvent
+(
+	IN HANDLE EventHandle,
+	OUT PEVENT_BASIC_INFORMATION BasicInfo
+);
+
+NTSTATUS NTAPI NtResetEvent
+(
+	IN HANDLE EventHandle,
+	OUT PLONG PreviousState OPTIONAL
+);
+
+NTSTATUS NTAPI NtSetEvent
+(
+	IN HANDLE EventHandle,
+	OUT PLONG PreviousState  OPTIONAL
+);
+
+NTSTATUS NTAPI NtSetEventBoostPriority
+(
+	IN HANDLE EventHandle
 );
 
 EXPORTNUM(214) NTSTATUS NTAPI NtQuerySemaphore

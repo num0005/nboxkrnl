@@ -237,7 +237,7 @@ enum KWAIT_REASON {
 	MaximumWaitReason = 27
 };
 
-enum EVENT_TYPE {
+enum EVENT_TYPE : UCHAR {
 	NotificationEvent = 0,
 	SynchronizationEvent
 };
@@ -964,6 +964,16 @@ EXPORTNUM(145) LONG XBOXAPI KeSetEvent
 	PKEVENT Event,
 	KPRIORITY Increment,
 	BOOLEAN	Wait
+);
+
+VOID NTAPI KeClearEvent
+(
+	IN PKEVENT Event
+);
+
+LONG NTAPI KeReadStateEvent
+(
+	IN PKEVENT Event
 );
 
 EXPORTNUM(146) VOID NTAPI KeSetEventBoostPriority

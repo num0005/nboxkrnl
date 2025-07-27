@@ -191,6 +191,31 @@ EXPORTNUM(145) LONG XBOXAPI KeSetEvent
 	return OldState;
 }
 
+VOID NTAPI KeClearEvent
+(
+	IN PKEVENT Event
+)
+{
+	ASSERT_EVENT(Event);
+
+	/* Reset Signal State */
+	Event->Header.SignalState = FALSE;
+};
+
+/*
+ * @implemented
+ */
+LONG NTAPI KeReadStateEvent
+(
+	IN PKEVENT Event
+)
+{
+	ASSERT_EVENT(Event);
+
+	/* Return the Signal State */
+	return Event->Header.SignalState;
+};
+
 EXPORTNUM(146) VOID NTAPI KeSetEventBoostPriority
 (
 	IN PKEVENT Event,
