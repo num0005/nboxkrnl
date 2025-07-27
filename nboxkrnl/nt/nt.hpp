@@ -189,6 +189,21 @@ EXPORTNUM(224) NTSTATUS NTAPI NtResumeThread
 	OUT PULONG  PreviousSuspendCount OPTIONAL
 );
 
+/*
+ * FUNCTION: Sets the system time.
+ * PARAMETERS:
+ *        NewTime - Points to a variable that specified the new time
+ *        of day in the standard time format.
+ *        OldTime - Optionally points to a variable that receives the
+ *        old time of day in the standard time format.
+ * RETURNS: Status
+ */
+EXPORTNUM(228) NTSTATUS NTAPI NtSetSystemTime
+(
+	IN PLARGE_INTEGER SystemTime,
+	OUT PLARGE_INTEGER PreviousTime OPTIONAL
+);
+
 EXPORTNUM(231) NTSTATUS NTAPI NtSuspendThread
 (
 	IN  HANDLE  ThreadHandle,

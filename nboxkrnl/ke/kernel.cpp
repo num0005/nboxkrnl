@@ -51,7 +51,7 @@ EXPORTNUM(324) XBOX_KRNL_VERSION XboxKrnlVersion =
 #endif
 };
 
-// Source: Cxbx-Reloaded
+// Source: Reactos through Cxbx-Reloaded
 EXPORTNUM(125) ULONGLONG XBOXAPI KeQueryInterruptTime()
 {
 	LARGE_INTEGER InterruptTime;
@@ -63,12 +63,13 @@ EXPORTNUM(125) ULONGLONG XBOXAPI KeQueryInterruptTime()
 		if (InterruptTime.u.HighPart == KeInterruptTime.High2Time) {
 			break;
 		}
+		YieldProcessor();
 	}
 
 	return (ULONGLONG)InterruptTime.QuadPart;
 }
 
-// Source: Cxbx-Reloaded
+// Source: Reactos through Cxbx-Reloaded
 EXPORTNUM(128) VOID XBOXAPI KeQuerySystemTime
 (
 	PLARGE_INTEGER CurrentTime
@@ -83,6 +84,7 @@ EXPORTNUM(128) VOID XBOXAPI KeQuerySystemTime
 		if (SystemTime.u.HighPart == KeSystemTime.High2Time) {
 			break;
 		}
+		YieldProcessor();
 	}
 
 	*CurrentTime = SystemTime;
