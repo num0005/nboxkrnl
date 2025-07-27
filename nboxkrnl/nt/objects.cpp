@@ -50,6 +50,52 @@ EXPORTNUM(188) NTSTATUS XBOXAPI NtCreateDirectoryObject
 	return Status;
 }
 
+/* FUNCTIONS **************************************************************/
+
+/*++
+* @name NtOpenDirectoryObject
+* @implemented NT4
+*
+*     The NtOpenDirectoryObject routine opens a namespace directory object.
+*
+* @param DirectoryHandle
+*        Variable which receives the directory handle.
+*
+* @param ObjectAttributes
+*        Structure describing the directory.
+*
+* @return STATUS_SUCCESS or appropriate error value.
+*
+* @remarks None.
+*
+*--*/
+EXPORTNUM(201) NTSTATUS NTAPI NtOpenDirectoryObject
+(
+	OUT PHANDLE DirectoryHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+)
+{
+	NT_ASSERT(DirectoryHandle);
+
+	HANDLE Directory;
+	NTSTATUS Status;
+	PAGED_CODE();
+
+
+	/* Open the directory object */
+	Status = ObOpenObjectByName(ObjectAttributes,
+		&ObDirectoryObjectType,
+		NULL,
+		&Directory);
+	if (NT_SUCCESS(Status))
+	{
+		*DirectoryHandle = Directory;
+	}
+
+	/* Return the status to the caller */
+	return Status;
+}
+
 EXPORTNUM(203) NTSTATUS XBOXAPI NtOpenSymbolicLinkObject
 (
 	PHANDLE LinkHandle,

@@ -82,6 +82,12 @@ EXPORTNUM(199) NTSTATUS XBOXAPI NtFreeVirtualMemory
 	ULONG FreeType
 );
 
+EXPORTNUM(201) NTSTATUS NTAPI NtOpenDirectoryObject
+(
+	OUT PHANDLE DirectoryHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+);
+
 EXPORTNUM(202) NTSTATUS XBOXAPI NtOpenFile
 (
 	PHANDLE FileHandle,
