@@ -13,34 +13,23 @@ EXPORTNUM(187) NTSTATUS XBOXAPI NtClose
 	HANDLE Handle
 )
 {
-	KIRQL OldIrql = ObLock();
+	return ObfCloseHandle(Handle);
+}
 
-	if (PVOID Object = ObpDestroyObjectHandle(Handle); Object != NULL_HANDLE) {
-		POBJECT_HEADER Obj = GetObjHeader(Object);
-		LONG HandleCount = Obj->HandleCount;
-		--Obj->HandleCount;
+EXPORTNUM(197) NTSTATUS NTAPI NtDuplicateObject
+(
+	IN HANDLE SourceHandle,
+	OUT PHANDLE TargetHandle OPTIONAL,
+	IN ULONG Options
+)
+{
+	/* Call the internal routine */
+	NTSTATUS Status = ObfDuplicateObject(SourceHandle, TargetHandle);
 
-		if (Obj->Type->CloseProcedure) {
-			ObUnlock(OldIrql);
-			Obj->Type->CloseProcedure(Object, HandleCount);
-			OldIrql = ObLock();
-		}
+	if (Options & DUPLICATE_CLOSE_SOURCE && NT_SUCCESS(Status))
+		Status = NtClose(SourceHandle);
 
-		if ((Obj->HandleCount == 0) && (Obj->Flags & OB_FLAG_ATTACHED_OBJECT) && !(Obj->Flags & OB_FLAG_PERMANENT_OBJECT)) {
-			ObpDetachNamedObject(Object, OldIrql);
-		}
-		else {
-			ObUnlock(OldIrql);
-		}
-
-		ObfDereferenceObject(Object);
-
-		return STATUS_SUCCESS;
-	}
-
-	ObUnlock(OldIrql);
-
-	return STATUS_INVALID_HANDLE;
+	return Status;
 }
 
 EXPORTNUM(188) NTSTATUS XBOXAPI NtCreateDirectoryObject

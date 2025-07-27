@@ -54,6 +54,7 @@
     }
 
  // Macros to ensure thread safety
+// todo: is this the right way of doing this? reactos uses KeEnterCriticalRegion to disable DPCs when working with handles
 #define ObLock() KeRaiseIrqlToDpcLevel()
 #define ObUnlock(Irql) KfLowerIrql(Irql)
 

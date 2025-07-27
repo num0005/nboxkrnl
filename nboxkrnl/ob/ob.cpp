@@ -7,6 +7,9 @@
 #include "ex.hpp"
 #include "ps.hpp"
 #include <string.h>
+#include <rtl.hpp>
+
+#define ASSERT_OBJECT(OBJ) NT_ASSERT(OBJ != NULL)
 
 
 EXPORTNUM(240) OBJECT_TYPE ObDirectoryObjectType = {
@@ -64,6 +67,8 @@ EXPORTNUM(239) NTSTATUS XBOXAPI ObCreateObject
 	PVOID *Object
 )
 {
+	NT_ASSERT(Object != NULL);
+
 	if ((ObjectAttributes == nullptr) || (ObjectAttributes->ObjectName == nullptr)) {
 		POBJECT_HEADER Obj = (POBJECT_HEADER)ObjectType->AllocateProcedure(ObjectBodySize + sizeof(OBJECT_HEADER) - sizeof(OBJECT_HEADER::Body), ObjectType->PoolTag);
 
@@ -132,6 +137,8 @@ EXPORTNUM(241) NTSTATUS XBOXAPI ObInsertObject
 	PHANDLE ReturnedHandle
 )
 {
+	ASSERT_OBJECT(Object);
+	NT_ASSERT(ReturnedHandle != NULL);
 	KIRQL OldIrql = ObLock();
 	PVOID ObjectToInsert = Object;
 
@@ -255,6 +262,8 @@ EXPORTNUM(242) VOID XBOXAPI ObMakeTemporaryObject
 	PVOID Object
 )
 {
+	ASSERT_OBJECT(Object);
+
 	KIRQL OldIrql = ObLock();
 
 	POBJECT_HEADER Obj = GetObjHeader(Object);
@@ -304,6 +313,7 @@ EXPORTNUM(244) NTSTATUS XBOXAPI ObOpenObjectByPointer
 	PHANDLE ReturnedHandle
 )
 {
+	NT_ASSERT(ReturnedHandle);
 	*ReturnedHandle = NULL_HANDLE;
 
 	if (NTSTATUS Status = NT_SUCCESS(ObReferenceObjectByPointer(Object, ObjectType))) {
@@ -332,6 +342,8 @@ EXPORTNUM(246) NTSTATUS XBOXAPI ObReferenceObjectByHandle
 	PVOID *ReturnedObject
 )
 {
+	NT_ASSERT(ReturnedObject);
+
 	*ReturnedObject = NULL_HANDLE;
 
 	// NOTE: on the xbox, NtCurrentProcess is not supported
@@ -387,6 +399,8 @@ EXPORTNUM(248) NTSTATUS XBOXAPI ObReferenceObjectByPointer
 	POBJECT_TYPE ObjectType
 )
 {
+	ASSERT_OBJECT(Object);
+
 	if (GetObjHeader(Object)->Type == ObjectType) {
 		ObfReferenceObject(Object);
 		return STATUS_SUCCESS;
@@ -400,9 +414,12 @@ EXPORTNUM(250) ULONG FASTCALL ObfDereferenceObject
 	PVOID Object
 )
 {
+	ASSERT_OBJECT(Object);
+
 	POBJECT_HEADER Obj = GetObjHeader(Object);
 	ULONG NewCount = InterlockedDecrement(&Obj->PointerCount);
 	if (NewCount == 0) {
+		NT_ASSERT(Obj->HandleCount == 0);
 		if (Obj->Type->DeleteProcedure) {
 			Obj->Type->DeleteProcedure(Object); // performs object-specific cleanup
 		}
@@ -423,6 +440,8 @@ EXPORTNUM(251) VOID FASTCALL ObfReferenceObject
 	PVOID Object
 )
 {
+	ASSERT_OBJECT(Object);
+
 	InterlockedIncrement(&GetObjHeader(Object)->PointerCount);
 }
 
@@ -431,6 +450,8 @@ BOOLEAN FASTCALL ObReferenceObjectSafe(IN PVOID Object)
 {
 	POBJECT_HEADER ObjectHeader;
 	LONG_PTR OldValue, NewValue;
+
+	ASSERT_OBJECT(Object);
 
 	/* Get the object header */
 	ObjectHeader = GetObjHeader(Object);
@@ -455,3 +476,73 @@ BOOLEAN FASTCALL ObReferenceObjectSafe(IN PVOID Object)
 	/* If we got here, then the reference count is now 0 */
 	return FALSE;
 }
+
+
+NTSTATUS FASTCALL ObfCloseHandle
+(
+	HANDLE Handle
+)
+{
+	KIRQL OldIrql = ObLock();
+
+	if (PVOID Object = ObpDestroyObjectHandle(Handle); Object != NULL_HANDLE)
+	{
+		POBJECT_HEADER Obj = GetObjHeader(Object);
+		LONG HandleCount = Obj->HandleCount;
+		--Obj->HandleCount;
+
+		if (Obj->Type->CloseProcedure)
+		{
+			ObUnlock(OldIrql);
+			Obj->Type->CloseProcedure(Object, HandleCount);
+			OldIrql = ObLock();
+		}
+
+		if ((Obj->HandleCount == 0) && (Obj->Flags & OB_FLAG_ATTACHED_OBJECT) && !(Obj->Flags & OB_FLAG_PERMANENT_OBJECT))
+		{
+			// implicitly lowers the IRQL!!
+			ObpDetachNamedObject(Object, OldIrql);
+		}
+		else
+		{
+			ObUnlock(OldIrql);
+		}
+
+		ObfDereferenceObject(Object);
+
+		return STATUS_SUCCESS;
+	}
+
+	ObUnlock(OldIrql);
+
+	return STATUS_INVALID_HANDLE;
+}
+
+NTSTATUS FASTCALL ObfDuplicateObject
+(
+	IN HANDLE SourceHandle,
+	IN PHANDLE TargetHandle OPTIONAL
+)
+{
+	/* Assume failure */
+	if (TargetHandle) *TargetHandle = NULL;
+
+	PVOID Object = nullptr;
+	NTSTATUS Status = ObReferenceObjectByHandle(SourceHandle, NULL, &Object);
+	if (!NT_SUCCESS(Status))
+		return Status;
+
+	if (TargetHandle)
+	{
+		// implicitly decrements the references while allocating a new handle for the object
+		Status = ObInsertObject(Object, NULL, 0, TargetHandle);
+	}
+	else
+	{
+		// decrement the object
+		ObfDereferenceObject(Object);
+	}
+
+	return Status;
+}
+

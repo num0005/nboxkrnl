@@ -228,6 +228,17 @@ EXPORTNUM(251) VOID FASTCALL ObfReferenceObject
 
 BOOLEAN FASTCALL ObReferenceObjectSafe(IN PVOID Object);
 
+NTSTATUS FASTCALL ObfDuplicateObject
+(
+	IN HANDLE SourceHandle,
+	IN PHANDLE TargetHandle OPTIONAL
+);
+
+NTSTATUS FASTCALL ObfCloseHandle
+(
+	HANDLE Handle
+);
+
 #ifdef __cplusplus
 }
 #endif

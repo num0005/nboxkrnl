@@ -66,6 +66,15 @@ EXPORTNUM(196) NTSTATUS XBOXAPI NtDeviceIoControlFile
 	ULONG OutputBufferLength
 );
 
+#define DUPLICATE_CLOSE_SOURCE        0x00000001
+
+EXPORTNUM(197) NTSTATUS NTAPI NtDuplicateObject
+(
+	IN HANDLE SourceHandle,
+	OUT PHANDLE TargetHandle OPTIONAL,
+	IN ULONG Options
+);
+
 EXPORTNUM(199) NTSTATUS XBOXAPI NtFreeVirtualMemory
 (
 	PVOID *BaseAddress,
