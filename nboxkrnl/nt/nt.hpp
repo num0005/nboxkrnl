@@ -112,6 +112,41 @@ EXPORTNUM(204) NTSTATUS XBOXAPI NtProtectVirtualMemory
 	PULONG OldProtect
 );
 
+/*++
+ * @name NtQueueApcThreadEx
+ * NT4
+ *
+ *    This routine is used to queue an APC from user-mode for the specified
+ *    thread.
+ *
+ * @param ThreadHandle
+ *        Handle to the Thread.
+ *        This handle must have THREAD_SET_CONTEXT privileges.
+ *
+ * @param ApcRoutine
+ *        Pointer to the APC Routine to call when the APC executes.
+ *
+ * @param NormalContext
+ *        Pointer to the context to send to the Normal Routine.
+ *
+ * @param SystemArgument[1-2]
+ *        Pointer to a set of two parameters that contain untyped data.
+ *
+ * @return STATUS_SUCCESS or failure cute from associated calls.
+ *
+ * @remarks The thread must enter an alertable wait before the APC will be
+ *          delivered.
+ *
+ *--*/
+EXPORTNUM(206) NTSTATUS NTAPI NtQueueApcThread
+(
+	IN HANDLE ThreadHandle,
+	IN PKNORMAL_ROUTINE ApcRoutine,
+	IN PVOID NormalContext,
+	IN OPTIONAL PVOID SystemArgument1,
+	IN OPTIONAL PVOID SystemArgument2
+);
+
 EXPORTNUM(211) NTSTATUS XBOXAPI NtQueryInformationFile
 (
 	HANDLE FileHandle,
