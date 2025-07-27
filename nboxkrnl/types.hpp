@@ -50,6 +50,12 @@ static inline void DPRINT(const char* fmt, ...) {};
 #define ANSI_NULL ((CHAR)0)
 #define UNICODE_NULL ((WCHAR)0)
 
+#define _SEH2_TRY __try
+#define _SEH2_EXCEPT __except
+#define _SEH2_END
+#define _SEH2_GetExceptionCode GetExceptionCode
+//#define ExSystemExceptionFilter() 1
+
 
 using VOID = void;
 using PVOID = void *;
