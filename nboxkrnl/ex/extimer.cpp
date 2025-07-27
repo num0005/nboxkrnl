@@ -33,6 +33,92 @@ inline BOOLEAN NTAPI KeReadStateTimer(IN PKTIMER Timer)
 KSPIN_LOCK ExpWakeListLock;
 LIST_ENTRY ExpWakeList;
 
+VOID ExTimerRundown(VOID)
+{
+    PETHREAD Thread = PsGetCurrentThread();
+    KIRQL OldIrql;
+    PLIST_ENTRY CurrentEntry;
+    PETIMER Timer;
+    ULONG DerefsToDo;
+
+    /* Lock the Thread's Active Timer List and loop it */
+    #if SMP
+    KeAcquireSpinLock(&Thread->ActiveTimerListLock, &OldIrql);
+    #else
+    OldIrql = KfRaiseIrql(DISPATCH_LEVEL);
+    #endif
+    CurrentEntry = Thread->ActiveTimerListHead.Flink;
+    while (CurrentEntry != &Thread->ActiveTimerListHead)
+    {
+        /* Get the timer */
+        Timer = CONTAINING_RECORD(CurrentEntry, ETIMER, ActiveTimerListEntry);
+
+        /* Reference it */
+        ObReferenceObject(Timer);
+        DerefsToDo = 1;
+
+        
+        #if SMP
+        /* Unlock the list */
+        KeReleaseSpinLock(&Thread->ActiveTimerListLock, OldIrql);
+        #else
+        KfLowerIrql(OldIrql);
+        #endif
+        /* Lock the Timer */
+        KeAcquireSpinLock(&Timer->Lock, &OldIrql);
+        
+        #if SMP
+        /* Lock the list again */
+        KeAcquireSpinLockAtDpcLevel(&Thread->ActiveTimerListLock);
+        #endif
+
+        /* Make sure that the timer is valid */
+        if ((Timer->ApcAssociated) && (&Thread->Tcb == Timer->TimerApc.Thread))
+        {
+            /* Remove it from the list */
+            RemoveEntryList(&Timer->ActiveTimerListEntry);
+            Timer->ApcAssociated = FALSE;
+
+            /* Cancel the timer and remove its DPC and APC */
+            KeCancelTimer(&Timer->KeTimer);
+            KeRemoveQueueDpc(&Timer->TimerDpc);
+            if (KeRemoveQueueApc(&Timer->TimerApc)) DerefsToDo++;
+
+            /* Add another dereference to do */
+            DerefsToDo++;
+        }
+
+        #if SMP
+        /* Unlock the list */
+        KeReleaseSpinLockFromDpcLevel(&Thread->ActiveTimerListLock);
+        #endif
+
+        /* Unlock the Timer */
+        KeReleaseSpinLock(&Timer->Lock, OldIrql);
+
+        /* Dereference it */
+        ObDereferenceObjectEx(Timer, DerefsToDo);
+
+        /* Loop again */
+        #if SMP
+        KeAcquireSpinLock(&Thread->ActiveTimerListLock, &OldIrql);
+        #else
+        OldIrql = KfRaiseIrql(DISPATCH_LEVEL);
+        #endif
+        CurrentEntry = Thread->ActiveTimerListHead.Flink;
+    }
+
+    /* Release lock and return */
+    #if SMP
+    /* Unlock the list */
+    KeReleaseSpinLock(&Thread->ActiveTimerListLock, OldIrql);
+    #else
+    /* re-lower IRQL */
+    KfLowerIrql(OldIrql);
+    #endif
+}
+
+
 VOID NTAPI ExpDeleteTimer(IN PVOID ObjectBody)
 {
     KIRQL OldIrql;
@@ -65,10 +151,13 @@ VOID NTAPI ExpDeleteTimer(IN PVOID ObjectBody)
 _Function_class_(KDEFERRED_ROUTINE)
 VOID
 NTAPI
-ExpTimerDpcRoutine(IN PKDPC Dpc,
+ExpTimerDpcRoutine
+(
+    IN PKDPC Dpc,
     IN PVOID DeferredContext,
     IN PVOID SystemArgument1,
-    IN PVOID SystemArgument2)
+    IN PVOID SystemArgument2
+)
 {
     PETIMER Timer = (PETIMER)DeferredContext;
     BOOLEAN Inserted = FALSE;

@@ -339,6 +339,8 @@ EXPORTNUM(58) PSLIST_ENTRY FASTCALL InterlockedPushEntrySList
 	_Inout_ __drv_aliasesMem PSLIST_ENTRY SListEntry
 );
 
+VOID ExTimerRundown(VOID);
+
 EXPORTNUM(185) NTSTATUS NTAPI NtCancelTimer
 (
 	IN HANDLE TimerHandle,

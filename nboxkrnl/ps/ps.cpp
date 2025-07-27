@@ -150,6 +150,9 @@ EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
 		KeSetPriorityThread(kThread, LOW_REALTIME_PRIORITY);
 	}
 
+	/* Rundown Timers */
+	ExTimerRundown();
+
 	// TODO: cancel I/O, timers and mutants associated to this thread
 
 	KeQuerySystemTime(&eThread->ExitTime);
