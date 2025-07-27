@@ -33,6 +33,8 @@
 #define REG_FULL_RESOURCE_DESCRIPTOR 9
 #define REG_RESOURCE_REQUIREMENTS_LIST 10
 
+#define NONE_TAG             'enoN'
+
 
 enum XC_VALUE_INDEX {
 	XC_TIMEZONE_BIAS = 0,
@@ -475,3 +477,9 @@ EXPORTNUM(229) NTSTATUS NTAPI NtSetTimerEx
 
 
 VOID XBOXAPI ExpDeleteMutant(PVOID Object);
+
+template<typename T>
+inline T* ExNewFromPool(ULONG Tag = NONE_TAG)
+{
+	return reinterpret_cast<T*>(ExAllocatePoolWithTag(sizeof(T), Tag));
+}

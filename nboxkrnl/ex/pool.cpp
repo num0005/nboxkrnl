@@ -26,7 +26,6 @@ static_assert(sizeof(CHUNK_HEADER) == 8);
 #define CHUNK_OVERHEAD       sizeof(CHUNK_HEADER)
 #define CHUNK_SHIFT          5
 #define NUM_CHUNK_LISTS      64
-#define NONE_TAG             'enoN'
 
 // Macros to ensure thread safety
 #define PoolLock() KeRaiseIrqlToDpcLevel()
