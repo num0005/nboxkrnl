@@ -95,7 +95,7 @@ ExpTimerDpcRoutine(IN PKDPC Dpc,
     if (!Inserted) ObDereferenceObject(Timer);
 }
 
-NTSTATUS NTAPI NtCreateTimer
+EXPORTNUM(194) NTSTATUS NTAPI NtCreateTimer
 (
     OUT PHANDLE TimerHandle,
     IN POBJECT_ATTRIBUTES ObjectAttributes OPTIONAL,
@@ -241,6 +241,37 @@ EXPORTNUM(185) NTSTATUS NTAPI NtCancelTimer
     }
 
     /* Return to Caller */
+    return Status;
+}
+
+EXPORTNUM(216) NTSTATUS NTAPI NtQueryTimer
+(
+    IN HANDLE TimerHandle,
+    OUT PTIMER_BASIC_INFORMATION  TimerInformation
+)
+{
+    PAGED_CODE();
+
+    if (!TimerInformation)
+        return STATUS_INVALID_PARAMETER_2;
+
+    PETIMER Timer;
+
+    /* Get the Timer Object */
+    NTSTATUS Status = ObReferenceObjectByHandle(TimerHandle, &ExTimerObjectType, (PVOID*)&Timer);
+    if (NT_SUCCESS(Status))
+    {
+        /* Return the remaining time, corrected */
+        TimerInformation->TimeRemaining.QuadPart = Timer->KeTimer.DueTime.QuadPart - KeQueryInterruptTime();
+
+        /* Return the current state */
+        TimerInformation->SignalState = KeReadStateTimer(&Timer->KeTimer);
+
+        /* Dereference Object */
+        ObDereferenceObject(Timer);
+    }
+
+    /* Return Status */
     return Status;
 }
 

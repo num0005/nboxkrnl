@@ -421,6 +421,22 @@ EXPORTNUM(214) NTSTATUS NTAPI NtQuerySemaphore
 	OUT PSEMAPHORE_BASIC_INFORMATION BasicInfo
 );
 
+//
+// Information Structures for NtQueryTimer
+//
+typedef struct _TIMER_BASIC_INFORMATION
+{
+	LARGE_INTEGER TimeRemaining;
+	BOOLEAN SignalState;
+} TIMER_BASIC_INFORMATION, * PTIMER_BASIC_INFORMATION;
+
+
+EXPORTNUM(216) NTSTATUS NTAPI NtQueryTimer
+(
+	IN HANDLE TimerHandle,
+	OUT PTIMER_BASIC_INFORMATION  TimerInformation
+);
+
 EXPORTNUM(222) NTSTATUS NTAPI NtReleaseSemaphore
 (
 	IN HANDLE SemaphoreHandle,
