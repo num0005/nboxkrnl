@@ -24,6 +24,9 @@ EXPORTNUM(259) OBJECT_TYPE PsThreadObjectType =
 	'erhT'
 };
 
+static PCREATE_THREAD_NOTIFY_ROUTINE PspThreadNotifyRoutine[PSP_MAX_CREATE_THREAD_NOTIFY];
+static LONG PspThreadNotifyRoutineCount;
+
 BOOLEAN PsInitSystem()
 {
 	KeInitializeDpc(&PspTerminationDpc, PspTerminationRoutine, nullptr);
@@ -92,6 +95,10 @@ EXPORTNUM(255) NTSTATUS XBOXAPI PsCreateSystemThreadEx
 	eThread->StartAddress = StartRoutine;
 	KeInitializeThread(&eThread->Tcb, KernelStack, KernelStackSize, TlsDataSize, SystemRoutine, StartRoutine, StartContext, &KiUniqueProcess);
 
+	
+	// reactos runs it earlier
+	//PspRunCreateThreadNotifyRoutines(eThread, TRUE);
+	
 	if (CreateSuspended) {
 		KeSuspendThread(&eThread->Tcb);
 	}
@@ -108,7 +115,8 @@ EXPORTNUM(255) NTSTATUS XBOXAPI PsCreateSystemThreadEx
 	Status = ObInsertObject(eThread, nullptr, 0, &eThread->UniqueThread);
 
 	if (NT_SUCCESS(Status)) {
-		PspCallThreadNotificationRoutines(eThread, TRUE);
+		/* Notify Thread Creation */
+		PspRunCreateThreadNotifyRoutines(eThread, TRUE);
 		Status = ObOpenObjectByPointer(eThread, &PsThreadObjectType, ThreadHandle);
 	}
 
@@ -143,9 +151,14 @@ EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
 	KfLowerIrql(PASSIVE_LEVEL);
 
 	PETHREAD eThread = (PETHREAD)kThread;
-	if (eThread->UniqueThread) {
-		PspCallThreadNotificationRoutines(eThread, FALSE);
-	}
+	
+	/* Notify Thread Creation */
+	PspRunCreateThreadNotifyRoutines(eThread, FALSE);
+	
+	// reactos difference
+	//if (eThread->UniqueThread) {
+	//	PspCallThreadNotificationRoutines(eThread, FALSE);
+	//}
 
 	if (kThread->Priority < LOW_REALTIME_PRIORITY) {
 		KeSetPriorityThread(kThread, LOW_REALTIME_PRIORITY);
@@ -383,4 +396,60 @@ EXPORTNUM(256) NTSTATUS NTAPI PsQueryStatistics
 	}
 
 	return Status;
+}
+
+/*
+ * @implemented
+ */
+EXPORTNUM(257) NTSTATUS NTAPI PsSetCreateThreadNotifyRoutine
+(
+	IN PCREATE_THREAD_NOTIFY_ROUTINE NotifyRoutine
+)
+{
+	PAGED_CODE();
+
+	/* Loop callbacks */
+	for (ULONG i = 0; i < PSP_MAX_CREATE_THREAD_NOTIFY; i++)
+	{
+		/* Add this entry if the slot is empty */
+		if (InterlockedCompareExchangePointer(&PspThreadNotifyRoutine[i],
+			NotifyRoutine,
+			PCREATE_THREAD_NOTIFY_ROUTINE()) == NULL)
+		{
+			/* Return success */
+			InterlockedIncrement(&PspThreadNotifyRoutineCount);
+			return STATUS_SUCCESS;
+		}
+	}
+
+	/* No free space found, fail */
+	return STATUS_INSUFFICIENT_RESOURCES;
+}
+
+
+VOID PspRunCreateThreadNotifyRoutines
+(
+	IN PETHREAD CurrentThread,
+	IN BOOLEAN Create
+)
+{
+	ULONG i;
+
+
+	/* Check if we have registered routines */
+	if (PspThreadNotifyRoutineCount)
+	{
+		/* Loop callbacks */
+		for (i = 0; i < PSP_MAX_CREATE_THREAD_NOTIFY; i++)
+		{
+			/* Do the callback */
+			KeMemoryBarrierWithoutFence();
+			PCREATE_THREAD_NOTIFY_ROUTINE Callback = PspThreadNotifyRoutine[i];
+			KeMemoryBarrierWithoutFence();
+			if (Callback)
+			{
+				Callback(CurrentThread, CurrentThread->UniqueThread, Create);
+			}
+		}
+	}
 }

@@ -40,15 +40,6 @@ VOID XBOXAPI PspSystemThreadStartup(PKSTART_ROUTINE StartRoutine, PVOID StartCon
 	PsTerminateSystemThread(STATUS_SUCCESS);
 }
 
-VOID PspCallThreadNotificationRoutines(PETHREAD eThread, BOOLEAN Create)
-{
-	for (unsigned i = 0; i < PSP_MAX_CREATE_THREAD_NOTIFY; ++i) {
-		if (PspNotifyRoutines[i]) {
-			(*PspNotifyRoutines[i])(eThread, eThread->UniqueThread, Create);
-		}
-	}
-}
-
 VOID XBOXAPI PspTerminationRoutine(PKDPC Dpc, PVOID DpcContext, PVOID DpcArg0, PVOID DpcArg1)
 {
 	assert(KeGetCurrentIrql() == DISPATCH_LEVEL);

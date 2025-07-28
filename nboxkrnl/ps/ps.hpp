@@ -46,12 +46,29 @@ typedef struct _PS_STATISTICS
 }
 PS_STATISTICS, * PPS_STATISTICS;
 
+using PCREATE_THREAD_NOTIFY_ROUTINE = VOID(XBOXAPI *)(
+	PETHREAD eThread,
+	HANDLE ThreadId,
+	BOOLEAN Create
+	);
+
 // ******************************************************************
 // * 0x0100 - PsQueryStatistics() - source CXBX-reloaded
 // ******************************************************************
 EXPORTNUM(256) NTSTATUS NTAPI PsQueryStatistics
 (
 	IN OUT PPS_STATISTICS ProcessStatistics
+);
+
+EXPORTNUM(257) NTSTATUS NTAPI PsSetCreateThreadNotifyRoutine
+(
+	IN PCREATE_THREAD_NOTIFY_ROUTINE NotifyRoutine
+);
+
+VOID PspRunCreateThreadNotifyRoutines
+(
+	IN PETHREAD CurrentThread,
+	IN BOOLEAN Create
 );
 
 EXPORTNUM(258) VOID XBOXAPI PsTerminateSystemThread
