@@ -475,6 +475,21 @@ EXPORTNUM(229) NTSTATUS NTAPI NtSetTimerEx
 }
 #endif
 
+template <typename T>
+T* InterlockedCompareExchangePointer
+(
+	IN OUT  T** Destination,
+	IN      T*  Exchange,
+	IN      T*  Comperand
+)
+{
+	LONG OldValue = InterlockedCompareExchange(
+		reinterpret_cast<PLONG>(Destination),
+		reinterpret_cast<LONG>(Exchange),
+		reinterpret_cast<LONG>(Comperand));
+	return reinterpret_cast<T*>(OldValue);
+}
+
 
 VOID XBOXAPI ExpDeleteMutant(PVOID Object);
 
