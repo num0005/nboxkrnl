@@ -24,6 +24,41 @@ EXPORTNUM(192) NTSTATUS XBOXAPI NtCreateMutant
 	return Status;
 }
 
+/*
+ * @implemented
+ */
+EXPORTNUM(213) NTSTATUS NTAPI NtQueryMutant
+(
+	IN HANDLE MutantHandle,
+	OUT PMUTANT_BASIC_INFORMATION MutantInformation
+)
+{
+	PKMUTANT Mutant;
+	NTSTATUS Status;
+	PAGED_CODE();
+
+	if (!MutantInformation)
+		return STATUS_INVALID_PARAMETER_2;
+
+	/* Open the Object */
+	Status = ObReferenceObjectByHandle(MutantHandle, &ExMutantObjectType, (PVOID*)&Mutant);
+	/* Check for Status */
+	if (NT_SUCCESS(Status))
+	{
+		/* Fill out the Basic Information Requested */
+		DPRINT("Returning Mutant Information\n");
+		MutantInformation->CurrentCount = KeReadStateMutant(Mutant);
+		MutantInformation->OwnedByCaller = (Mutant->OwnerThread == KeGetCurrentThread());
+		MutantInformation->AbandonedState = Mutant->Abandoned;
+
+		/* Release the Object */
+		ObDereferenceObject(Mutant);
+	}
+
+	/* Return Status */
+	return Status;
+}
+
 EXPORTNUM(221) NTSTATUS XBOXAPI NtReleaseMutant
 (
 	HANDLE MutantHandle,

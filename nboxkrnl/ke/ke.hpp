@@ -852,6 +852,18 @@ EXPORTNUM(129) KIRQL XBOXAPI KeRaiseIrqlToDpcLevel();
 
 EXPORTNUM(130) KIRQL XBOXAPI KeRaiseIrqlToSynchLevel();
 
+/*
+ * @implemented
+ */
+inline LONG FASTCALL KeReadStateMutant
+(
+	IN PKMUTANT Mutant
+)
+{
+	/* Return the Signal State */
+	return Mutant->Header.SignalState;
+}
+
 EXPORTNUM(131) LONG XBOXAPI KeReleaseMutant
 (
 	PKMUTANT Mutant,

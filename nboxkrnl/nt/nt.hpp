@@ -156,6 +156,26 @@ EXPORTNUM(211) NTSTATUS XBOXAPI NtQueryInformationFile
 	FILE_INFORMATION_CLASS FileInformationClass
 );
 
+
+//
+// Information Structures for NtQueryMutant
+//
+typedef struct _MUTANT_BASIC_INFORMATION
+{
+	LONG CurrentCount;
+	BOOLEAN OwnedByCaller;
+	BOOLEAN AbandonedState;
+} MUTANT_BASIC_INFORMATION, * PMUTANT_BASIC_INFORMATION;
+
+/*
+ * @implemented
+ */
+EXPORTNUM(213) NTSTATUS NTAPI NtQueryMutant
+(
+	IN HANDLE MutantHandle,
+	OUT PMUTANT_BASIC_INFORMATION MutantInformation
+);
+
 EXPORTNUM(218) NTSTATUS XBOXAPI NtQueryVolumeInformationFile
 (
 	HANDLE FileHandle,
