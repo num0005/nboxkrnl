@@ -18,6 +18,7 @@
 #define STATUS_BREAKPOINT                       ((NTSTATUS)0x80000003L)
 #define STATUS_SINGLE_STEP                      ((NTSTATUS)0x80000004L)
 #define STATUS_BUFFER_OVERFLOW                  ((NTSTATUS)0x80000005L)
+#define STATUS_DEVICE_BUSY                      ((NTSTATUS)0x80000011L)
 #define STATUS_UNSUCCESSFUL                     ((NTSTATUS)0xC0000001L)
 #define STATUS_NOT_IMPLEMENTED                  ((NTSTATUS)0xC0000002L)
 #define STATUS_INVALID_INFO_CLASS               ((NTSTATUS)0xC0000003L)
