@@ -427,11 +427,12 @@ PKTHREAD XBOXAPI KiQuantumEnd()
 	return KiPcr.PrcbData.NextThread;
 }
 
-VOID KiAdjustQuantumThread()
+VOID KiAdjustQuantumThread(PKTHREAD Thread)
 {
 	assert(KeGetCurrentIrql() == DISPATCH_LEVEL);
 
-	PKTHREAD Thread = KeGetCurrentThread();
+	if (Thread == nullptr)
+		Thread = KeGetCurrentThread();
 
 	if ((Thread->Priority < LOW_REALTIME_PRIORITY) && (Thread->BasePriority < TIME_CRITICAL_BASE_PRIORITY)) {
 		Thread->Quantum -= WAIT_QUANTUM_DECREMENT;

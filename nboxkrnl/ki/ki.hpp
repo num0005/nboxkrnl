@@ -117,7 +117,7 @@ VOID FASTCALL KiExecuteDpcQueue();
 // called KiRetireDpcListInDpcStack on reactos
 VOID FASTCALL KiExecuteDpcQueueInDpcStack(IN PVOID DpcStack);
 PKTHREAD XBOXAPI KiQuantumEnd();
-VOID KiAdjustQuantumThread();
+VOID KiAdjustQuantumThread(PKTHREAD Thread = nullptr);
 NTSTATUS XBOXAPI KiSwapThread();
 inline NTSTATUS XBOXAPI KiSwapThread(PKTHREAD Thread, PKPRCB Prcb)
 {
