@@ -264,6 +264,25 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 	PLARGE_INTEGER ByteOffset
 );
 
+/*++
+* @name NtMakeTemporaryObject
+* @implemented NT4
+*
+*     The NtMakeTemporaryObject routine <FILLMEIN>
+*
+* @param ObjectHandle
+*        <FILLMEIN>
+*
+* @return STATUS_SUCCESS or appropriate error value.
+*
+* @remarks None.
+*
+*--*/
+NTSTATUS NTAPI NtMakeTemporaryObject
+(
+	IN HANDLE ObjectHandle
+);
+
 #ifdef __cplusplus
 }
 #endif

@@ -152,3 +152,39 @@ EXPORTNUM(234) NTSTATUS XBOXAPI NtWaitForSingleObjectEx
 
 	return Status;
 }
+
+/*++
+* @name NtMakeTemporaryObject
+* @implemented NT4
+*
+*     The NtMakeTemporaryObject routine <FILLMEIN>
+*
+* @param ObjectHandle
+*        <FILLMEIN>
+*
+* @return STATUS_SUCCESS or appropriate error value.
+*
+* @remarks None.
+*
+*--*/
+NTSTATUS NTAPI NtMakeTemporaryObject
+(
+	IN HANDLE ObjectHandle
+)
+{
+	PVOID ObjectBody;
+	NTSTATUS Status;
+	PAGED_CODE();
+
+	/* Reference the object for DELETE access */
+	Status = ObReferenceObjectByHandle(ObjectHandle,
+		NULL,
+		&ObjectBody);
+
+	if (Status != STATUS_SUCCESS) return Status;
+
+	/* Set it as temporary and dereference it */
+	ObMakeTemporaryObject(ObjectBody);
+	ObDereferenceObject(ObjectBody);
+	return STATUS_SUCCESS;
+}
