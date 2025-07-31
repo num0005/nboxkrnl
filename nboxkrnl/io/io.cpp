@@ -693,6 +693,38 @@ EXPORTNUM(80) VOID XBOXAPI IoSetShareAccess
 	}
 }
 
+// ******************************************************************
+// * 0x0055 - IoSynchronousFsdRequest()
+// ******************************************************************
+EXPORTNUM(85) NTSTATUS NTAPI IoSynchronousFsdRequest
+(
+	IN ULONG          MajorFunction,
+	IN PDEVICE_OBJECT DeviceObject,
+	OUT PVOID         Buffer OPTIONAL,
+	IN ULONG          Length,
+	IN PLARGE_INTEGER StartingOffset OPTIONAL
+)
+{
+	// guess on how this is implemented based on https://eaton-works.com/2023/01/24/how-the-xbox-360-knows-if-your-hard-drive-is-genuine/
+	// and seeing how this is usually done
+	// https://github.com/andrew-boyarshin/reactos/blob/4377d3b8274c988c20635523c32952b91a1c59c8/ntoskrnl/fstub/fstubex.c#L1767
+	// https://github.com/wine-mirror/wine/blob/42a63687cd6991de03402d81bf79b773ae12e68e/dlls/ntoskrnl.exe/pnp.c#L107
+	// https://github.com/wine-mirror/wine/blob/42a63687cd6991de03402d81bf79b773ae12e68e/dlls/hidclass.sys/pnp.c#L78
+
+	IO_STATUS_BLOCK IOStatusBlock;
+	KEVENT Event;
+	KeInitializeEvent(&Event, NotificationEvent, FALSE);
+
+	PIRP Irp = IoBuildSynchronousFsdRequest(MajorFunction, DeviceObject, Buffer, Length, StartingOffset, &Event, &IOStatusBlock);
+	if (!Irp)
+		return STATUS_NO_MEMORY;
+
+	if (IoCallDriver(DeviceObject, Irp) == STATUS_PENDING)
+		KeWaitForSingleObject(&Event, Executive, KernelMode, FALSE, NULL);
+
+	return IOStatusBlock.Status;
+}
+
 EXPORTNUM(86) NTSTATUS FASTCALL IofCallDriver
 (
 	PDEVICE_OBJECT DeviceObject,

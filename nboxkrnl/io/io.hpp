@@ -260,11 +260,22 @@ EXPORTNUM(80) VOID XBOXAPI IoSetShareAccess
 	PSHARE_ACCESS ShareAccess
 );
 
+EXPORTNUM(85) NTSTATUS NTAPI IoSynchronousFsdRequest
+(
+	IN ULONG          MajorFunction,
+	IN PDEVICE_OBJECT DeviceObject,
+	OUT PVOID         Buffer OPTIONAL,
+	IN ULONG          Length,
+	IN PLARGE_INTEGER StartingOffset OPTIONAL
+);
+
 EXPORTNUM(86) NTSTATUS FASTCALL IofCallDriver
 (
 	PDEVICE_OBJECT DeviceObject,
 	PIRP Irp
 );
+
+#define IoCallDriver(DeviceObject, Irp) IofCallDriver(DeviceObject, Irp)
 
 EXPORTNUM(87) VOID FASTCALL IofCompleteRequest
 (
