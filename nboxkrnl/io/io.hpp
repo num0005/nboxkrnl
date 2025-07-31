@@ -122,6 +122,51 @@ EXPORTNUM(59) PIRP XBOXAPI IoAllocateIrp
 	CCHAR StackSize
 );
 
+/*
+ * @implemented
+ */
+EXPORTNUM(60) PIRP NTAPI IoBuildAsynchronousFsdRequest
+(
+	IN ULONG MajorFunction,
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PVOID Buffer,
+	IN ULONG Length,
+	IN PLARGE_INTEGER StartingOffset,
+	IN PIO_STATUS_BLOCK IoStatusBlock
+);
+
+/*
+ * @implemented
+ */
+EXPORTNUM(61) PIRP NTAPI IoBuildDeviceIoControlRequest
+(
+	IN ULONG IoControlCode,
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PVOID InputBuffer,
+	IN ULONG InputBufferLength,
+	IN PVOID OutputBuffer,
+	IN ULONG OutputBufferLength,
+	IN BOOLEAN InternalDeviceIoControl,
+	IN PKEVENT Event,
+	IN PIO_STATUS_BLOCK IoStatusBlock
+);
+
+/*
+ * @implemented
+ */
+EXPORTNUM(62) PIRP NTAPI IoBuildSynchronousFsdRequest
+(
+	IN ULONG MajorFunction,
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PVOID Buffer,
+	IN ULONG Length,
+	IN PLARGE_INTEGER StartingOffset,
+	IN PKEVENT Event,
+	IN PIO_STATUS_BLOCK IoStatusBlock
+);
+
+
+
 EXPORTNUM(63) NTSTATUS XBOXAPI IoCheckShareAccess
 (
 	ACCESS_MASK DesiredAccess,
@@ -196,6 +241,11 @@ EXPORTNUM(74) NTSTATUS XBOXAPI IoInvalidDeviceRequest
 	PIRP Irp
 );
 
+EXPORTNUM(77) VOID XBOXAPI IoQueueThreadIrp
+(
+	IN PIRP Irp
+);
+
 EXPORTNUM(78) VOID XBOXAPI IoRemoveShareAccess
 (
 	PFILE_OBJECT FileObject,
@@ -220,6 +270,11 @@ EXPORTNUM(87) VOID FASTCALL IofCompleteRequest
 (
 	PIRP Irp,
 	CCHAR PriorityBoost
+);
+
+EXPORTNUM(359) VOID XBOXAPI IoMarkIrpMustComplete
+(
+	IN PIRP Irp
 );
 
 #ifdef __cplusplus

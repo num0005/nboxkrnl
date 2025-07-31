@@ -167,6 +167,7 @@ file (GLOB SOURCES
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/fsc.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/io.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/iop.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/irp.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/cdrom/cdrom.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/cdrom/xdvdfs.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/hdd/fatx.cpp"
