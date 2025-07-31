@@ -166,6 +166,14 @@ EXPORTNUM(68) VOID XBOXAPI IoDeleteDevice
 	PDEVICE_OBJECT DeviceObject
 );
 
+/*
+ * @implemented
+ */
+EXPORTNUM(69) NTSTATUS NTAPI IoDeleteSymbolicLink
+(
+	IN PSTRING SymbolicLinkName
+);
+
 EXPORTNUM(70) extern OBJECT_TYPE IoDeviceObjectType;
 
 EXPORTNUM(71) extern OBJECT_TYPE IoFileObjectType;

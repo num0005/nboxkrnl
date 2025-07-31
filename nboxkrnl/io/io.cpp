@@ -466,6 +466,33 @@ EXPORTNUM(68) VOID XBOXAPI IoDeleteDevice
 	}
 }
 
+/*
+ * @implemented
+ */
+EXPORTNUM(69) NTSTATUS NTAPI IoDeleteSymbolicLink
+(
+	IN PSTRING SymbolicLinkName
+)
+{
+	OBJECT_ATTRIBUTES ObjectAttributes;
+	HANDLE Handle;
+	NTSTATUS Status;
+	PAGED_CODE();
+
+	/* Initialize the object attributes and open the link */
+	// OBJ_PERMANENT
+	InitializeObjectAttributes(&ObjectAttributes, SymbolicLinkName, OBJ_PERMANENT | OBJ_CASE_INSENSITIVE, nullptr);
+	Status = NtOpenSymbolicLinkObject(&Handle, &ObjectAttributes);
+	if (!NT_SUCCESS(Status)) return Status;
+
+	/* Make the link temporary and close its handle */
+	Status = NtMakeTemporaryObject(Handle);
+	if (NT_SUCCESS(Status)) NtClose(Handle);
+
+	/* Return status */
+	return Status;
+}
+
 EXPORTNUM(72) VOID XBOXAPI IoFreeIrp
 (
 	PIRP Irp
