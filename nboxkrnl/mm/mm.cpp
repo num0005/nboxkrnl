@@ -11,6 +11,7 @@
 #include "mi.hpp"
 #include "vad_tree.hpp"
 #include <assert.h>
+#include <image.hpp>
 
 
 EXPORTNUM(102) MMGLOBALDATA MmGlobalData = {

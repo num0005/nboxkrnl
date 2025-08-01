@@ -2,6 +2,9 @@
 #include "../types.hpp"
 #include "../driverspecs.h"
 
+#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
+#define IMAGE_SIZEOF_SHORT_NAME              8
+
 //
 // Directory Entry Specifiers
 //
@@ -20,6 +23,30 @@
 #define IMAGE_DIRECTORY_ENTRY_IAT            12
 #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13
 #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14
+
+struct IMAGE_DOS_HEADER
+{
+	WORD   e_magic;
+	WORD   e_cblp;
+	WORD   e_cp;
+	WORD   e_crlc;
+	WORD   e_cparhdr;
+	WORD   e_minalloc;
+	WORD   e_maxalloc;
+	WORD   e_ss;
+	WORD   e_sp;
+	WORD   e_csum;
+	WORD   e_ip;
+	WORD   e_cs;
+	WORD   e_lfarlc;
+	WORD   e_ovno;
+	WORD   e_res[4];
+	WORD   e_oemid;
+	WORD   e_oeminfo;
+	WORD   e_res2[10];
+	LONG   e_lfanew;
+};
+using PIMAGE_DOS_HEADER = IMAGE_DOS_HEADER*;
 
 typedef struct _IMAGE_FILE_HEADER // Size=20
 {
@@ -76,9 +103,31 @@ typedef struct _IMAGE_OPTIONAL_HEADER32
 typedef struct _IMAGE_NT_HEADERS
 {
 	UINT Signature; // 0x0
-	struct _IMAGE_FILE_HEADER FileHeader; // 0x4
-	struct _IMAGE_OPTIONAL_HEADER32 OptionalHeader; // 0x18
+	IMAGE_FILE_HEADER FileHeader; // 0x4
+	IMAGE_OPTIONAL_HEADER32 OptionalHeader; // 0x18
 } IMAGE_NT_HEADERS, * PIMAGE_NT_HEADERS;
+
+using IMAGE_NT_HEADERS32 = IMAGE_NT_HEADERS;
+using PIMAGE_NT_HEADERS32 = IMAGE_NT_HEADERS*;
+
+struct IMAGE_SECTION_HEADER
+{
+	BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];
+	union
+	{
+		DWORD   PhysicalAddress;
+		DWORD   VirtualSize;
+	} Misc;
+	DWORD   VirtualAddress;
+	DWORD   SizeOfRawData;
+	DWORD   PointerToRawData;
+	DWORD   PointerToRelocations;
+	DWORD   PointerToLinenumbers;
+	WORD    NumberOfRelocations;
+	WORD    NumberOfLinenumbers;
+	DWORD   Characteristics;
+};
+using PIMAGE_SECTION_HEADER = IMAGE_SECTION_HEADER*;
 
 typedef struct _IMAGE_EXPORT_DIRECTORY
 {

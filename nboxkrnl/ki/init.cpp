@@ -11,6 +11,7 @@
 #include "ps.hpp"
 #include "io.hpp"
 #include <string.h>
+#include <image.hpp>
 
 
 KTSS KiTss = {
