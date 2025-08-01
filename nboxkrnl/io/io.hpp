@@ -287,6 +287,18 @@ EXPORTNUM(83) VOID NTAPI IoStartPacket
 	IN PULONG Key
 );
 
+EXPORTNUM(84) NTSTATUS NTAPI IoSynchronousDeviceIoControlRequest
+(
+	IN ULONG IoControlCode,
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PVOID InputBuffer OPTIONAL,
+	IN ULONG InputBufferLength,
+	OUT PVOID OutputBuffer OPTIONAL,
+	IN ULONG OutputBufferLength,
+	OUT PULONG ReturnedOutputBufferLength OPTIONAL,
+	IN BOOLEAN InternalDeviceIoControl
+);
+
 EXPORTNUM(85) NTSTATUS NTAPI IoSynchronousFsdRequest
 (
 	IN ULONG          MajorFunction,

@@ -768,6 +768,49 @@ EXPORTNUM(80) VOID XBOXAPI IoSetShareAccess
 	}
 }
 
+EXPORTNUM(84) NTSTATUS NTAPI IoSynchronousDeviceIoControlRequest
+(
+	IN ULONG IoControlCode,
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PVOID InputBuffer OPTIONAL,
+	IN ULONG InputBufferLength,
+	OUT PVOID OutputBuffer OPTIONAL,
+	IN ULONG OutputBufferLength,
+	OUT PULONG ReturnedOutputBufferLength OPTIONAL,
+	IN BOOLEAN InternalDeviceIoControl
+)
+{
+	IO_STATUS_BLOCK IOStatusBlock;
+	KEVENT Event;
+	KeInitializeEvent(&Event, NotificationEvent, FALSE);
+
+	// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-iobuilddeviceiocontrolrequest
+	// same as IoSynchronousFsdRequest probably
+
+	PIRP Irp = IoBuildDeviceIoControlRequest(
+		IoControlCode,
+		DeviceObject,
+		InputBuffer,
+		InputBufferLength,
+		OutputBuffer,
+		OutputBufferLength,
+		InternalDeviceIoControl,
+		&Event,
+		&IOStatusBlock);
+	if (!Irp)
+		return STATUS_NO_MEMORY;
+
+	if (IoCallDriver(DeviceObject, Irp) == STATUS_PENDING)
+		KeWaitForSingleObject(&Event, Executive, KernelMode, FALSE, NULL);
+
+	NTSTATUS Status = IOStatusBlock.Status;
+	// guess
+	if (NT_SUCCESS(Status) && ReturnedOutputBufferLength)
+		*ReturnedOutputBufferLength = IOStatusBlock.Information;
+
+	return Status;
+}
+
 // ******************************************************************
 // * 0x0055 - IoSynchronousFsdRequest()
 // ******************************************************************
@@ -785,6 +828,7 @@ EXPORTNUM(85) NTSTATUS NTAPI IoSynchronousFsdRequest
 	// https://github.com/andrew-boyarshin/reactos/blob/4377d3b8274c988c20635523c32952b91a1c59c8/ntoskrnl/fstub/fstubex.c#L1767
 	// https://github.com/wine-mirror/wine/blob/42a63687cd6991de03402d81bf79b773ae12e68e/dlls/ntoskrnl.exe/pnp.c#L107
 	// https://github.com/wine-mirror/wine/blob/42a63687cd6991de03402d81bf79b773ae12e68e/dlls/hidclass.sys/pnp.c#L78
+	// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-iobuildsynchronousfsdrequest
 
 	IO_STATUS_BLOCK IOStatusBlock;
 	KEVENT Event;
