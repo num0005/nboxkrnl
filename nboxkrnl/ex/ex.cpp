@@ -66,6 +66,9 @@ static const EepromInfo EepromInfos[] = {
 
 static INITIALIZE_GLOBAL_CRITICAL_SECTION(ExpEepromLock);
 
+EXPORTNUM(323) XBOX_KEY_DATA XboxHDKey;
+EXPORTNUM(353) XBOX_KEY_DATA XboxLANKey;
+
 // Source: Cxbx-Reloaded
 static const EepromInfo *ExpFindEepromInfo(XC_VALUE_INDEX Index)
 {

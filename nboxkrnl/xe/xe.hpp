@@ -29,7 +29,13 @@ extern "C" {
 
 extern EXPORTNUM(164) PLAUNCH_DATA_PAGE LaunchDataPage;
 
+extern EXPORTNUM(325) XBOX_KEY_DATA XboxSignatureKey;
+
 extern EXPORTNUM(326) OBJECT_STRING XeImageFileName;
+
+extern EXPORTNUM(354) XBOX_KEY_DATA XboxAlternateSignatureKeys[ALTERNATE_SIGNATURE_COUNT];
+
+extern EXPORTNUM(355) UCHAR XePublicKeyData[284];
 
 EXPORTNUM(327) NTSTATUS XBOXAPI XeLoadSection
 (

@@ -30,7 +30,13 @@ static_assert(sizeof(wchar_t) == 2);
 
 EXPORTNUM(164) PLAUNCH_DATA_PAGE LaunchDataPage = nullptr;
 
+EXPORTNUM(325) XBOX_KEY_DATA XboxSignatureKey;
+
 EXPORTNUM(326) OBJECT_STRING XeImageFileName = { 0, 0, nullptr };
+
+EXPORTNUM(354) XBOX_KEY_DATA XboxAlternateSignatureKeys[ALTERNATE_SIGNATURE_COUNT];
+
+EXPORTNUM(355) UCHAR XePublicKeyData[284];
 
 static INITIALIZE_GLOBAL_CRITICAL_SECTION(XepXbeLoaderLock);
 

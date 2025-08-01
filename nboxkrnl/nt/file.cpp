@@ -23,6 +23,40 @@ EXPORTNUM(190) NTSTATUS XBOXAPI NtCreateFile
 	return IoCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, 0);
 }
 
+EXPORTNUM(195) NTSTATUS XBOXAPI NtDeleteFile
+(
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+EXPORTNUM(198) NTSTATUS XBOXAPI NtFlushBuffersFile
+(
+	PVOID                FileHandle,
+	OUT PIO_STATUS_BLOCK IoStatusBlock
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+EXPORTNUM(200) NTSTATUS XBOXAPI NtFsControlFile
+(
+	IN HANDLE               FileHandle,
+	IN HANDLE               Event OPTIONAL,
+	IN PIO_APC_ROUTINE      ApcRoutine OPTIONAL,
+	IN PVOID                ApcContext OPTIONAL,
+	OUT PIO_STATUS_BLOCK    IoStatusBlock,
+	IN ULONG                FsControlCode,
+	IN PVOID                InputBuffer OPTIONAL,
+	IN ULONG                InputBufferLength,
+	OUT PVOID               OutputBuffer OPTIONAL,
+	IN ULONG                OutputBufferLength
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 EXPORTNUM(202) NTSTATUS XBOXAPI NtOpenFile
 (
 	PHANDLE FileHandle,
@@ -34,6 +68,45 @@ EXPORTNUM(202) NTSTATUS XBOXAPI NtOpenFile
 )
 {
 	return IoCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, nullptr, 0, ShareAccess, FILE_OPEN, OpenOptions, 0);
+}
+
+EXPORTNUM(207) NTSTATUS XBOXAPI NtQueryDirectoryFile
+(
+	IN  HANDLE                      FileHandle,
+	IN  HANDLE                      Event OPTIONAL,
+	IN  PVOID                       ApcRoutine, // Todo: define this routine's prototype
+	IN  PVOID                       ApcContext,
+	OUT PIO_STATUS_BLOCK            IoStatusBlock,
+	OUT FILE_DIRECTORY_INFORMATION* FileInformation,
+	IN  ULONG                       Length,
+	IN  FILE_INFORMATION_CLASS      FileInformationClass,
+	IN  PSTRING                     FileMask,
+	IN  BOOLEAN                     RestartScan
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+EXPORTNUM(208) NTSTATUS XBOXAPI NtQueryDirectoryObject
+(
+	IN HANDLE     DirectoryHandle,
+	OUT PVOID     Buffer,
+	IN ULONG      Length,
+	IN BOOLEAN    RestartScan,
+	IN OUT PULONG Context,
+	OUT PULONG    ReturnedLength OPTIONAL
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+EXPORTNUM(210) NTSTATUS XBOXAPI NtQueryFullAttributesFile
+(
+	IN  POBJECT_ATTRIBUTES          ObjectAttributes,
+	OUT PFILE_NETWORK_OPEN_INFORMATION   Attributes
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
 }
 
 EXPORTNUM(211) NTSTATUS XBOXAPI NtQueryInformationFile
@@ -129,6 +202,16 @@ EXPORTNUM(211) NTSTATUS XBOXAPI NtQueryInformationFile
 	ObfDereferenceObject(FileObject);
 
 	return Status;
+}
+
+EXPORTNUM(215) NTSTATUS XBOXAPI NtQuerySymbolicLinkObject
+(
+	HANDLE LinkHandle,
+	OUT PSTRING LinkTarget,
+	OUT PULONG ReturnedLength OPTIONAL
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
 }
 
 EXPORTNUM(218) NTSTATUS XBOXAPI NtQueryVolumeInformationFile

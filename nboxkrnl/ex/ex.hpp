@@ -471,6 +471,9 @@ EXPORTNUM(229) NTSTATUS NTAPI NtSetTimerEx
 	OUT PBOOLEAN PreviousState OPTIONAL
 );
 
+extern EXPORTNUM(323) XBOX_KEY_DATA XboxHDKey;
+extern EXPORTNUM(353) XBOX_KEY_DATA XboxLANKey;
+
 #ifdef __cplusplus
 }
 #endif

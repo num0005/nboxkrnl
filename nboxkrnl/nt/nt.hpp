@@ -66,6 +66,11 @@ EXPORTNUM(192) NTSTATUS XBOXAPI NtCreateMutant
 	BOOLEAN InitialOwner
 );
 
+EXPORTNUM(195) NTSTATUS XBOXAPI NtDeleteFile
+(
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+);
+
 EXPORTNUM(196) NTSTATUS XBOXAPI NtDeviceIoControlFile
 (
 	HANDLE FileHandle,
@@ -89,11 +94,31 @@ EXPORTNUM(197) NTSTATUS NTAPI NtDuplicateObject
 	IN ULONG Options
 );
 
+EXPORTNUM(198) NTSTATUS XBOXAPI NtFlushBuffersFile
+(
+	PVOID                FileHandle,
+	OUT PIO_STATUS_BLOCK IoStatusBlock
+);
+
 EXPORTNUM(199) NTSTATUS XBOXAPI NtFreeVirtualMemory
 (
 	PVOID *BaseAddress,
 	PULONG FreeSize,
 	ULONG FreeType
+);
+
+EXPORTNUM(200) NTSTATUS XBOXAPI NtFsControlFile
+(
+	IN HANDLE               FileHandle,
+	IN HANDLE               Event OPTIONAL,
+	IN PIO_APC_ROUTINE      ApcRoutine OPTIONAL,
+	IN PVOID                ApcContext OPTIONAL,
+	OUT PIO_STATUS_BLOCK    IoStatusBlock,
+	IN ULONG                FsControlCode,
+	IN PVOID                InputBuffer OPTIONAL,
+	IN ULONG                InputBufferLength,
+	OUT PVOID               OutputBuffer OPTIONAL,
+	IN ULONG                OutputBufferLength
 );
 
 EXPORTNUM(201) NTSTATUS NTAPI NtOpenDirectoryObject
@@ -161,6 +186,52 @@ EXPORTNUM(206) NTSTATUS NTAPI NtQueueApcThread
 	IN OPTIONAL PVOID SystemArgument2
 );
 
+typedef struct _FILE_DIRECTORY_INFORMATION
+{
+	ULONG           NextEntryOffset;
+	ULONG           FileIndex;
+	LARGE_INTEGER   CreationTime;
+	LARGE_INTEGER   LastAccessTime;
+	LARGE_INTEGER   LastWriteTime;
+	LARGE_INTEGER   ChangeTime;
+	LARGE_INTEGER   EndOfFile;
+	LARGE_INTEGER   AllocationSize;
+	ULONG           FileAttributes;
+	ULONG           FileNameLength;
+	CHAR            FileName[1];        // Offset: 0x40
+}
+FILE_DIRECTORY_INFORMATION, * PFILE_DIRECTORY_INFORMATION;
+
+EXPORTNUM(207) NTSTATUS XBOXAPI NtQueryDirectoryFile
+(
+	IN  HANDLE                      FileHandle,
+	IN  HANDLE                      Event OPTIONAL,
+	IN  PVOID                       ApcRoutine, // Todo: define this routine's prototype
+	IN  PVOID                       ApcContext,
+	OUT PIO_STATUS_BLOCK            IoStatusBlock,
+	OUT FILE_DIRECTORY_INFORMATION* FileInformation,
+	IN  ULONG                       Length,
+	IN  FILE_INFORMATION_CLASS      FileInformationClass,
+	IN  PSTRING                     FileMask,
+	IN  BOOLEAN                     RestartScan
+);
+
+EXPORTNUM(208) NTSTATUS XBOXAPI NtQueryDirectoryObject
+(
+	IN HANDLE     DirectoryHandle,
+	OUT PVOID     Buffer,
+	IN ULONG      Length,
+	IN BOOLEAN    RestartScan,
+	IN OUT PULONG Context,
+	OUT PULONG    ReturnedLength OPTIONAL
+);
+
+EXPORTNUM(210) NTSTATUS XBOXAPI NtQueryFullAttributesFile
+(
+	IN  POBJECT_ATTRIBUTES          ObjectAttributes,
+	OUT PFILE_NETWORK_OPEN_INFORMATION   Attributes
+);
+
 EXPORTNUM(211) NTSTATUS XBOXAPI NtQueryInformationFile
 (
 	HANDLE FileHandle,
@@ -200,6 +271,34 @@ EXPORTNUM(213) NTSTATUS NTAPI NtQueryMutant
 	OUT PMUTANT_BASIC_INFORMATION MutantInformation
 );
 
+EXPORTNUM(215) NTSTATUS XBOXAPI NtQuerySymbolicLinkObject
+(
+	HANDLE LinkHandle,
+	OUT PSTRING LinkTarget,
+	OUT PULONG ReturnedLength OPTIONAL
+);
+
+typedef struct _MEMORY_BASIC_INFORMATION
+{
+	PVOID   BaseAddress;
+	PVOID   AllocationBase;
+	DWORD   AllocationProtect;
+	SIZE_T  RegionSize;
+	DWORD   State;
+	DWORD   Protect;
+	DWORD   Type;
+}
+MEMORY_BASIC_INFORMATION, * PMEMORY_BASIC_INFORMATION;
+
+inline EXPORTNUM(217) NTSTATUS XBOXAPI NtQueryVirtualMemory
+(
+	IN  PVOID                       BaseAddress,
+	OUT PMEMORY_BASIC_INFORMATION   Buffer
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 EXPORTNUM(218) NTSTATUS XBOXAPI NtQueryVolumeInformationFile
 (
 	HANDLE FileHandle,
@@ -221,10 +320,34 @@ EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 	PLARGE_INTEGER ByteOffset
 );
 
+inline EXPORTNUM(220) NTSTATUS XBOXAPI NtReadFileScatter
+(
+	IN HANDLE FileHandle,
+	IN HANDLE Event OPTIONAL,
+	IN PIO_APC_ROUTINE ApcRoutine OPTIONAL,
+	IN PVOID ApcContext OPTIONAL,
+	OUT PIO_STATUS_BLOCK IoStatusBlock,
+	IN PFILE_SEGMENT_ELEMENT SegmentArray,
+	IN ULONG Length,
+	IN PLARGE_INTEGER ByteOffset OPTIONAL
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 EXPORTNUM(221) NTSTATUS XBOXAPI NtReleaseMutant
 (
 	HANDLE MutantHandle,
 	PLONG PreviousCount
+);
+
+EXPORTNUM(223) NTSTATUS XBOXAPI NtRemoveIoCompletion
+(
+	IN HANDLE IoCompletionHandle,
+	OUT PVOID* KeyContext,
+	OUT PVOID* ApcContext,
+	OUT PIO_STATUS_BLOCK IoStatusBlock,
+	IN PLARGE_INTEGER Timeout OPTIONAL
 );
 
 EXPORTNUM(224) NTSTATUS NTAPI NtResumeThread
@@ -232,6 +355,18 @@ EXPORTNUM(224) NTSTATUS NTAPI NtResumeThread
 	IN  HANDLE  ThreadHandle,
 	OUT PULONG  PreviousSuspendCount OPTIONAL
 );
+
+inline EXPORTNUM(226) NTSTATUS XBOXAPI NtSetInformationFile
+(
+	IN  HANDLE                   FileHandle,
+	OUT PIO_STATUS_BLOCK         IoStatusBlock,
+	IN  PVOID                    FileInformation,
+	IN  ULONG                    Length,
+	IN  FILE_INFORMATION_CLASS   FileInformationClass
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
 
 EXPORTNUM(227) NTSTATUS NTAPI NtSetIoCompletion
 (
@@ -256,6 +391,18 @@ EXPORTNUM(228) NTSTATUS NTAPI NtSetSystemTime
 	IN PLARGE_INTEGER SystemTime,
 	OUT PLARGE_INTEGER PreviousTime OPTIONAL
 );
+
+inline EXPORTNUM(230) NTSTATUS NTAPI NtSignalAndWaitForSingleObjectEx
+(
+	IN HANDLE SignalHandle,
+	IN HANDLE WaitHandle,
+	IN KPROCESSOR_MODE WaitMode,
+	IN BOOLEAN Alertable,
+	IN PLARGE_INTEGER Timeout OPTIONAL
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
 
 EXPORTNUM(231) NTSTATUS NTAPI NtSuspendThread
 (
@@ -306,6 +453,21 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 	ULONG Length,
 	PLARGE_INTEGER ByteOffset
 );
+
+inline EXPORTNUM(237) NTSTATUS XBOXAPI NtWriteFileGather
+(
+	IN HANDLE FileHandle,
+	IN HANDLE Event OPTIONAL,
+	IN PIO_APC_ROUTINE ApcRoutine OPTIONAL,
+	IN PVOID ApcContext OPTIONAL,
+	OUT PIO_STATUS_BLOCK IoStatusBlock,
+	IN PFILE_SEGMENT_ELEMENT SegmentArray,
+	IN ULONG Length,
+	IN PLARGE_INTEGER ByteOffset OPTIONAL
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
 
 /*++
 * @name NtMakeTemporaryObject

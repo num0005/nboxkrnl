@@ -8,6 +8,7 @@
 #include "nt.hpp"
 #include "dbg.hpp"
 #include "halp.hpp"
+#include "ide.h"
 #include "cdrom\cdrom.hpp"
 #include "hdd\hdd.hpp"
 #include <string.h>
@@ -43,6 +44,8 @@ EXPORTNUM(64) OBJECT_TYPE IoCompletionObjectType =
 	NULL, // &xbox::ObpDefaultObject,
 	'pmoC' // = first four characters of "Completion" in reverse
 };
+
+EXPORTNUM(357) IDE_CHANNEL_OBJECT IdexChannelObject;
 
 BOOLEAN IoInitSystem()
 {
@@ -1332,3 +1335,14 @@ EXPORTNUM(91) NTSTATUS NTAPI IoDismountVolumeByName
 	return STATUS_NOT_IMPLEMENTED;
 }
 
+EXPORTNUM(223) NTSTATUS XBOXAPI NtRemoveIoCompletion
+(
+	IN HANDLE IoCompletionHandle,
+	OUT PVOID* KeyContext,
+	OUT PVOID* ApcContext,
+	OUT PIO_STATUS_BLOCK IoStatusBlock,
+	IN PLARGE_INTEGER Timeout OPTIONAL
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}

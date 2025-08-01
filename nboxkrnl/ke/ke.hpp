@@ -9,6 +9,7 @@
 #include "rtl_assert.hpp"
 
 #define XBOX_KEY_LENGTH 16
+#define ALTERNATE_SIGNATURE_COUNT 16
 
 #define THREAD_QUANTUM 60 // ms that a thread is allowed to run before being preempted, in multiples of CLOCK_QUANTUM_DECREMENT
 #define CLOCK_QUANTUM_DECREMENT 3 // subtracts 1 ms after every clock interrupt, in multiples of CLOCK_QUANTUM_DECREMENT
