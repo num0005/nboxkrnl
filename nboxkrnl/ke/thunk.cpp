@@ -260,7 +260,7 @@ ULONG KernelThunkTable[379] =
 	(ULONG)FUNC(&NtWriteFile),                             // 0x00EC (236)
 	(ULONG)FUNC(nullptr), //(ULONG)FUNC(&NtWriteFileGather),                       // 0x00ED (237)
 	(ULONG)FUNC(nullptr), //(ULONG)FUNC(&NtYieldExecution),                        // 0x00EE (238)
-	(ULONG)FUNC(&ObCreateObject),                          // 0x00EF (239)
+	(ULONG)FUNC(nullptr),                          // 0x00EF (239)
 	(ULONG)VARIABLE(&ObDirectoryObjectType),               // 0x00F0 (240)
 	(ULONG)FUNC(&ObInsertObject),                          // 0x00F1 (241)
 	(ULONG)FUNC(&ObMakeTemporaryObject),                   // 0x00F2 (242)

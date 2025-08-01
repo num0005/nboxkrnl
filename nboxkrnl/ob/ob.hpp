@@ -252,3 +252,15 @@ NTSTATUS FASTCALL ObfCloseHandle
 #endif
 
 BOOLEAN ObInitSystem();
+
+template <typename T>
+NTSTATUS ObCreateObject
+(
+	POBJECT_TYPE ObjectType,
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	T** Object
+)
+{
+	return ObCreateObject(ObjectType, ObjectAttributes, sizeof(T), (PVOID*)Object);
+}
+
