@@ -252,12 +252,39 @@ EXPORTNUM(78) VOID XBOXAPI IoRemoveShareAccess
 	PSHARE_ACCESS ShareAccess
 );
 
+EXPORTNUM(79) NTSTATUS NTAPI IoSetIoCompletion
+(
+	IN PVOID IoCompletion,
+	IN PVOID KeyContext,
+	IN PVOID ApcContext,
+	IN NTSTATUS IoStatus,
+	IN ULONG_PTR IoStatusInformation
+);
+
 EXPORTNUM(80) VOID XBOXAPI IoSetShareAccess
 (
 	ULONG DesiredAccess,
 	ULONG DesiredShareAccess,
 	PFILE_OBJECT FileObject,
 	PSHARE_ACCESS ShareAccess
+);
+
+EXPORTNUM(81) VOID NTAPI IoStartNextPacket
+(
+	IN PDEVICE_OBJECT DeviceObject
+);
+
+EXPORTNUM(82) VOID NTAPI IoStartNextPacketByKey
+(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN ULONG Key
+);
+
+EXPORTNUM(83) VOID NTAPI IoStartPacket
+(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PIRP Irp,
+	IN PULONG Key
 );
 
 EXPORTNUM(85) NTSTATUS NTAPI IoSynchronousFsdRequest

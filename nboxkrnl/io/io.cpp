@@ -655,6 +655,81 @@ EXPORTNUM(78) VOID XBOXAPI IoRemoveShareAccess
 	}
 }
 
+/*
+ * @implemented
+ */
+EXPORTNUM(79) NTSTATUS NTAPI IoSetIoCompletion
+(
+	IN PVOID IoCompletion,
+	IN PVOID KeyContext,
+	IN PVOID ApcContext,
+	IN NTSTATUS IoStatus,
+	IN ULONG_PTR IoStatusInformation
+)
+{
+	// reactos implementation 
+	#if 0
+	PKQUEUE Queue = (PKQUEUE)IoCompletion;
+	PNPAGED_LOOKASIDE_LIST List;
+	PKPRCB Prcb = KeGetCurrentPrcb();
+	PIOP_MINI_COMPLETION_PACKET Packet;
+
+	/* Get the P List */
+	List = (PNPAGED_LOOKASIDE_LIST)Prcb->
+		PPLookasideList[LookasideCompletionList].P;
+
+/* Try to allocate the Packet */
+	List->L.TotalAllocates++;
+	Packet = (PVOID)InterlockedPopEntrySList(&List->L.ListHead);
+
+	/* Check if that failed, use the L list if it did */
+	if (!Packet)
+	{
+		/* Let the balancer know */
+		List->L.AllocateMisses++;
+
+		/* Get L List */
+		List = (PNPAGED_LOOKASIDE_LIST)Prcb->PPLookasideList[LookasideCompletionList].L;
+
+	/* Try to allocate the Packet */
+		List->L.TotalAllocates++;
+		Packet = (PVOID)InterlockedPopEntrySList(&List->L.ListHead);
+	}
+
+	/* Still failed, use pool */
+	if (!Packet)
+	{
+		/* Let the balancer know */
+		List->L.AllocateMisses++;
+
+		/* Allocate from Nonpaged Pool */
+		Packet = ExAllocatePoolWithTag(sizeof(*Packet), IOC_TAG);
+	}
+
+	/* Make sure we have one by now... */
+	if (Packet)
+	{
+		/* Set up the Packet */
+		Packet->PacketType = IopCompletionPacketMini;
+		Packet->KeyContext = KeyContext;
+		Packet->ApcContext = ApcContext;
+		Packet->IoStatus = IoStatus;
+		Packet->IoStatusInformation = IoStatusInformation;
+
+		/* Insert the Queue */
+		KeInsertQueue(Queue, &Packet->ListEntry);
+	}
+	else
+	{
+		/* Out of memory, fail */
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
+	#endif
+
+	/* Return Success */
+	return STATUS_IO_DEVICE_ERROR;
+}
+
 EXPORTNUM(80) VOID XBOXAPI IoSetShareAccess
 (
 	ULONG DesiredAccess,
@@ -1056,3 +1131,120 @@ PIRP IoAllocateIrpNoFail(CCHAR StackSize)
 		KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
 	}
 }
+
+VOID NTAPI IopStartNextPacket
+(
+	IN PDEVICE_OBJECT DeviceObject
+)
+{
+	PKDEVICE_QUEUE_ENTRY Entry;
+	PIRP Irp;
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	/* Clear the current IRP */
+	DeviceObject->CurrentIrp = NULL;
+
+	/* Remove an entry from the queue */
+	Entry = KeRemoveDeviceQueue(&DeviceObject->DeviceQueue);
+	if (Entry)
+	{
+		/* Get the IRP and set it */
+		Irp = CONTAINING_RECORD(Entry, IRP, Tail.Overlay.DeviceQueueEntry);
+		DeviceObject->CurrentIrp = Irp;
+
+		/* Call the Start I/O Routine */
+		DeviceObject->DriverObject->DriverStartIo(DeviceObject, Irp);
+	}
+}
+
+EXPORTNUM(81) VOID NTAPI IoStartNextPacket
+(
+	IN PDEVICE_OBJECT DeviceObject
+)
+{
+	IopStartNextPacket(DeviceObject);
+}
+
+VOID NTAPI IopStartNextPacketByKey
+(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN ULONG Key
+)
+{
+	PKDEVICE_QUEUE_ENTRY Entry;
+	PIRP Irp;
+	ASSERT_IRQL_LESS_OR_EQUAL(DISPATCH_LEVEL);
+
+	/* Clear the current IRP */
+	DeviceObject->CurrentIrp = NULL;
+
+	/* Remove an entry from the queue */
+	Entry = KeRemoveByKeyDeviceQueue(&DeviceObject->DeviceQueue, Key);
+	if (Entry)
+	{
+		/* Get the IRP and set it */
+		Irp = CONTAINING_RECORD(Entry, IRP, Tail.Overlay.DeviceQueueEntry);
+		DeviceObject->CurrentIrp = Irp;
+
+		/* Call the Start I/O Routine */
+		DeviceObject->DriverObject->DriverStartIo(DeviceObject, Irp);
+	}
+}
+
+/*
+ * @implemented
+ */
+EXPORTNUM(82) VOID NTAPI IoStartNextPacketByKey
+(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN ULONG Key
+)
+{
+	IopStartNextPacketByKey(DeviceObject, Key);
+}
+
+/*
+ * @implemented
+ */
+EXPORTNUM(83) VOID NTAPI IoStartPacket
+(
+	IN PDEVICE_OBJECT DeviceObject,
+	IN PIRP Irp,
+	IN PULONG Key
+)
+{
+	BOOLEAN Stat;
+	KIRQL OldIrql, CancelIrql;
+
+	/* Raise to dispatch level */
+	KeRaiseIrql(DISPATCH_LEVEL, &OldIrql);
+
+	/* Check if we have a key */
+	if (Key)
+	{
+		/* Insert by key */
+		Stat = KeInsertByKeyDeviceQueue(&DeviceObject->DeviceQueue,
+			&Irp->Tail.Overlay.DeviceQueueEntry,
+			*Key);
+	}
+	else
+	{
+		/* Insert without a key */
+		Stat = KeInsertDeviceQueue(&DeviceObject->DeviceQueue,
+			&Irp->Tail.Overlay.DeviceQueueEntry);
+	}
+
+	/* Check if this was a first insert */
+	if (!Stat)
+	{
+		/* Set the IRP */
+		DeviceObject->CurrentIrp = Irp;
+
+		/* Call the Start I/O function */
+		DeviceObject->DriverObject->DriverStartIo(DeviceObject, Irp);
+	}
+
+	/* Return back to previous IRQL */
+	KeLowerIrql(OldIrql);
+}
+
