@@ -218,6 +218,7 @@ file (GLOB SOURCES
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/rtlprint.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/rtl.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/strings.cpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/rtl/image.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xc/crypto.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xc/sha.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/xe/xe.cpp"

@@ -23,6 +23,7 @@
 #define CRITICAL_SECTION_INTERNAL_ERRROR  202
 #define INVALID_WORK_QUEUE_ITEM           203
 #define UNEXPECTED_OOM                    204
+#define IMPORTED_FUNCTION_MISSING         205
 
 // Optional bug codes used in following arguments in KeBugCheckEx
 #define MM_FAILURE 0
