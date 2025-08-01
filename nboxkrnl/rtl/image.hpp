@@ -180,11 +180,9 @@ NTSTATUS RtlGetProcedureAddress
 	_Out_ PVOID* ProcedureAddress
 );
 
-
-
 #if _MSC_VER
 extern "C" IMAGE_DOS_HEADER __ImageBase;
-#define KernelBase (PVOID)(&__ImageBase) 
+#define KernelBase ((PVOID)(&__ImageBase)) 
 #else
-#define KernelBase (PVOID)(0x80010000)
+#define KernelBase ((PVOID)(0x80010000))
 #endif

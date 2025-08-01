@@ -184,6 +184,8 @@ NTSTATUS RtlGetProcedureAddress
 
 	PULONG AddressOfFunctions = (PULONG)((ULONG)BaseAddress + ExportDir->AddressOfFunctions);
 	ULONG FunctionRVA = AddressOfFunctions[Ordinal];
+	if (!FunctionRVA)
+		DbgPrint("ordinal seems invalid");
 	PVOID Function = (PVOID)((ULONG)BaseAddress + FunctionRVA);
 
 	*ProcedureAddress = Function;

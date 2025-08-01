@@ -132,12 +132,12 @@ static_assert((KiIdtLimit + 1) / sizeof(KIDT) == 64);
 
 void InitializeCrt()
 {
-	PIMAGE_DOS_HEADER dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(KERNEL_BASE);
-	PIMAGE_NT_HEADERS32 pNtHeader = reinterpret_cast<PIMAGE_NT_HEADERS32>(KERNEL_BASE + dosHeader->e_lfanew);
+	PIMAGE_NT_HEADERS32 NtHeader = RtlImageNtHeader(KernelBase);
+	NT_ASSERT(NtHeader);
 
 	PIMAGE_SECTION_HEADER crtSection = nullptr;
-	PIMAGE_SECTION_HEADER section = reinterpret_cast<PIMAGE_SECTION_HEADER>(pNtHeader + 1);
-	for (WORD i = 0; i < pNtHeader->FileHeader.NumberOfSections; i++) {
+	PIMAGE_SECTION_HEADER section = reinterpret_cast<PIMAGE_SECTION_HEADER>(NtHeader + 1);
+	for (WORD i = 0; i < NtHeader->FileHeader.NumberOfSections; i++) {
 		if (strcmp((char *)&section[i].Name, ".CRT") == 0) {
 			crtSection = &section[i];
 			break;
@@ -149,7 +149,7 @@ void InitializeCrt()
 	}
 
 	using CrtFunc = void(*)();
-	CrtFunc *initializer = reinterpret_cast<CrtFunc *>(KERNEL_BASE + crtSection->VirtualAddress);
+	CrtFunc *initializer = reinterpret_cast<CrtFunc *>((ULONG)(KernelBase) + crtSection->VirtualAddress);
 	while (*initializer) {
 		(*initializer)();
 		++initializer;

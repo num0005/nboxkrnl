@@ -7,7 +7,6 @@
 #include "types.hpp"
 
 #define KERNEL_STACK_SIZE 12288
-#define KERNEL_BASE 0x80010000
 
 // Host device number
 #define DEV_CDROM      0

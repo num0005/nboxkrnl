@@ -71,14 +71,15 @@ BOOLEAN MmInitSystem()
 	}
 
 	// Calculate how large is the kernel image, so that we can keep its allocation and unmap all the other large pages we were booted with
-	PIMAGE_DOS_HEADER dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(KERNEL_BASE);
-	PIMAGE_NT_HEADERS32 pNtHeader = reinterpret_cast<PIMAGE_NT_HEADERS32>(KERNEL_BASE + dosHeader->e_lfanew);
-	DWORD KernelSize = ROUND_UP_4K(pNtHeader->OptionalHeader.SizeOfImage);
+	PIMAGE_NT_HEADERS32 NtHeader = RtlImageNtHeader(KernelBase);
+	NT_ASSERT(NtHeader);
+	DWORD KernelSize = ROUND_UP_4K(NtHeader->OptionalHeader.SizeOfImage);
 
 	// Sanity check: make sure our kernel size is below 4 MiB. A real uncompressed kernel is approximately 1.2 MiB large
-	ULONG PdeNumber = PAGES_SPANNED_LARGE(KERNEL_BASE, KernelSize);
-	PdeNumber = PAGES_SPANNED_LARGE(KERNEL_BASE, (PdeNumber + RequiredPt) * PAGE_SIZE + KernelSize); // also count the space needed for the pts
-	if ((KERNEL_BASE + KernelSize + PdeNumber * PAGE_SIZE) >= 0x80400000) {
+	ULONG PdeNumber = PAGES_SPANNED_LARGE(KernelBase, KernelSize);
+	PdeNumber = PAGES_SPANNED_LARGE(KernelBase, (PdeNumber + RequiredPt) * PAGE_SIZE + KernelSize); // also count the space needed for the pts
+	const ULONG KernelEnd = (ULONG)(KernelBase) + KernelSize;
+	if ((KernelEnd + PdeNumber * PAGE_SIZE) >= 0x80400000) {
 		return FALSE;
 	}
 
@@ -107,13 +108,13 @@ BOOLEAN MmInitSystem()
 	}
 
 	// Map the kernel image
-	ULONG NextPageTableAddr = KERNEL_BASE + KernelSize;
-	ULONG TempPte = ValidKernelPteBits | SetPfn(KERNEL_BASE);
-	PMMPTE PteEnd = (PMMPTE)(NextPageTableAddr + GetPteOffset(KERNEL_BASE + KernelSize - 1) * 4);
+	ULONG NextPageTableAddr = KernelEnd;
+	ULONG TempPte = ValidKernelPteBits | SetPfn(KernelBase);
+	PMMPTE PteEnd = (PMMPTE)(NextPageTableAddr + GetPteOffset(KernelEnd - 1) * 4);
 	RtlFillMemoryUlong((PCHAR)NextPageTableAddr, PAGE_SIZE, 0); // zero out the page table used by the kernel
 	{
-		ULONG Addr = KERNEL_BASE;
-		for (PMMPTE Pte = (PMMPTE)(NextPageTableAddr + GetPteOffset(KERNEL_BASE) * 4); Pte <= PteEnd; ++Pte) {
+		ULONG Addr = (ULONG)KernelBase;
+		for (PMMPTE Pte = (PMMPTE)(NextPageTableAddr + GetPteOffset(KernelBase) * 4); Pte <= PteEnd; ++Pte) {
 			WritePte(Pte, TempPte);
 
 			// NOTE: this cannot use the overload MiRemovePageFromFreeList that updates PtesUsed of the pfn of the page table that maps this allocation. This, because
@@ -136,12 +137,12 @@ BOOLEAN MmInitSystem()
 		// Map the pt of the kernel image. This is backed by the page immediately following it
 		// This must happen after the ptes of the pt have been written, because writing the new pde invalidates the large page the kernel is currently using. Otherwise,
 		// if some kernel code resides on a 4K page that was not yet cached in the TLB, it will cause a page fault
-		WritePte(GetPdeAddress(KERNEL_BASE), ValidKernelPdeBits | SetPfn(NextPageTableAddr)); // write pde for the kernel image and also of the pt
+		WritePte(GetPdeAddress(KernelBase), ValidKernelPdeBits | SetPfn(NextPageTableAddr)); // write pde for the kernel image and also of the pt
 		PXBOX_PFN Pf = MiRemovePageFromFreeList(GetPfnFromContiguous(NextPageTableAddr));
 		Pf->PtPageFrame.Busy = 1;
 		Pf->PtPageFrame.BusyType = VirtualPageTable;
 		Pf->PtPageFrame.LockCount = 0;
-		Pf->PtPageFrame.PtesUsed = PAGES_SPANNED(KERNEL_BASE, KernelSize);
+		Pf->PtPageFrame.PtesUsed = PAGES_SPANNED(KernelBase, KernelSize);
 		++MiPagesByUsage[VirtualPageTable];
 		NextPageTableAddr += PAGE_SIZE;
 	}
