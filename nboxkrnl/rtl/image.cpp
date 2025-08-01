@@ -149,12 +149,12 @@ NTSTATUS RtlGetProcedureAddress
 	NT_ASSERT_MESSAGE(Name == nullptr, "Lookup by name is not implemented!");
 	NT_ASSERT(ProcedureAddress);
 
-	if (ProcedureAddress)
+	if (!ProcedureAddress)
 		return STATUS_INVALID_PARAMETER_4;
 
 	*ProcedureAddress = &RtlBadImport;
 
-	if (Ordinal == 0 || Name == NULL)
+	if (Ordinal != 0 && Name != NULL)
 		return STATUS_INVALID_PARAMETER_2;
 	if (Ordinal == 0 && Name == NULL)
 		return STATUS_INVALID_PARAMETER_3;
