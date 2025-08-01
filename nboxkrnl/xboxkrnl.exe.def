@@ -376,3 +376,4 @@ EXPORTS
     _MmDbgQueryAvailablePages@0               @ 376 NONAME
     _MmDbgReleaseAddress@8                    @ 377 NONAME
     _MmDbgWriteCheck@8                        @ 378 NONAME
+    NboxkrnlVersion                           @ 2552 DATA
