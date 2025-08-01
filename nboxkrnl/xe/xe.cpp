@@ -11,6 +11,7 @@
 #include "obp.hpp"
 #include "hal.hpp"
 #include "dbg.hpp"
+#include "image.hpp"
 #include <string.h>
 
 #define XBE_BASE_ADDRESS 0x10000
@@ -178,12 +179,23 @@ static NTSTATUS XeLoadXbe()
 		}
 	}
 
+	Status = STATUS_SUCCESS;
+
 	// Map the kernel thunk table to the XBE kernel imports
 	PULONG XbeKrnlThunk = (PULONG)GetXbeAddress()->dwKernelImageThunkAddr;
 	unsigned i = 0;
 	while (XbeKrnlThunk[i]) {
-		ULONG t = XbeKrnlThunk[i] & 0x7FFFFFFF;
-		XbeKrnlThunk[i] = KernelThunkTable[t];
+		ULONG Ordinal = XbeKrnlThunk[i] & 0x7FFFFFFF;
+
+		NT_ASSERT(Ordinal != 0);
+
+		PVOID FunctionAddress = NULL;
+		Status = RtlGetProcedureAddress(KernelBase, NULL, Ordinal, &FunctionAddress);
+
+		if (!NT_SUCCESS(Status))
+			break;
+
+		XbeKrnlThunk[i] = (ULONG)FunctionAddress;
 		++i;
 	}
 
@@ -199,7 +211,7 @@ static NTSTATUS XeLoadXbe()
 
 	NtClose(XbeHandle);
 
-	return STATUS_SUCCESS;
+	return Status;
 }
 
 VOID XBOXAPI XbeStartupThread(PVOID Opaque)

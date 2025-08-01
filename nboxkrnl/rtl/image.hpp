@@ -179,3 +179,12 @@ NTSTATUS RtlGetProcedureAddress
 	_In_opt_ _When_(Name == NULL, _In_range_(> , 0)) ULONG Ordinal,
 	_Out_ PVOID* ProcedureAddress
 );
+
+
+
+#if _MSC_VER
+extern "C" IMAGE_DOS_HEADER __ImageBase;
+#define KernelBase (PVOID)(&__ImageBase) 
+#else
+#define KernelBase (PVOID)(0x80010000)
+#endif

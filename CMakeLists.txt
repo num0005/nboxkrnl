@@ -192,7 +192,6 @@ file (GLOB SOURCES
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/semaphore.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/spinlock.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/thread.cpp"
- "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/thunk.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/timer.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/wait.cpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/mm/mi.cpp"
