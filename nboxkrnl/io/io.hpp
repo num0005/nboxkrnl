@@ -176,6 +176,8 @@ EXPORTNUM(63) NTSTATUS XBOXAPI IoCheckShareAccess
 	BOOLEAN Update
 );
 
+EXPORTNUM(64) extern OBJECT_TYPE IoCompletionObjectType;
+
 EXPORTNUM(65) NTSTATUS XBOXAPI IoCreateDevice
 (
 	PDRIVER_OBJECT DriverObject,

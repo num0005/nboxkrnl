@@ -45,6 +45,20 @@ EXPORTNUM(190) NTSTATUS XBOXAPI NtCreateFile
 	ULONG CreateOptions
 );
 
+EXPORTNUM(191) NTSTATUS NTAPI NtCreateIoCompletion
+(
+	OUT PHANDLE IoCompletionHandle,
+	IN ACCESS_MASK DesiredAccess,
+	IN POBJECT_ATTRIBUTES ObjectAttributes,
+	IN ULONG NumberOfConcurrentThreads
+);
+
+NTSTATUS NTAPI NtOpenIoCompletion
+(
+	OUT PHANDLE IoCompletionHandle,
+	IN POBJECT_ATTRIBUTES ObjectAttributes
+);
+
 EXPORTNUM(192) NTSTATUS XBOXAPI NtCreateMutant
 (
 	PHANDLE MutantHandle,
@@ -207,6 +221,15 @@ EXPORTNUM(224) NTSTATUS NTAPI NtResumeThread
 (
 	IN  HANDLE  ThreadHandle,
 	OUT PULONG  PreviousSuspendCount OPTIONAL
+);
+
+EXPORTNUM(227) NTSTATUS NTAPI NtSetIoCompletion
+(
+	IN HANDLE IoCompletionPortHandle,
+	IN PVOID CompletionKey,
+	IN PVOID CompletionContext,
+	IN NTSTATUS CompletionStatus,
+	IN ULONG CompletionInformation
 );
 
 /*
