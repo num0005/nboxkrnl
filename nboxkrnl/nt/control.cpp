@@ -90,6 +90,35 @@ NTSTATUS NTAPI NtOpenIoCompletion
     return Status;
 }
 
+EXPORTNUM(212) NTSTATUS NTAPI NtQueryIoCompletion
+(
+    IN  HANDLE IoCompletionHandle,
+    OUT IO_COMPLETION_BASIC_INFORMATION* IoCompletionInformation
+)
+{
+    PKQUEUE Queue;
+    NTSTATUS Status;
+    PAGED_CODE();
+
+    if (!IoCompletionInformation)
+        return STATUS_INVALID_PARAMETER_2;
+
+    /* Get the Object */
+    Status = ObReferenceObjectByHandle(IoCompletionHandle,
+        &IoCompletionObjectType,
+        (PVOID*)&Queue);
+
+    if (NT_SUCCESS(Status))
+    {
+        IoCompletionInformation->Depth = KeReadStateQueue(Queue);
+
+        /* Dereference the queue */
+        ObDereferenceObject(Queue);
+    }
+
+    /* Return Status */
+    return Status;
+}
 
 EXPORTNUM(227) NTSTATUS NTAPI NtSetIoCompletion
 (

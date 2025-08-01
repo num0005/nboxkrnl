@@ -170,6 +170,16 @@ EXPORTNUM(211) NTSTATUS XBOXAPI NtQueryInformationFile
 	FILE_INFORMATION_CLASS FileInformationClass
 );
 
+typedef struct _IO_COMPLETION_BASIC_INFORMATION
+{
+	LONG Depth;
+} IO_COMPLETION_BASIC_INFORMATION, * PIO_COMPLETION_BASIC_INFORMATION;
+
+EXPORTNUM(212) NTSTATUS NTAPI NtQueryIoCompletion
+(
+	IN  HANDLE IoCompletionHandle,
+	OUT IO_COMPLETION_BASIC_INFORMATION* IoCompletionInformation
+);
 
 //
 // Information Structures for NtQueryMutant
