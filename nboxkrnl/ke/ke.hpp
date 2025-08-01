@@ -1066,6 +1066,18 @@ EXPORTNUM(156) extern volatile DWORD KeTickCount;
 
 EXPORTNUM(157) extern ULONG KeTimeIncrement;
 
+EXPORTNUM(158) NTSTATUS NTAPI KeWaitForMultipleObjects
+(
+	IN ULONG Count,
+	IN PVOID Object[],
+	IN WAIT_TYPE WaitType,
+	IN KWAIT_REASON WaitReason,
+	IN KPROCESSOR_MODE WaitMode,
+	IN BOOLEAN Alertable,
+	IN PLARGE_INTEGER Timeout OPTIONAL,
+	OUT PKWAIT_BLOCK WaitBlockArray OPTIONAL
+);
+
 EXPORTNUM(159) NTSTATUS XBOXAPI KeWaitForSingleObject
 (
 	PVOID Object,
