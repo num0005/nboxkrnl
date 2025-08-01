@@ -620,6 +620,30 @@ EXPORTNUM(74) NTSTATUS XBOXAPI IoInvalidDeviceRequest
 	return STATUS_INVALID_DEVICE_REQUEST;
 }
 
+EXPORTNUM(75) NTSTATUS NTAPI IoQueryFileInformation
+(
+	IN PFILE_OBJECT FileObject,
+	IN FILE_INFORMATION_CLASS FileInformationClass,
+	IN ULONG Length,
+	OUT PVOID FileInformation,
+	OUT PULONG ReturnedLength
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+EXPORTNUM(76) NTSTATUS NTAPI IoQueryVolumeInformation
+(
+	IN PFILE_OBJECT FileObject,
+	IN FS_INFORMATION_CLASS FsInformationClass,
+	IN ULONG Length,
+	OUT PVOID FsInformation,
+	OUT PULONG ReturnedLength
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 EXPORTNUM(78) VOID XBOXAPI IoRemoveShareAccess
 (
 	PFILE_OBJECT FileObject,
@@ -727,7 +751,7 @@ EXPORTNUM(79) NTSTATUS NTAPI IoSetIoCompletion
 	#endif
 
 	/* Return Success */
-	return STATUS_IO_DEVICE_ERROR;
+	return STATUS_NOT_IMPLEMENTED;
 }
 
 EXPORTNUM(80) VOID XBOXAPI IoSetShareAccess
@@ -1290,5 +1314,21 @@ EXPORTNUM(83) VOID NTAPI IoStartPacket
 
 	/* Return back to previous IRQL */
 	KeLowerIrql(OldIrql);
+}
+
+EXPORTNUM(90) NTSTATUS NTAPI IoDismountVolume
+(
+	IN PDEVICE_OBJECT DeviceObject
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
+EXPORTNUM(91) NTSTATUS NTAPI IoDismountVolumeByName
+(
+	IN PSTRING VolumeName
+)
+{
+	return STATUS_NOT_IMPLEMENTED;
 }
 

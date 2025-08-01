@@ -241,6 +241,24 @@ EXPORTNUM(74) NTSTATUS XBOXAPI IoInvalidDeviceRequest
 	PIRP Irp
 );
 
+EXPORTNUM(75) NTSTATUS NTAPI IoQueryFileInformation
+(
+	IN PFILE_OBJECT FileObject,
+	IN FILE_INFORMATION_CLASS FileInformationClass,
+	IN ULONG Length,
+	OUT PVOID FileInformation,
+	OUT PULONG ReturnedLength
+);
+
+EXPORTNUM(76) NTSTATUS NTAPI IoQueryVolumeInformation
+(
+	IN PFILE_OBJECT FileObject,
+	IN FS_INFORMATION_CLASS FsInformationClass,
+	IN ULONG Length,
+	OUT PVOID FsInformation,
+	OUT PULONG ReturnedLength
+);
+
 EXPORTNUM(77) VOID XBOXAPI IoQueueThreadIrp
 (
 	IN PIRP Irp
@@ -320,6 +338,16 @@ EXPORTNUM(87) VOID FASTCALL IofCompleteRequest
 (
 	PIRP Irp,
 	CCHAR PriorityBoost
+);
+
+EXPORTNUM(90) NTSTATUS NTAPI IoDismountVolume
+(
+	IN PDEVICE_OBJECT DeviceObject
+);
+
+EXPORTNUM(91) NTSTATUS NTAPI IoDismountVolumeByName
+(
+	IN PSTRING VolumeName
 );
 
 EXPORTNUM(359) VOID XBOXAPI IoMarkIrpMustComplete
