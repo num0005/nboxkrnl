@@ -6,6 +6,7 @@
 #include "obp.hpp"
 #include "rtl.hpp"
 #include <string.h>
+#include <ex.hpp>
 
 
 EXPORTNUM(187) NTSTATUS XBOXAPI NtClose
@@ -115,6 +116,8 @@ EXPORTNUM(233) NTSTATUS XBOXAPI NtWaitForSingleObject
 	return NtWaitForSingleObjectEx(Handle, KernelMode, Alertable, Timeout);
 }
 
+#define TAG_WAIT 'tiaw'
+
 EXPORTNUM(234) NTSTATUS XBOXAPI NtWaitForSingleObjectEx
 (
 	HANDLE Handle,
@@ -151,6 +154,170 @@ EXPORTNUM(234) NTSTATUS XBOXAPI NtWaitForSingleObjectEx
 	}
 
 	return Status;
+}
+
+// todo: set these correctly
+#define MAXIMUM_WAIT_OBJECTS 0x100
+#define THREAD_WAIT_OBJECTS 0x20
+
+EXPORTNUM(235) NTSTATUS NTAPI NtWaitForMultipleObjectsEx
+(
+    IN ULONG ObjectCount,
+    IN PHANDLE Handles,
+    IN WAIT_TYPE WaitType,
+    IN KPROCESSOR_MODE WaitMode,
+    IN BOOLEAN Alertable,
+    IN PLARGE_INTEGER TimeOut OPTIONAL
+)
+{
+    PKWAIT_BLOCK WaitBlockArray;
+    PVOID Objects[MAXIMUM_WAIT_OBJECTS];
+    PVOID WaitObjects[MAXIMUM_WAIT_OBJECTS];
+    ULONG i, ReferencedObjects, j;
+    LARGE_INTEGER SafeTimeOut;
+    BOOLEAN LockInUse;
+    POBJECT_HEADER ObjectHeader;
+    NTSTATUS Status;
+    PAGED_CODE();
+
+    /* Check for valid Object Count */
+    if ((ObjectCount > MAXIMUM_WAIT_OBJECTS) || !(ObjectCount))
+    {
+        /* Fail */
+        return STATUS_INVALID_PARAMETER_1;
+    }
+
+    /* Check for valid Wait Type */
+    if ((WaitType != WaitAll) && (WaitType != WaitAny))
+    {
+        /* Fail */
+        return STATUS_INVALID_PARAMETER_3;
+    }
+
+    /* Check if we can use the internal Wait Array */
+    if (ObjectCount > THREAD_WAIT_OBJECTS)
+    {
+        /* Allocate from Pool */
+        WaitBlockArray = ExNewArrayFromPool<KWAIT_BLOCK>(ObjectCount, TAG_WAIT);
+        if (!WaitBlockArray)
+        {
+            /* Fail */
+            return STATUS_INSUFFICIENT_RESOURCES;
+        }
+    }
+    else
+    {
+        /* No need for the array  */
+        WaitBlockArray = NULL;
+    }
+
+    /* Enter a critical region since we'll play with handles */
+    LockInUse = TRUE;
+    KeEnterCriticalRegion();
+
+    /* Start the loop */
+    i = 0;
+    ReferencedObjects = 0;
+    do
+    {
+        Status = ObReferenceObjectByHandle(Handles[i], NULL, &Objects[i]);
+        if (!NT_SUCCESS(Status))
+            goto Exit;
+
+        ReferencedObjects++;
+
+        /* Get the Object Header */
+        ObjectHeader = GetObjHeader(Objects[i]);
+
+        PVOID ObjectToWaitOn = ObjectHeader->Type->DefaultObject;
+
+        if ((LONG_PTR)ObjectToWaitOn >= 0)
+        {
+            ObjectToWaitOn = (PCHAR)Objects + (ULONG_PTR)ObjectToWaitOn; // DefaultObject is the offset of DISPATCHER_HEADER::Header
+        }
+
+        WaitObjects[i] = ObjectToWaitOn;
+
+        /* Keep looping */
+        i++;
+    } while (i < ObjectCount);
+
+    /* For a Waitall, we can't have the same object more then once */
+    if (WaitType == WaitAll)
+    {
+        /* Clear the main loop variable */
+        i = 0;
+
+        /* Start the loop */
+        do
+        {
+            /* Check the current and forward object */
+            for (j = i + 1; j < ObjectCount; j++)
+            {
+                /* Make sure they don't match */
+                if (WaitObjects[i] == WaitObjects[j])
+                {
+                    /* Fail */
+                    Status = STATUS_INVALID_PARAMETER_MIX;
+                    DPRINT("Passed a duplicate object to NtWaitForMultipleObjects\n");
+                    goto Exit;
+                }
+            }
+
+            /* Keep looping */
+            i++;
+        } while (i < ObjectCount);
+    }
+
+    /* Now we can finally wait. Always use SEH since it can raise an exception */
+    _SEH2_TRY
+    {
+        /* We're done playing with handles */
+        LockInUse = FALSE;
+        KeLeaveCriticalRegion();
+
+        /* Do the kernel wait */
+        Status = KeWaitForMultipleObjects(ObjectCount,
+                                          WaitObjects,
+                                          WaitType,
+                                          UserRequest,
+                                          WaitMode,
+                                          Alertable,
+                                          TimeOut,
+                                          WaitBlockArray);
+    }
+        _SEH2_EXCEPT((_SEH2_GetExceptionCode() == STATUS_MUTANT_LIMIT_EXCEEDED) ?
+            EXCEPTION_EXECUTE_HANDLER :
+            EXCEPTION_CONTINUE_SEARCH)
+    {
+        /* Get the exception code */
+        Status = _SEH2_GetExceptionCode();
+    }
+    _SEH2_END;
+
+Exit:
+    /* First derefence */
+    while (ReferencedObjects)
+    {
+        /* Decrease the number of objects */
+        ReferencedObjects--;
+
+        /* Check if we had a valid object in this position */
+        if (Objects[ReferencedObjects])
+        {
+            /* Dereference it */
+            ObDereferenceObject(Objects[ReferencedObjects]);
+        }
+    }
+
+    /* Free wait block array */
+    if (WaitBlockArray) ExFreePoolWithTag(WaitBlockArray, TAG_WAIT);
+
+    /* Re-enable APCs if needed */
+    if (LockInUse) KeLeaveCriticalRegion();
+
+    /* Return status */
+    return Status;
 }
 
 /*++

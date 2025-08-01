@@ -498,3 +498,9 @@ inline T* ExNewFromPool(ULONG Tag = NONE_TAG)
 {
 	return reinterpret_cast<T*>(ExAllocatePoolWithTag(sizeof(T), Tag));
 }
+
+template<typename T>
+inline T* ExNewArrayFromPool(size_t Count, ULONG Tag = NONE_TAG)
+{
+	return reinterpret_cast<T*>(ExAllocatePoolWithTag(sizeof(T) * Count, Tag));
+}
