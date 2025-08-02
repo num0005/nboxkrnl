@@ -12,7 +12,8 @@
 #include "hal.hpp"
 #include "dbg.hpp"
 #include "image.hpp"
-#include <string.h>
+#include "string.h"
+#include "xc.hpp"
 
 #define XBE_BASE_ADDRESS 0x10000
 #define GetXbeAddress() ((XBE_HEADER *)XBE_BASE_ADDRESS)
@@ -41,6 +42,29 @@ EXPORTNUM(355) UCHAR XePublicKeyData[284];
 
 static INITIALIZE_GLOBAL_CRITICAL_SECTION(XepXbeLoaderLock);
 
+XBE_CERTIFICATE* XeQueryCertificate()
+{
+	return (XBE_CERTIFICATE*)(GetXbeAddress()->dwCertificateAddr);
+}
+
+static void XeSetupPerTitleKeys()
+{
+	// Generate per-title keys from the XBE Certificate
+	UCHAR Digest[20] ={};
+
+	// Set the LAN Key
+	XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzLanKey, XBOX_KEY_LENGTH, NULL, 0, XboxLANKey);
+
+	// Signature Key
+	XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzSignatureKey, XBOX_KEY_LENGTH, NULL, 0, XboxSignatureKey);
+
+	// Alternate Signature Keys
+	for (int i = 0; i < ALTERNATE_SIGNATURE_COUNT; i++)
+	{
+		XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzTitleAlternateSignatureKey[i], XBOX_KEY_LENGTH, NULL, 0, XboxAlternateSignatureKeys[i]);
+	}
+
+}
 
 // Source: partially from Cxbx-Reloaded
 static NTSTATUS XeLoadXbe()
@@ -207,7 +231,7 @@ static NTSTATUS XeLoadXbe()
 		GetXbeAddress()->dwInitFlags.bDontSetupHarddisk = 1;
 	}
 
-	// TODO: extract the keys from the certificate and store them in XboxLANKey, XboxSignatureKey and XboxAlternateSignatureKeys
+	XeSetupPerTitleKeys();
 
 	NtClose(XbeHandle);
 

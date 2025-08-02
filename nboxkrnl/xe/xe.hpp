@@ -51,4 +51,6 @@ EXPORTNUM(328) NTSTATUS XBOXAPI XeUnloadSection
 }
 #endif
 
+XBE_CERTIFICATE* XeQueryCertificate();
+
 VOID XBOXAPI XbeStartupThread(PVOID Opaque);
