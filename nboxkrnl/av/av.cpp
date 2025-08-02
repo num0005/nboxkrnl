@@ -77,7 +77,7 @@
 */
 
 STICKY_PAGE_START
-PVOID AvSavedDataAddress = nullptr;
+PVOID AvSavedDataAddress;
 STICKY_PAGE_END
 
 // ******************************************************************

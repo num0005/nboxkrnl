@@ -14,9 +14,8 @@
 #define CODE_SEG(segment) __declspec(code_seg(segment))
 
 // mark data within (STICKY_PAGE_START, STICKY_PAGE_END) as being part of the sticky page
-// TODO: should this use a data page not a bss page?
-#define STICKY_PAGE_START __pragma(bss_seg(push, STICKY, "STICKY"))
-#define STICKY_PAGE_END __pragma(bss_seg(pop, STICKY))
+#define STICKY_PAGE_START __pragma(data_seg(push, STICKY, "STICKY")) __pragma(bss_seg(push, STICKY, "STICKY"))
+#define STICKY_PAGE_END __pragma(data_seg(pop, STICKY)) __pragma(bss_seg(pop, STICKY))
 
 // segment tag for initalized data, not currently used
 #define DATA_SEG(segment) __declspec(code_seg(segment)) 

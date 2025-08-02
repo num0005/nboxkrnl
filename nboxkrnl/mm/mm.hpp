@@ -151,7 +151,7 @@ using PHYSICAL_ADDRESS = ULONG;
 extern "C" {
 #endif
 
-EXPORTNUM(102) extern MMGLOBALDATA MmGlobalData;
+const EXPORTNUM(102) extern MMGLOBALDATA MmGlobalData;
 
 EXPORTNUM(165) PVOID XBOXAPI MmAllocateContiguousMemory
 (

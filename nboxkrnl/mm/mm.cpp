@@ -13,8 +13,7 @@
 #include <assert.h>
 #include <image.hpp>
 
-
-EXPORTNUM(102) MMGLOBALDATA MmGlobalData = {
+const EXPORTNUM(102) MMGLOBALDATA MmGlobalData = {
 	&MiRetailRegion,
 	&MiSystemPteRegion,
 	&MiTotalPagesAvailable,
@@ -24,7 +23,6 @@ EXPORTNUM(102) MMGLOBALDATA MmGlobalData = {
 	nullptr,
 	(PVOID *)&MiLastFree
 };
-
 
 static DWORD MiConvertPteToProtect(ULONG PteMask)
 {

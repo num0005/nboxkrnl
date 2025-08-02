@@ -172,6 +172,7 @@ enum PageType {
 #define MiLock() KeRaiseIrqlToDpcLevel()
 #define MiUnlock(Irql) KfLowerIrql(Irql)
 
+STICKY_PAGE_START;
 inline bool MiLayoutChihiro;
 inline bool MiLayoutDevkit;
 
@@ -194,9 +195,9 @@ inline PFN MiNV2AInstancePage = XBOX_INSTANCE_PHYSICAL_PAGE;
 // Number of allocated bytes for the nv2a instance memory
 inline size_t MiNV2AInstanceMemoryBytes = NV2A_INSTANCE_PAGE_COUNT << PAGE_SHIFT;
 // Array containing the number of pages in use per type
-inline PFN_COUNT MiPagesByUsage[Max] = { 0 };
+inline PFN_COUNT MiPagesByUsage[Max];
 // Total physical free pages currently available (retail + devkit)
-inline PFN_COUNT MiTotalPagesAvailable = 0;
+inline PFN_COUNT MiTotalPagesAvailable;
 // Tracks free pfns for retail / chihiro
 inline PFNREGION MiRetailRegion = { {{ PFN_LIST_END, PFN_LIST_END }, { PFN_LIST_END, PFN_LIST_END }}, 0 };
 // Tracks free pfns for the upper 64 MiB of a devkit
@@ -210,9 +211,11 @@ inline PCHAR MiPfnAddress = XBOX_PFN_ADDRESS;
 // Lock used to synchronize access to the VAD tree
 inline INITIALIZE_GLOBAL_CRITICAL_SECTION(MiVadLock);
 // Whether or not to allow NtAllocateVirtualMemory to use physical pages from the devkit region too (devkits only)
-inline BOOLEAN MiAllowNonDebuggerOnTop64MiB = FALSE;
+inline BOOLEAN MiAllowNonDebuggerOnTop64MiB;
 // Amount of virtual memory reserved with NtAllocateVirtualMemory
-inline ULONG MiVirtualMemoryBytesReserved = 0;
+inline ULONG MiVirtualMemoryBytesReserved;
+
+STICKY_PAGE_END;
 
 #define VadLock() RtlEnterCriticalSectionAndRegion(&MiVadLock)
 #define VadUnlock() RtlLeaveCriticalSectionAndRegion(&MiVadLock)
