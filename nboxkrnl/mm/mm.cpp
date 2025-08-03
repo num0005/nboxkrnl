@@ -521,23 +521,21 @@ EXPORTNUM(173) PHYSICAL_ADDRESS NTAPI MmGetPhysicalAddress
 	PVOID Address
 )
 {
+	// Callers of MmGetPhysicalAddress can be running at any IRQL, provided that the BaseAddress value is valid.
 	ULONG PAddr;
 
-	KIRQL OldIrql = MiLock();
-
-	PMMPTE PointerPte = GetPdeAddress(Address);
-	if ((PointerPte->Hw & PTE_VALID_MASK) == 0)
+	MMPTE PointerPte = *GetPdeAddress(Address);
+	if ((PointerPte.Hw & PTE_VALID_MASK) == 0)
 	{ // invalid pde -> addr is invalid
-		PAddr = 0;
-		goto Exit;
+		return NULL;
 	}
 
-	if ((PointerPte->Hw & PTE_PAGE_LARGE_MASK) == 0)
+	if ((PointerPte.Hw & PTE_PAGE_LARGE_MASK) == 0)
 	{
-		PointerPte = GetPteAddress(Address);
-		if ((PointerPte->Hw & PTE_VALID_MASK) == 0)
+		PointerPte = *GetPteAddress(Address);
+		if ((PointerPte.Hw & PTE_VALID_MASK) == 0)
 		{ // invalid pte -> addr is invalid
-			goto Exit;
+			return NULL;
 		}
 		PAddr = BYTE_OFFSET(Address); // valid pte -> addr is valid
 	}
@@ -546,10 +544,8 @@ EXPORTNUM(173) PHYSICAL_ADDRESS NTAPI MmGetPhysicalAddress
 		PAddr = BYTE_OFFSET_LARGE(Address); // this is a large page, translate it immediately
 	}
 
-	PAddr += (PointerPte->Hw << PAGE_SHIFT);
+	PAddr += (PointerPte.Hw << PAGE_SHIFT);
 
-Exit:
-	MiUnlock(OldIrql);
 	return PAddr;
 }
 
