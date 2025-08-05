@@ -45,3 +45,13 @@ jobs:
         run: cmake -B build ${{ matrix.cmake-generator }}
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }} ${{ matrix.cmake-build-param }}
+      - name: Upload PDBs
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDB_${{ matrix.configuration }}
+          path: build\bin\${{ matrix.configuration }}\*.pdb
+      - name: Upload Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: EXE_${{ matrix.configuration }}
+          path: build\bin\${{ matrix.configuration }}\*.exe
