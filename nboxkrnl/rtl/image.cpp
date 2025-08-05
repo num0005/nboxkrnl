@@ -8,7 +8,7 @@ PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader
 )
 {
 	PIMAGE_DOS_HEADER DOSHeader = (PIMAGE_DOS_HEADER)Base;
-	if (RtlUlongByteSwap(DOSHeader->e_magic) != 'MZ')
+	if (RtlUshortByteSwap(DOSHeader->e_magic) != 'MZ')
 		return NULL;
 
 	const PIMAGE_NT_HEADERS NtHeaders = (PIMAGE_NT_HEADERS)(((UCHAR*)Base) + DOSHeader->e_lfanew);
