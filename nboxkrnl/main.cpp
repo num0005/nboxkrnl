@@ -30,7 +30,7 @@
 
 		// Load the GDT from the hardcoded KiGdt
 		ASM(sub esp, 8);
-		ASM(mov ax, KiGdtLimit);
+		ASM(mov ax, SIZE KiGdt - 1);
 		ASM(mov word ptr [esp], ax);
 		ASM(mov dword ptr [esp + 2], offset KiGdt);
 		ASM(lgdt [esp]);
@@ -54,7 +54,7 @@
 		ASM(ltr ax);
 
 		// Load the IDT from the hardcoded KiIdt
-		ASM(mov ax, KiIdtLimit);
+		ASM(mov ax, SIZE KiIdt - 1);
 		ASM(mov word ptr [esp], ax);
 		ASM(mov dword ptr [esp + 2], offset KiIdt);
 		ASM(lidt [esp]);
