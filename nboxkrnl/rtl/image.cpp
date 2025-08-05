@@ -8,13 +8,19 @@ PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader
 )
 {
 	PIMAGE_DOS_HEADER DOSHeader = (PIMAGE_DOS_HEADER)Base;
-	if (RtlUshortByteSwap(DOSHeader->e_magic) != 'MZ')
+	if (DOSHeader->e_magic != 'ZM')
+	{
+		DbgPrint("RtlImageNtHeader: bad DOS header for %p", Base);
 		return NULL;
+	}
 
 	const PIMAGE_NT_HEADERS NtHeaders = (PIMAGE_NT_HEADERS)(((UCHAR*)Base) + DOSHeader->e_lfanew);
 
-	if (RtlUlongByteSwap(NtHeaders->Signature) != 'PE\0\0')
+	if (NtHeaders->Signature != 'EP')
+	{
+		DbgPrint("RtlImageNtHeader: bad NT header (%p) for %p", NtHeaders, Base);
 		return NULL;
+	}
 
 	return NtHeaders;
 }
