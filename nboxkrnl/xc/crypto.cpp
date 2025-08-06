@@ -3,12 +3,13 @@
  */
 
 #include "xc.hpp"
-#include <rtl_assert.hpp>
+#include "rtl_assert.hpp"
+#include "rtl.hpp"
 
 
  // The following are the default implementations of the crypto functions
 
-VOID XBOXAPI JumpedSHAInit
+VOID XBOXAPI XcDefaultSHAInit
 (
 	PUCHAR pbSHAContext
 )
@@ -19,7 +20,7 @@ VOID XBOXAPI JumpedSHAInit
 	A_SHAInit((SHA_CTX *)(pbSHAContext + 24));
 }
 
-VOID XBOXAPI JumpedSHAUpdate
+VOID XBOXAPI XcDefaultSHAUpdate
 (
 	PUCHAR pbSHAContext,
 	PUCHAR pbInput,
@@ -29,7 +30,7 @@ VOID XBOXAPI JumpedSHAUpdate
 	A_SHAUpdate((SHA_CTX *)(pbSHAContext + 24), pbInput, dwInputLength);
 }
 
-VOID XBOXAPI JumpedSHAFinal
+VOID XBOXAPI XcDefaultSHAFinal
 (
 	PUCHAR pbSHAContext,
 	PUCHAR pbDigest
@@ -38,15 +39,77 @@ VOID XBOXAPI JumpedSHAFinal
 	A_SHAFinal((SHA_CTX *)(pbSHAContext + 24), (PULONG)pbDigest);
 }
 
+VOID XBOXAPI XcDefaultHMAC
+(
+	PBYTE pbKeyMaterial,
+	ULONG cbKeyMaterial,
+	PBYTE pbData,
+	ULONG cbData,
+	PBYTE pbData2,
+	ULONG cbData2,
+	PBYTE HmacData
+)
+{
+	// XBOX uses a non-standard key truncation method per CXBX-R
+	if (cbKeyMaterial > 64)
+	{
+		cbKeyMaterial = 64;
+	}
+
+	// K + OPAD || H(K+IPAD || M)
+	BYTE HMACOuterBlock[A_SHA_BLOCK_LEN + A_SHA_DIGEST_LEN];
+
+	// setup the two padded keys
+	BYTE IPAD[A_SHA_BLOCK_LEN] = {};
+	RtlCopyMemory(IPAD, pbKeyMaterial, cbKeyMaterial);
+
+	BYTE *OPAD = HMACOuterBlock;
+	RtlZeroMemory(OPAD, A_SHA_BLOCK_LEN);
+	RtlCopyMemory(HMACOuterBlock, pbKeyMaterial, cbKeyMaterial);
+
+	for (ULONG dwBlock = 0; dwBlock < A_SHA_BLOCK_LEN / sizeof(DWORD); dwBlock++)
+	{
+		((DWORD*)IPAD)[dwBlock] ^= ((DWORD)0x36363636);
+		((DWORD*)OPAD)[dwBlock] ^= ((DWORD)0x5C5C5C5C);
+	}
+
+	// hash inner block with message
+	{
+		SHA_CTX ShaContextInner;
+		A_SHAInit(&ShaContextInner);
+		A_SHAUpdate(&ShaContextInner, IPAD, A_SHA_BLOCK_LEN);
+
+		if (cbData != 0)
+		{
+			A_SHAUpdate(&ShaContextInner, pbData, cbData);
+		}
+
+		if (cbData2 != 0)
+		{
+			A_SHAUpdate(&ShaContextInner, pbData2, cbData2);
+		}
+
+		A_SHAFinal(&ShaContextInner, (PULONG)(&HMACOuterBlock[A_SHA_BLOCK_LEN]));
+	}
+
+	// hash outer block
+	{
+		SHA_CTX ShaContextOuter;
+		A_SHAInit(&ShaContextOuter);
+		A_SHAUpdate(&ShaContextOuter, HMACOuterBlock, sizeof(HMACOuterBlock));
+		A_SHAFinal(&ShaContextOuter, (PULONG)HmacData);
+	}
+}
+
 
  /* This struct contains the original crypto functions exposed by the kernel */
 const CRYPTO_VECTOR DefaultCryptoStruct = {
-	JumpedSHAInit,
-	JumpedSHAUpdate,
-	JumpedSHAFinal,
+	XcDefaultSHAInit,
+	XcDefaultSHAUpdate,
+	XcDefaultSHAFinal,
 	nullptr,
 	nullptr,
-	nullptr,
+	XcDefaultHMAC,
 	nullptr,
 	nullptr,
 	nullptr,

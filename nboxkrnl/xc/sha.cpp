@@ -91,7 +91,7 @@ static void SHA1Transform(ULONG State[5], UCHAR Buffer[64])
  *  Nothing
  */
  // Source: Wine project
-void XBOXAPI A_SHAInit(PSHA_CTX Context)
+void FASTCALL A_SHAInit(PSHA_CTX Context)
 {
 	/* SHA1 initialization constants */
 	Context->State[0] = 0x67452301;
@@ -117,29 +117,29 @@ void XBOXAPI A_SHAInit(PSHA_CTX Context)
  *  Nothing
  */
  // Source: Wine project
-void XBOXAPI A_SHAUpdate(PSHA_CTX Context, const unsigned char *Buffer, UINT BufferSize)
+void FASTCALL A_SHAUpdate(PSHA_CTX Context, const unsigned char *Buffer, UINT BufferSize)
 {
 	ULONG BufferContentSize;
 
-	BufferContentSize = Context->Count[1] & 63;
+	BufferContentSize = Context->Count[1] & (A_SHA_BLOCK_LEN - 1);
 	Context->Count[1] += BufferSize;
 	if (Context->Count[1] < BufferSize)
 		Context->Count[0]++;
 	Context->Count[0] += (BufferSize >> 29);
 
-	if (BufferContentSize + BufferSize < 64)
+	if (BufferContentSize + BufferSize < A_SHA_BLOCK_LEN)
 	{
 		RtlCopyMemory(&Context->Buffer[BufferContentSize], Buffer,
 			BufferSize);
 	}
 	else
 	{
-		while (BufferContentSize + BufferSize >= 64)
+		while (BufferContentSize + BufferSize >= A_SHA_BLOCK_LEN)
 		{
 			RtlCopyMemory(Context->Buffer + BufferContentSize, Buffer,
-				64 - BufferContentSize);
-			Buffer += 64 - BufferContentSize;
-			BufferSize -= 64 - BufferContentSize;
+				A_SHA_BLOCK_LEN - BufferContentSize);
+			Buffer += A_SHA_BLOCK_LEN - BufferContentSize;
+			BufferSize -= A_SHA_BLOCK_LEN - BufferContentSize;
 			SHA1Transform(Context->State, Context->Buffer);
 			BufferContentSize = 0;
 		}
@@ -160,16 +160,16 @@ void XBOXAPI A_SHAUpdate(PSHA_CTX Context, const unsigned char *Buffer, UINT Buf
  *  Nothing
  */
  // Source: Wine project
-void XBOXAPI A_SHAFinal(PSHA_CTX Context, PULONG Result)
+void FASTCALL A_SHAFinal(PSHA_CTX Context, PULONG Result)
 {
 	INT Pad, Index;
 	UCHAR Buffer[72];
 	ULONG *Count;
 	ULONG BufferContentSize, LengthHi, LengthLo;
 
-	BufferContentSize = Context->Count[1] & 63;
+	BufferContentSize = Context->Count[1] & (A_SHA_BLOCK_LEN - 1);
 	if (BufferContentSize >= 56)
-		Pad = 56 + 64 - BufferContentSize;
+		Pad = 56 + A_SHA_BLOCK_LEN - BufferContentSize;
 	else
 		Pad = 56 - BufferContentSize;
 

@@ -185,6 +185,8 @@ EXPORTNUM(351) VOID XBOXAPI XcUpdateCrypto
 }
 #endif
 
-void XBOXAPI A_SHAInit(PSHA_CTX Context);
-void XBOXAPI A_SHAUpdate(PSHA_CTX Context, const unsigned char *Buffer, UINT BufferSize);
-void XBOXAPI A_SHAFinal(PSHA_CTX Context, PULONG Result);
+void FASTCALL A_SHAInit(PSHA_CTX Context);
+void FASTCALL A_SHAUpdate(PSHA_CTX Context, const unsigned char *Buffer, UINT BufferSize);
+void FASTCALL A_SHAFinal(PSHA_CTX Context, PULONG Result);
+#define A_SHA_DIGEST_LEN (sizeof(ULONG)*5)
+#define A_SHA_BLOCK_LEN 64
