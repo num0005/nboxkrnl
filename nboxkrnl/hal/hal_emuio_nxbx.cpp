@@ -2,6 +2,7 @@
 #include  "halp_nxbx.hpp"
 #include "ex.hpp"
 #include "halp_nxbx_emuio.hpp"
+#include "rtl_assert.hpp"
 
 static_assert(sizeof(IoRequest) == 44);
 static_assert(sizeof(IoInfoBlockOc) == 36);
@@ -49,6 +50,7 @@ static NTSTATUS HostToNtStatus(IoStatus Status)
 		return STATUS_DIRECTORY_NOT_EMPTY;
 	}
 
+	RIP_API_FMT("Unable to convert NXBX status code %x (%d) to XBOX status code", Status, Status);
 	KeBugCheckLogEip(UNREACHABLE_CODE_REACHED);
 }
 
@@ -104,8 +106,6 @@ IoInfoBlock SubmitIoRequestToHost(ULONG Type, LONGLONG Offset, ULONG Size, ULONG
 	Packet.m_rw.Timestamp = Timestamp;
 	SubmitIoRequestToHost(&Packet);
 	RetrieveIoRequestFromHost(&InfoBlockOc, Packet.Header.Id);
-
-	InfoBlockOc.Header.Status = HostToNtStatus(InfoBlockOc.Header.HostStatus);
 
 	InfoBlockProcess(InfoBlockOc.Header);
 	return InfoBlockOc.Header;
