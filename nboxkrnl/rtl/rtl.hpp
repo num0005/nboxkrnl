@@ -8,6 +8,7 @@
 #include "seh.hpp"
 #include "io.hpp"
 #include "rtl_assert.hpp"
+#include "rtl_context.hpp"
 #include <string.h>
 
 
@@ -43,11 +44,6 @@ EXPORTNUM(264) VOID XBOXAPI RtlAssert
 	PVOID FileName,
 	ULONG LineNumber,
 	PCHAR Message
-);
-
-EXPORTNUM(265) VOID XBOXAPI RtlCaptureContext
-(
-	PCONTEXT ContextRecord
 );
 
 EXPORTNUM(266) USHORT XBOXAPI RtlCaptureStackBackTrace

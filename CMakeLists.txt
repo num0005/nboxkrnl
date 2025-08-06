@@ -111,6 +111,7 @@ file (GLOB HEADERS
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/io/raw/raw.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/bug_codes.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/ke.hpp"
+ "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ke/context.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ki/hw_exp.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ki/ki.hpp"
  "${NBOXKRNL_ROOT_DIR}/nboxkrnl/ki/seh.hpp"

@@ -35,31 +35,6 @@ using KIDT = uint64_t;
 using KTSS = uint32_t[26];
 
 
-#define CONTEXT_i386                0x00010000
-#define CONTEXT_CONTROL             (CONTEXT_i386 | 0x00000001L)
-#define CONTEXT_INTEGER             (CONTEXT_i386 | 0x00000002L)
-#define CONTEXT_SEGMENTS            (CONTEXT_i386 | 0x00000004L)
-#define CONTEXT_FLOATING_POINT      (CONTEXT_i386 | 0x00000008L)
-#define CONTEXT_EXTENDED_REGISTERS  (CONTEXT_i386 | 0x00000020L)
-
-struct CONTEXT {
-	DWORD ContextFlags;
-	FLOATING_SAVE_AREA FloatSave;
-	DWORD Edi;
-	DWORD Esi;
-	DWORD Ebx;
-	DWORD Edx;
-	DWORD Ecx;
-	DWORD Eax;
-	DWORD Ebp;
-	DWORD Eip;
-	DWORD SegCs;
-	DWORD EFlags;
-	DWORD Esp;
-	DWORD SegSs;
-};
-using PCONTEXT = CONTEXT *;
-
 inline KTHREAD KiIdleThread;
 inline uint8_t alignas(16) KiIdleThreadStack[KERNEL_STACK_SIZE]; // must be 16 byte aligned because it's used by fxsave and fxrstor
 

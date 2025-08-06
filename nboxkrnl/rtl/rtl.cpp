@@ -499,8 +499,21 @@ EXPORTNUM(319) ULONG XBOXAPI RtlWalkFrameChain
 	return i;
 }
 
-EXPORTNUM(352) VOID XBOXAPI RtlRip
+[[noreturn]] EXPORTNUM(352) VOID XBOXAPI RtlRip
 (
+	const CHAR* ApiName,
+	const CHAR* Expression,
+	const CHAR* Message
+)
+{
+	CONTEXT Context;
+	RtlCaptureContext(&Context);
+	RtlRipWithContext(&Context, ApiName, Expression, Message);
+}
+
+[[noreturn]] VOID XBOXAPI RtlRipWithContext
+(
+	PCONTEXT Context,
 	const CHAR* ApiName,
 	const CHAR* Expression,
 	const CHAR* Message
@@ -536,15 +549,49 @@ EXPORTNUM(352) VOID XBOXAPI RtlRip
 	PVOID BackTrace[128] = { 0 };
 	ULONG TraceHash;
 	ULONG NumOfFrames = RtlCaptureStackBackTrace(0, 126, BackTrace, &TraceHash);
-	DbgPrint("The kernel terminated execution with RtlRip. A stack trace was created with %u frames captured (Hash = 0x%X)", NumOfFrames, TraceHash);
+	DbgPrint("The kernel terminated execution with RtlRip (caller = %p). A stack trace was created with %u frames captured (Hash = 0x%X)", _ReturnAddress(), NumOfFrames, TraceHash);
 	for (unsigned i = 0; (i < 128) && BackTrace[i]; ++i) {
 		DbgPrint("Traced Eip at level %u is 0x%X", i, BackTrace[i]);
+	}
+
+	if (Context)
+	{
+		DbgPrint(
+			"Context: \n"
+			"\tFLAGS:  %x\n"
+			"\tEAX:    %x\n"
+			"\tEBP:    %x\n"
+			"\tEBX:    %x\n"
+			"\tECX:    %x\n"
+			"\tEDI:    %x\n"
+			"\tEDX:    %x\n"
+			"\tEFLAGS: %x\n"
+			"\tEIP:    %x\n"
+			"\tESI:    %x\n"
+			"\tESP:    %x\n"
+			"\tCS:     %x\n"
+			"\tSS:     %x\n"
+			,
+			Context->ContextFlags,
+			Context->Eax,
+			Context->Ebp,
+			Context->Ebx,
+			Context->Ecx,
+			Context->Edi,
+			Context->Edx,
+			Context->EFlags,
+			Context->Eip,
+			Context->Esi,
+			Context->Esp,
+			Context->SegCs,
+			Context->SegSs
+		);
 	}
 
 	HalpShutdownSystem();
 }
 
-VOID CDECL RipWithMsg(const char *Func, const char *Msg, ...)
+VOID CDECL RtlRipPrintf(PCONTEXT Context, const char *Func, const char *Msg, ...)
 {
 	char buff[512];
 	va_list vlist;

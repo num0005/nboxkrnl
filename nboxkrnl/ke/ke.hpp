@@ -7,6 +7,7 @@
 #include "..\types.hpp"
 #include "..\driverspecs.h"
 #include "rtl_assert.hpp"
+#include "context.hpp"
 
 #define XBOX_KEY_LENGTH 16
 #define ALTERNATE_SIGNATURE_COUNT 16
@@ -408,7 +409,7 @@ struct KTHREAD {
 	PKWAIT_BLOCK WaitBlockList;
 	LIST_ENTRY WaitListEntry;
 	ULONG WaitTime;
-	ULONG KernelApcDisable;
+	volatile LONG KernelApcDisable;
 	LONG Quantum;
 	SCHAR BasePriority;
 	UCHAR DecrementCount;
@@ -515,36 +516,8 @@ static_assert(offsetof(KINTERRUPT, ServiceCount) == 20);
 static_assert(offsetof(KINTERRUPT, DispatchCode) == 24);
 using PKINTERRUPT = KINTERRUPT *;
 
-#define SIZE_OF_FPU_REGISTERS        128
 #define NPX_STATE_NOT_LOADED (CR0_TS | CR0_MP) // x87 fpu, XMM, and MXCSR registers not loaded on fpu
 #define NPX_STATE_LOADED 0                     // x87 fpu, XMM, and MXCSR registers loaded on fpu
-
-#pragma pack(1)
-struct FLOATING_SAVE_AREA
-{
-	USHORT  ControlWord;
-	USHORT  StatusWord;
-	USHORT  TagWord;
-	USHORT  ErrorOpcode;
-	ULONG   ErrorOffset;
-	ULONG   ErrorSelector;
-	ULONG   DataOffset;
-	ULONG   DataSelector;
-	ULONG   MXCsr;
-	ULONG   Reserved1;
-	UCHAR   RegisterArea[SIZE_OF_FPU_REGISTERS];
-	UCHAR   XmmRegisterArea[SIZE_OF_FPU_REGISTERS];
-	UCHAR   Reserved2[224];
-	ULONG   Cr0NpxState;
-};
-#pragma pack()
-
-struct  FX_SAVE_AREA
-{
-	FLOATING_SAVE_AREA FloatSave;
-	ULONG Align16Byte[3];
-};
-using PFX_SAVE_AREA = FX_SAVE_AREA*;
 
 struct KPRCB
 {
