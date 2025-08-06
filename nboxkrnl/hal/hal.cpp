@@ -5,7 +5,7 @@
 #include "hal.hpp"
 #include "halp.hpp"
 #include "rtl.hpp"
-
+#include "dbg.hpp"
 
  // Global list of routines executed during a reboot
 static LIST_ENTRY ShutdownRoutineList = { &ShutdownRoutineList , &ShutdownRoutineList };
@@ -25,10 +25,23 @@ VOID HalInitSystem()
 	TIME_FIELDS TimeFields;
 	LARGE_INTEGER SystemTime, OldTime;
 	HalpReadCmosTime(&TimeFields);
-	if (!RtlTimeFieldsToTime(&TimeFields, &SystemTime)) {
-		// If the conversion fails, just set some random date for the system time instead of failing the initialization
-		SystemTime.HighPart = 0x80000000;
-		SystemTime.LowPart = 0;
+	if (!RtlTimeFieldsToTime(&TimeFields, &SystemTime))
+	{
+		DbgPrint("Failed to convert SMC time (%04d-%02d-%02d %02d:%02d:%02d) to timestamp!",
+			TimeFields.Year,
+			TimeFields.Month,
+			TimeFields.Day,
+
+			TimeFields.Hour,
+			TimeFields.Minute,
+			TimeFields.Second);
+		// If the conversion fails, just set the Xbox release date
+		TimeFields ={};
+		TimeFields.Year = 2001;
+		TimeFields.Month = 11;
+		TimeFields.Day = 15;
+
+		RtlTimeFieldsToTime(&TimeFields, &SystemTime);
 	}
 	KeSetSystemTime(&SystemTime, &OldTime);
 
