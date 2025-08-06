@@ -346,7 +346,6 @@ VOID XBOXAPI XbeStartupThread(PVOID Opaque)
 	using PXBE_ENTRY_POINT = VOID(__cdecl *)();
 	PXBE_ENTRY_POINT XbeEntryPoint = (PXBE_ENTRY_POINT)(GetXbeAddress()->dwEntryAddr);
 	XbeEntryPoint();
-	KeBugCheck(NORETURN_FUNCTION_RETURNED);
 }
 
 // Source: Cxbx-Reloaded
