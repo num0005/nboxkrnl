@@ -1091,6 +1091,57 @@ EXPORTNUM(321) extern XBOX_KEY_DATA XboxEEPROMKey;
 }
 #endif
 
+class KeCriticalRegionLock
+{
+public:
+	// enter scope
+	__forceinline KeCriticalRegionLock()
+	{
+		KeEnterCriticalRegion();
+		m_in_section = true;
+	}
+	// exit scope
+	__forceinline ~KeCriticalRegionLock()
+	{
+		if (m_in_section)
+			KeLeaveCriticalRegion();
+		m_in_section = false;
+	}
+
+	__forceinline void Enter()
+	{
+		NT_ASSERT(!m_in_section);
+		if (!m_in_section)
+		{
+			KeEnterCriticalRegion();
+			m_in_section = true;
+		}
+	}
+
+	__forceinline void Leave()
+	{
+		NT_ASSERT(m_in_section);
+		if (m_in_section)
+		{
+			KeLeaveCriticalRegion();
+			m_in_section = false;
+		}
+	}
+
+	__forceinline bool Locked() const
+	{
+		return m_in_section;
+	}
+
+	// disable copy and move
+	KeCriticalRegionLock(const KeCriticalRegionLock&) = delete;
+	KeCriticalRegionLock(KeCriticalRegionLock&&) = delete;
+	KeCriticalRegionLock& operator=(const KeCriticalRegionLock&) = delete;
+	KeCriticalRegionLock& operator=(KeCriticalRegionLock&&) = delete;
+private:
+	bool m_in_section = false;
+};
+
 extern XBOX_KEY_DATA XboxCERTKey;
 
 VOID XBOXAPI KiSuspendNop(PKAPC Apc, PKNORMAL_ROUTINE *NormalRoutine, PVOID *NormalContext, PVOID *SystemArgument1, PVOID *SystemArgument2);
