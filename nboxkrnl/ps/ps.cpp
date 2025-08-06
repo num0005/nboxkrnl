@@ -80,6 +80,7 @@ EXPORTNUM(255) NTSTATUS XBOXAPI PsCreateSystemThreadEx
 
 	InitializeListHead(&eThread->ReaperLink);
 	InitializeListHead(&eThread->IrpList);
+	InitializeListHead(&eThread->ActiveTimerListHead);
 
 	KernelStackSize = ROUND_UP_4K(KernelStackSize);
 	if (KernelStackSize < KERNEL_STACK_SIZE) {

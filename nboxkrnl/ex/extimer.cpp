@@ -50,6 +50,7 @@ VOID ExTimerRundown(VOID)
     CurrentEntry = Thread->ActiveTimerListHead.Flink;
     while (CurrentEntry != &Thread->ActiveTimerListHead)
     {
+        NT_ASSERT(CurrentEntry);
         /* Get the timer */
         Timer = CONTAINING_RECORD(CurrentEntry, ETIMER, ActiveTimerListEntry);
 
