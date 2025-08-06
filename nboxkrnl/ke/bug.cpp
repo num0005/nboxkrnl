@@ -33,7 +33,7 @@ EXPORTNUM(96) VOID XBOXAPI KeBugCheckEx
 	KiBugCheckData[3] = BugCheckParameter3;
 	KiBugCheckData[4] = BugCheckParameter4;
 
-	DbgPrint("Fatal error of the kernel with code: 0x%08lx (0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx)",
+	RIP_API_FMT("Fatal error of the kernel with code: 0x%08lx (0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx)",
 		BugCheckCode,
 		BugCheckParameter1,
 		BugCheckParameter2,
@@ -59,5 +59,10 @@ VOID __declspec(noinline) CDECL KeBugCheckLogEip(ULONG BugCheckCode)
 	ULONG_PTR BugCheckParameter4
 )
 {
+	RIP_API_FMT("Noreturn stack guard catch illegal return (0x%08lx, 0x%08lx, 0x%08lx, 0x%08lx)",
+		BugCheckParameter1,
+		BugCheckParameter2,
+		BugCheckParameter3,
+		BugCheckParameter4);
 	KeBugCheckEx(NORETURN_FUNCTION_RETURNED, BugCheckParameter1, BugCheckParameter2, BugCheckParameter3, BugCheckParameter4);
 }
