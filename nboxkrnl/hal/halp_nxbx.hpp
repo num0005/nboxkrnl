@@ -23,7 +23,7 @@
 // Retry submitting a I/O request
 #define IO_RETRY NXBX_PORT(0x07)
 // Request the I/O request with the specified id
-#define IO_QUERY NXBX_PORT(0x09)
+#define IO_QUERY NXBX_PORT(0x08)
 // Check if a I/O request was submitted successfully
 #define IO_CHECK_ENQUEUE NXBX_PORT(0x0A)
 // Request the path's length of the XBE to launch when no reboot occured
