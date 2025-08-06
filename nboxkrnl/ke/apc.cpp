@@ -6,6 +6,7 @@
 #include "ke.hpp"
 #include "hal.hpp"
 #include "rtl.hpp"
+#include <dbg.hpp>
 
 #define ASSERT_APC(APC) NT_ASSERT(APC != NULL); NT_ASSERT((APC)->ApcMode >= 0  && (APC)->ApcMode < MODE::MaximumMode);
 #define KiAcquireApcLockRaiseToSynch(Thread, ApcLock) (ApcLock)->OldIRQL = KeRaiseIrqlToSynchLevel();
@@ -140,12 +141,13 @@ VOID XBOXAPI KiExecuteApcQueue()
 
 EXPORTNUM(101) VOID XBOXAPI KeEnterCriticalRegion()
 {
-	PKTHREAD thread = KeGetCurrentThread();
-	NT_ASSERT((thread->KernelApcDisable <= 0) && \
-		(thread->KernelApcDisable != -32768));
+	PKTHREAD Thread = KeGetCurrentThread();
+	//DbgPrint("KeEnterCriticalRegion(%p): %d", _ReturnAddress(), Thread->KernelApcDisable);
+	NT_ASSERT((Thread->KernelApcDisable <= 0) && \
+		(Thread->KernelApcDisable != -32768));
 
 	/* Disable Kernel APCs */
-	thread->KernelApcDisable--;
+	Thread->KernelApcDisable--;
 	KeMemoryBarrierWithoutFence();
 }
 
@@ -203,7 +205,13 @@ EXPORTNUM(122) VOID XBOXAPI KeLeaveCriticalRegion()
 {
 	KeMemoryBarrierWithoutFence();
 	PKTHREAD Thread = KeGetCurrentThread();
-	if ((((*(volatile ULONG *)&Thread->KernelApcDisable) += 1) == 0) &&
+	//DbgPrint("KeLeaveCriticalRegion(%p): %d", _ReturnAddress(), Thread->KernelApcDisable);
+
+	LONG NewValue = ++Thread->KernelApcDisable;
+
+	NT_ASSERT(NewValue <= 0);
+
+	if ((NewValue == 0) &&
 		((*(volatile PLIST_ENTRY *)&Thread->ApcState.ApcListHead[KernelMode].Flink) != &Thread->ApcState.ApcListHead[KernelMode])) {
 		Thread->ApcState.KernelApcPending = TRUE;
 		HalRequestSoftwareInterrupt(APC_LEVEL);
