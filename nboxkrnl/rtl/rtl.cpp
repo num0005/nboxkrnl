@@ -599,7 +599,7 @@ VOID CDECL RtlRipPrintf(PCONTEXT Context, const char *Func, const char *Msg, ...
 	RtlVsnprintf(buff, sizeof(buff), Msg, vlist);
 	va_end(vlist);
 
-	RtlRip(const_cast<PCHAR>(Func), nullptr, const_cast<PCHAR>(buff));
+	RtlRipWithContext(Context, const_cast<PCHAR>(Func), nullptr, const_cast<PCHAR>(buff));
 }
 
 
