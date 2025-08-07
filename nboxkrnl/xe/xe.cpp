@@ -284,6 +284,13 @@ static NTSTATUS XeLoadXbe()
 		XbeCertificate->dwSecurityFlags &= ~1;
 	}
 
+	if (GetXbeAddress()->dwInitFlags.bMountUtilityDrive)
+	{
+		// this seems to fail because XAPI thinks the drive needs to be formatted - which then fails
+		DbgPrint("HACK: disabling utility drive mount");
+		GetXbeAddress()->dwInitFlags.bMountUtilityDrive = 0;
+	}
+
 	// Load all sections marked as "preload"
 	PXBE_SECTION SectionHeaders = (PXBE_SECTION)GetXbeAddress()->dwSectionHeadersAddr;
 	for (unsigned i = 0; i < GetXbeAddress()->dwSections; ++i) {
