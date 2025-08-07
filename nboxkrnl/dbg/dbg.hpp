@@ -44,6 +44,13 @@ EXPORTNUM(11) VOID NTAPI DbgUnLoadImageSymbols
 	ULONG_PTR ProcessId
 );
 
+#if DBG
+#define DBG_TRACE(Format, ...) DbgPrint(__FUNCTION__ "() " Format __VA_OPT__(,) __VA_ARGS__)
+#else
+#define DBG_TRACE(Format, ...) (void)(Format)
+#endif
+#define DBG_TRACE_NOT_IMPLEMENTED() DBG_TRACE("Function not implemented! Caller=%p", _ReturnAddress())
+
 #ifdef __cplusplus
 }
 #endif

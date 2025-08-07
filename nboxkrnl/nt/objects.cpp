@@ -7,6 +7,7 @@
 #include "rtl.hpp"
 #include <string.h>
 #include <ex.hpp>
+#include <dbg.hpp>
 
 
 EXPORTNUM(187) NTSTATUS XBOXAPI NtClose
@@ -259,7 +260,7 @@ EXPORTNUM(235) NTSTATUS NTAPI NtWaitForMultipleObjectsEx
                 {
                     /* Fail */
                     Status = STATUS_INVALID_PARAMETER_MIX;
-                    DPRINT("Passed a duplicate object to NtWaitForMultipleObjects\n");
+                    DBG_TRACE("Passed a duplicate object to NtWaitForMultipleObjects");
                     goto Exit;
                 }
             }

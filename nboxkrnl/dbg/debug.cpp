@@ -14,7 +14,7 @@ EXPORTNUM(5) void NTAPI DbgBreakPointWithStatus
 	IN ULONG Status
 )
 {
-	RIP_UNIMPLEMENTED();
+	DBG_TRACE_NOT_IMPLEMENTED();
 }
 
 EXPORTNUM(6) void NTAPI DbgBreakPoint(void)
@@ -29,7 +29,7 @@ EXPORTNUM(7) void NTAPI DbgLoadImageSymbols
 	ULONG_PTR ProcessId
 )
 {
-	RIP_UNIMPLEMENTED();
+	DBG_TRACE_NOT_IMPLEMENTED();
 }
 
 EXPORTNUM(8) ULONG CDECL DbgPrint
@@ -79,5 +79,5 @@ EXPORTNUM(11) VOID NTAPI DbgUnLoadImageSymbols
 	ULONG_PTR ProcessId
 )
 {
-	RIP_UNIMPLEMENTED();
+	DBG_TRACE_NOT_IMPLEMENTED();
 }

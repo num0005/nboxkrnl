@@ -11,6 +11,7 @@
 
 #include "ke.hpp"
 #include "ex.hpp"
+#include <dbg.hpp>
 
 /* GLOBALS ******************************************************************/
 
@@ -46,7 +47,7 @@ NtCreateSemaphore(OUT PHANDLE SemaphoreHandle,
         (InitialCount < 0) ||
         (InitialCount > MaximumCount))
     {
-        DPRINT("Invalid Count Data!\n");
+        DBG_TRACE("Invalid Count Data!\n");
         return STATUS_INVALID_PARAMETER;
     }
 
@@ -158,7 +159,7 @@ NtReleaseSemaphore(IN HANDLE SemaphoreHandle,
     /* Make sure count makes sense */
     if (ReleaseCount <= 0)
     {
-        DPRINT("Invalid Release Count\n");
+        DBG_TRACE("Invalid Release Count\n");
         return STATUS_INVALID_PARAMETER;
     }
 

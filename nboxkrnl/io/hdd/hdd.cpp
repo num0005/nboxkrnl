@@ -98,6 +98,7 @@ BOOLEAN HddInitDriver()
 	NTSTATUS Status = ObCreateObject(&HddDirectoryObjectType, &ObjectAttributes, 0, &DiskDirectoryObject);
 
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Failed to create HDD0 object!");
 		return FALSE;
 	}
 
@@ -105,6 +106,7 @@ BOOLEAN HddInitDriver()
 	Status = ObInsertObject(DiskDirectoryObject, &ObjectAttributes, 0, &Handle);
 
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Failed to insert HDD0 object!");
 		return FALSE;
 	}
 
@@ -121,6 +123,7 @@ BOOLEAN HddInitDriver()
 	);
 
 	if (InfoBlock.Status != Success) {
+		DBG_TRACE("Failed to read partiton table from Emu host!");
 		return FALSE;
 	}
 	if (memcmp(&PartitionTable.Magic[0], &ExpectedMagic[0], sizeof(ExpectedMagic))) {
@@ -138,6 +141,7 @@ BOOLEAN HddInitDriver()
 		PDEVICE_OBJECT HddDeviceObject;
 		Status = IoCreateDevice(&HddDriverObject, sizeof(IDE_DISK_EXTENSION), nullptr, FILE_DEVICE_DISK, FALSE, &HddDeviceObject);
 		if (!NT_SUCCESS(Status)) {
+			DBG_TRACE("Failed create HDD device partion %d!", i);
 			return FALSE;
 		}
 
@@ -178,6 +182,7 @@ NTSTATUS XBOXAPI HddParseDirectory(PVOID ParseObject, POBJECT_TYPE ObjectType, U
 	*Object = NULL_HANDLE;
 
 	if (RemainingName->Length == 0) {
+		DBG_TRACE("Bad arguments: no remaining string");
 		return STATUS_ACCESS_DENIED;
 	}
 
@@ -192,6 +197,7 @@ NTSTATUS XBOXAPI HddParseDirectory(PVOID ParseObject, POBJECT_TYPE ObjectType, U
 
 	if (LocalRemainingName.Length && (LocalRemainingName.Buffer[0] == OB_PATH_DELIMITER)) {
 		// Another delimiter in the name is invalid
+		DBG_TRACE("Unexpected deliminter");
 		return STATUS_OBJECT_NAME_INVALID;
 	}
 
@@ -240,6 +246,7 @@ static NTSTATUS HddGetDriveGeometry(PIRP Irp)
 	PIO_STACK_LOCATION IrpStackPointer = IoGetCurrentIrpStackLocation(Irp);
 
 	if (IrpStackPointer->Parameters.DeviceIoControl.OutputBufferLength < sizeof(DISK_GEOMETRY)) {
+		DBG_TRACE("Bad argument: buffer not large enough to fit DISK_GEOMETRY!");
 		return STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -259,6 +266,7 @@ static NTSTATUS HddGetPartitionInfo(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	PIO_STACK_LOCATION IrpStackPointer = IoGetCurrentIrpStackLocation(Irp);
 
 	if (IrpStackPointer->Parameters.DeviceIoControl.OutputBufferLength < sizeof(PARTITION_INFORMATION)) {
+		DBG_TRACE("Bad argument: buffer not large enough to fit PARTITION_INFORMATION!");
 		return STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -276,11 +284,13 @@ static NTSTATUS HddDiskVerify(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	PIO_STACK_LOCATION IrpStackPointer = IoGetCurrentIrpStackLocation(Irp);
 
 	if (IrpStackPointer->Parameters.DeviceIoControl.InputBufferLength < sizeof(VERIFY_INFORMATION)) {
+		DBG_TRACE("Bad argument: buffer not large enough to fit VERIFY_INFORMATION!");
 		return STATUS_INFO_LENGTH_MISMATCH;
 	}
 
 	PVERIFY_INFORMATION Verify = (PVERIFY_INFORMATION)IrpStackPointer->Parameters.DeviceIoControl.InputBuffer;
 	if (Verify->Length > HDD_MAXIMUM_TRANSFER_BYTES) {
+		DBG_TRACE("Bad argument: Verify->Length > HDD_MAXIMUM_TRANSFER_BYTES! (%d > %d)", Verify->Length, HDD_MAXIMUM_TRANSFER_BYTES);
 		return STATUS_INVALID_DEVICE_REQUEST;
 	}
 
@@ -291,6 +301,7 @@ static NTSTATUS HddDiskVerify(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		return STATUS_SUCCESS;
 	}
 
+	DBG_TRACE("Offset is out of range of the HDD!");
 	return STATUS_IO_DEVICE_ERROR;
 }
 
@@ -318,6 +329,7 @@ static NTSTATUS XBOXAPI HddIrpDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Ir
 		RIP_API_MSG("Ripped on IOCTL_IDE_PASS_THROUGH");
 
 	default:
+		DBG_TRACE("Unsupported device request: %d", IrpStackPointer->Parameters.DeviceIoControl.IoControlCode);
 		Status = STATUS_INVALID_DEVICE_REQUEST;
 	}
 

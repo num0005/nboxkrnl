@@ -7,6 +7,7 @@
 #include "nt.hpp"
 #include "rtl.hpp"
 #include <string.h>
+#include <dbg.hpp>
 
 
 EXPORTNUM(245) OBJECT_HANDLE_TABLE ObpObjectHandleTable;
@@ -393,6 +394,7 @@ NTSTATUS ObpReferenceObjectByName(POBJECT_ATTRIBUTES ObjectAttributes, POBJECT_T
 
 VOID XBOXAPI ObpDeleteSymbolicLink(PVOID Object)
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	RIP_UNIMPLEMENTED();
 }
 

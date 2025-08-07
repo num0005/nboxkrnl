@@ -47,4 +47,5 @@ EXPORTNUM(378) PVOID NTAPI MmDbgWriteCheck
 )
 {
 	RIP_UNIMPLEMENTED();
+	return NULL;
 }

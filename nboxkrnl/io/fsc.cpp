@@ -5,6 +5,7 @@
 #include "fsc.hpp"
 #include <string.h>
 #include <assert.h>
+#include "dbg.hpp"
 
 #define MAX_NUMBER_OF_CACHE_PAGES 2048
 
@@ -350,7 +351,7 @@ EXPORTNUM(35) ULONG XBOXAPI FscGetCacheSize()
 // ******************************************************************
 EXPORTNUM(36) void XBOXAPI FscInvalidateIdleBlocks()
 {
-	RIP_UNIMPLEMENTED();
+	DBG_TRACE_NOT_IMPLEMENTED();
 }
 
 EXPORTNUM(37) NTSTATUS XBOXAPI FscSetCacheSize

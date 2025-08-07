@@ -12,6 +12,7 @@
 #include <nt.hpp>
 #include <obp.hpp>
 #include <hdd/hdd.hpp>
+#include "dbg.hpp"
 
 // from DXBX, from NASMX Project, nasmx\inc\xbox\kernel.inc
 #define XBOX_REFURB_INFO_SECTOR_INDEX 3
@@ -199,10 +200,12 @@ EXPORTNUM(24) NTSTATUS XBOXAPI ExQueryNonVolatileSetting
 			RtlLeaveCriticalSectionAndRegion(&ExpEepromLock);
 		}
 		else {
+			DBG_TRACE("Invalid argument: buffer too small (%d < %d)", ValueLength, ActualLength);
 			Status = STATUS_BUFFER_TOO_SMALL;
 		}
 	}
 	else {
+		DBG_TRACE("Invalid argument: Invalid ValueIndex = %d", ValueIndex);
 		Status = STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -246,7 +249,10 @@ EXPORTNUM(25) NTSTATUS NTAPI ExReadWriteRefurbInfo
 		FILE_SYNCHRONOUS_IO_ALERT);
 
 	if (!NT_SUCCESS(Status))
+	{
+		DBG_TRACE("Failed to open configuration partition!");
 		return Status;
+	}
 
 	LARGE_INTEGER ByteOffset;
 	ByteOffset.QuadPart = XBOX_REFURB_INFO_SECTOR_INDEX * HDD_SECTOR_SIZE;

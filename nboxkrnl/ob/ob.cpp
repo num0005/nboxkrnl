@@ -8,6 +8,7 @@
 #include "ps.hpp"
 #include <string.h>
 #include <rtl.hpp>
+#include <dbg.hpp>
 
 #define ASSERT_OBJECT(OBJ) NT_ASSERT(OBJ != NULL)
 
@@ -93,6 +94,7 @@ EXPORTNUM(239) NTSTATUS XBOXAPI ObCreateObject
 
 		if (RemainingName.Length && (RemainingName.Buffer[0] == OB_PATH_DELIMITER)) {
 			// Another delimiter in the name is invalid
+			DBG_TRACE("Invalid object name: too many delimiters!");
 			return STATUS_OBJECT_NAME_INVALID;
 		}
 
@@ -101,6 +103,7 @@ EXPORTNUM(239) NTSTATUS XBOXAPI ObCreateObject
 
 	if (FirstName.Length == 0) {
 		// Empty object's name is invalid
+		DBG_TRACE("Invalid object name: empty name");
 		return STATUS_OBJECT_NAME_INVALID;
 	}
 
@@ -173,12 +176,14 @@ EXPORTNUM(241) NTSTATUS XBOXAPI ObInsertObject
 						else {
 							ObUnlock(OldIrql);
 							ObfDereferenceObject(Object);
+							DBG_TRACE("Wrong object type!");
 							return STATUS_OBJECT_TYPE_MISMATCH;
 						}
 					}
 					else {
 						ObUnlock(OldIrql);
 						ObfDereferenceObject(Object);
+						DBG_TRACE("Name already in use!");
 						return STATUS_OBJECT_NAME_COLLISION;
 					}
 				}
@@ -186,6 +191,7 @@ EXPORTNUM(241) NTSTATUS XBOXAPI ObInsertObject
 				if (GetObjHeader(ObjectInDirectory)->Type != &ObDirectoryObjectType) {
 					ObUnlock(OldIrql);
 					ObfDereferenceObject(Object);
+					DBG_TRACE("Bad object path: directory is not a directory!");
 					return STATUS_OBJECT_PATH_NOT_FOUND;
 				}
 
@@ -195,6 +201,7 @@ EXPORTNUM(241) NTSTATUS XBOXAPI ObInsertObject
 				if (RemainingName.Length) {
 					ObUnlock(OldIrql);
 					ObfDereferenceObject(Object);
+					DBG_TRACE("Bad object path: remaining path after parsing complete");
 					return STATUS_OBJECT_PATH_NOT_FOUND;
 				}
 

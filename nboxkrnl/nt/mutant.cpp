@@ -46,7 +46,6 @@ EXPORTNUM(213) NTSTATUS NTAPI NtQueryMutant
 	if (NT_SUCCESS(Status))
 	{
 		/* Fill out the Basic Information Requested */
-		DPRINT("Returning Mutant Information\n");
 		MutantInformation->CurrentCount = KeReadStateMutant(Mutant);
 		MutantInformation->OwnedByCaller = (Mutant->OwnerThread == KeGetCurrentThread());
 		MutantInformation->AbandonedState = Mutant->Abandoned;

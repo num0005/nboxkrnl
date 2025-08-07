@@ -8,6 +8,7 @@
 #include "hal.hpp"
 #include "..\kernel.hpp"
 #include "assert.h"
+#include <dbg.hpp>
 
 
 VOID XBOXAPI KeInitializeTimer(PKTIMER Timer)
@@ -260,7 +261,9 @@ EXPORTNUM(97) BOOLEAN NTAPI KeCancelTimer(IN OUT PKTIMER Timer)
 	BOOLEAN Inserted;
 	//ASSERT_TIMER(Timer);
 	NT_ASSERT(KeGetCurrentIrql() <= DISPATCH_LEVEL);
-	DPRINT("KeCancelTimer(): Timer %p\n", Timer);
+	#if DBG
+	DbgPrint("KeCancelTimer(): Timer %p\n", Timer);
+	#endif
 
 	/* Lock the Database and Raise IRQL */
 	OldIrql = KeRaiseIrqlToDpcLevel();

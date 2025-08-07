@@ -4,6 +4,7 @@
 
 #include "ke.hpp"
 #include "..\kernel.hpp"
+#include <dbg.hpp>
 
 #define ASSERT_DEVICE_QUEUE(Q)
 
@@ -50,7 +51,9 @@ EXPORTNUM(115) BOOLEAN NTAPI KeInsertDeviceQueue
     BOOLEAN Inserted;
     ASSERT_DEVICE_QUEUE(DeviceQueue);
 
-    DPRINT("KeInsertDeviceQueue() DevQueue %p, Entry %p\n", DeviceQueue, DeviceQueueEntry);
+    #if DBG
+    DbgPrint("KeInsertDeviceQueue() DevQueue %p, Entry %p\n", DeviceQueue, DeviceQueueEntry);
+    #endif
 
     /* Lock the queue (actually just goes up to DISPATCH_LEVEL on UP) */
     KiAcquireDeviceQueueLock(DeviceQueue, &DeviceLock);
@@ -96,7 +99,9 @@ EXPORTNUM(114) BOOLEAN NTAPI KeInsertByKeyDeviceQueue
     PKDEVICE_QUEUE_ENTRY LastEntry;
     ASSERT_DEVICE_QUEUE(DeviceQueue);
 
-    DPRINT("KeInsertByKeyDeviceQueue() DevQueue %p, Entry %p, SortKey 0x%x\n", DeviceQueue, DeviceQueueEntry, SortKey);
+    #if DBG
+    DbgPrint("KeInsertByKeyDeviceQueue() DevQueue %p, Entry %p, SortKey 0x%x\n", DeviceQueue, DeviceQueueEntry, SortKey);
+    #endif
 
     /* Lock the queue */
     KiAcquireDeviceQueueLock(DeviceQueue, &DeviceLock);
@@ -164,7 +169,9 @@ EXPORTNUM(134) PKDEVICE_QUEUE_ENTRY NTAPI KeRemoveDeviceQueue
     KLOCK_QUEUE_HANDLE DeviceLock;
     ASSERT_DEVICE_QUEUE(DeviceQueue);
 
-    DPRINT("KeRemoveDeviceQueue() DevQueue %p\n", DeviceQueue);
+    #if DBG
+    DbgPrint("KeRemoveDeviceQueue() DevQueue %p\n", DeviceQueue);
+    #endif
 
     /* Lock the queue */
     KiAcquireDeviceQueueLock(DeviceQueue, &DeviceLock);
@@ -210,7 +217,9 @@ EXPORTNUM(133) PKDEVICE_QUEUE_ENTRY NTAPI KeRemoveByKeyDeviceQueue
     KLOCK_QUEUE_HANDLE DeviceLock;
     ASSERT_DEVICE_QUEUE(DeviceQueue);
 
-    DPRINT("KeRemoveByKeyDeviceQueue() DevQueue %p, SortKey 0x%x\n", DeviceQueue, SortKey);
+    #if DBG
+    DbgPrint("KeRemoveByKeyDeviceQueue() DevQueue %p, SortKey 0x%x\n", DeviceQueue, SortKey);
+    #endif
 
     /* Lock the queue */
     KiAcquireDeviceQueueLock(DeviceQueue, &DeviceLock);
@@ -287,7 +296,9 @@ PKDEVICE_QUEUE_ENTRY NTAPI KeRemoveByKeyDeviceQueueIfBusy
     KLOCK_QUEUE_HANDLE DeviceLock;
     ASSERT_DEVICE_QUEUE(DeviceQueue);
 
-    DPRINT("KeRemoveByKeyDeviceQueueIfBusy() DevQueue %p, SortKey 0x%x\n", DeviceQueue, SortKey);
+    #if DBG
+    DbgPrint("KeRemoveByKeyDeviceQueueIfBusy() DevQueue %p, SortKey 0x%x\n", DeviceQueue, SortKey);
+    #endif
 
     /* Lock the queue */
     KiAcquireDeviceQueueLock(DeviceQueue, &DeviceLock);
@@ -362,7 +373,9 @@ EXPORTNUM(135) BOOLEAN NTAPI KeRemoveEntryDeviceQueue
     KLOCK_QUEUE_HANDLE DeviceLock;
     ASSERT_DEVICE_QUEUE(DeviceQueue);
 
-    DPRINT("KeRemoveEntryDeviceQueue() DevQueue %p, Entry %p\n", DeviceQueue, DeviceQueueEntry);
+    #if DBG
+    DbgPrint("KeRemoveEntryDeviceQueue() DevQueue %p, Entry %p\n", DeviceQueue, DeviceQueueEntry);
+    #endif
 
     /* Lock the queue */
     KiAcquireDeviceQueueLock(DeviceQueue, &DeviceLock);

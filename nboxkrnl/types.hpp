@@ -44,7 +44,6 @@
 #define IN
 #define OPTIONAL
 #define PAGED_CODE()
-static inline void DPRINT(const char* fmt, ...) {};
 #define RESTRICTED_POINTER
 
 #define DLLEXPORT __declspec(dllexport)

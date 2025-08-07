@@ -5,6 +5,7 @@
 #include "cdrom.hpp"
 #include "io.hpp"
 #include "obp.hpp"
+#include <dbg.hpp>
 
 
 static DRIVER_OBJECT CdromDriverObject = {
@@ -41,11 +42,13 @@ BOOLEAN CdromInitDriver()
 
 	NTSTATUS Status = IoCreateDevice(&CdromDriverObject, 0, &CdromDirectoryName, FILE_DEVICE_CD_ROM, FALSE, &CdromDeviceObject);
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Failed to create CD-ROM Device: Status=%x", Status);
 		return FALSE;
 	}
 
 	Status = IoCreateSymbolicLink(&CdromDosDirectoryName, &CdromDirectoryName);
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Failed to create CD-ROM symbolic link: Status=%x", Status);
 		return FALSE;
 	}
 

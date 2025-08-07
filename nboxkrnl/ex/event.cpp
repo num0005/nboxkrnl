@@ -4,6 +4,7 @@
  */
 
 #include "ex.hpp"
+#include <dbg.hpp>
 
 
 EXPORTNUM(16) OBJECT_TYPE ExEventObjectType = {
@@ -106,8 +107,10 @@ NTSTATUS NTAPI NtOpenEvent
     HANDLE hEvent;
     NTSTATUS Status;
     PAGED_CODE();
-    DPRINT("NtOpenEvent(0x%p, 0x%x, 0x%p)\n",
+    #if DBG
+    DbgPrint("NtOpenEvent(0x%p, 0x%x, 0x%p)\n",
         EventHandle, DesiredAccess, ObjectAttributes);
+    #endif
 
     /* Open the Object */
     Status = ObOpenObjectByName(ObjectAttributes,
@@ -138,8 +141,10 @@ EXPORTNUM(205) NTSTATUS NTAPI NtPulseEvent
     PKEVENT Event;
     NTSTATUS Status;
     PAGED_CODE();
-    DPRINT("NtPulseEvent(EventHandle 0%p PreviousState 0%p)\n",
+    #if DBG
+    DbgPrint("NtPulseEvent(EventHandle 0%p PreviousState 0%p)\n",
         EventHandle, PreviousState);
+    #endif
 
     /* Open the Object */
     Status = ObReferenceObjectByHandle(EventHandle,
@@ -211,9 +216,10 @@ NTSTATUS NTAPI NtResetEvent
     PKEVENT Event;
     NTSTATUS Status;
     PAGED_CODE();
-    DPRINT("NtResetEvent(EventHandle 0%p PreviousState 0%p)\n",
+    #if DBG
+    DbgPrint("NtResetEvent(EventHandle 0%p PreviousState 0%p)\n",
         EventHandle, PreviousState);
-
+    #endif
 
     /* Open the Object */
     Status = ObReferenceObjectByHandle(EventHandle,
@@ -251,8 +257,10 @@ NTSTATUS NTAPI NtSetEvent
     PKEVENT Event;
     NTSTATUS Status;
     PAGED_CODE();
-    DPRINT("NtSetEvent(EventHandle 0%p PreviousState 0%p)\n",
+    #if DBG
+    DbgPrint("NtSetEvent(EventHandle 0%p PreviousState 0%p)\n",
         EventHandle, PreviousState);
+    #endif
 
     /* Open the Object */
     Status = ObReferenceObjectByHandle(EventHandle,

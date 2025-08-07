@@ -5,6 +5,7 @@
 #include "nt.hpp"
 #include "ex.hpp"
 #include "rtl.hpp"
+#include "dbg.hpp"
 
 
 EXPORTNUM(190) NTSTATUS XBOXAPI NtCreateFile
@@ -28,6 +29,7 @@ EXPORTNUM(195) NTSTATUS XBOXAPI NtDeleteFile
 	IN POBJECT_ATTRIBUTES ObjectAttributes
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -37,6 +39,7 @@ EXPORTNUM(198) NTSTATUS XBOXAPI NtFlushBuffersFile
 	OUT PIO_STATUS_BLOCK IoStatusBlock
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -54,6 +57,7 @@ EXPORTNUM(200) NTSTATUS XBOXAPI NtFsControlFile
 	IN ULONG                OutputBufferLength
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -84,6 +88,7 @@ EXPORTNUM(207) NTSTATUS XBOXAPI NtQueryDirectoryFile
 	IN  BOOLEAN                     RestartScan
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -97,6 +102,7 @@ EXPORTNUM(208) NTSTATUS XBOXAPI NtQueryDirectoryObject
 	OUT PULONG    ReturnedLength OPTIONAL
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -106,6 +112,7 @@ EXPORTNUM(210) NTSTATUS XBOXAPI NtQueryFullAttributesFile
 	OUT PFILE_NETWORK_OPEN_INFORMATION   Attributes
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -211,6 +218,7 @@ EXPORTNUM(215) NTSTATUS XBOXAPI NtQuerySymbolicLinkObject
 	OUT PULONG ReturnedLength OPTIONAL
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -224,21 +232,25 @@ EXPORTNUM(218) NTSTATUS XBOXAPI NtQueryVolumeInformationFile
 )
 {
 	if (((ULONG)FileInformationClass >= FileFsMaximumInformation) || (IopValidFsInformationQueries[FileInformationClass] == 0)) {
+		DBG_TRACE("Bad argument: unsupported information class: %d", FileInformationClass);
 		return STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (Length < (ULONG)IopValidFsInformationQueries[FileInformationClass]) {
+		DBG_TRACE("Bad argument: Length=%d < %d", Length, (ULONG)IopValidFsInformationQueries[FileInformationClass]);
 		return STATUS_INFO_LENGTH_MISMATCH;
 	}
 
 	PFILE_OBJECT FileObject;
 	NTSTATUS Status = ObReferenceObjectByHandle(FileHandle, &IoFileObjectType, (PVOID *)&FileObject);
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Bad handle: FileHandle=%x", FileHandle);
 		return Status;
 	}
 
 	if ((IopQueryFsOperationAccess[FileInformationClass] & FILE_READ_DATA) && !FileObject->ReadAccess) {
 		ObfDereferenceObject(FileObject);
+		DBG_TRACE("No read access to: FileHandle=%x", FileHandle);
 		return STATUS_ACCESS_DENIED;
 	}
 
@@ -292,11 +304,13 @@ EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 	PFILE_OBJECT FileObject;
 	NTSTATUS Status = ObReferenceObjectByHandle(FileHandle, &IoFileObjectType, (PVOID *)&FileObject);
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Bad handle: FileHandle=%x", FileHandle);
 		return Status;
 	}
 
 	if (!FileObject->ReadAccess) {
 		ObfDereferenceObject(FileObject);
+		DBG_TRACE("No read access to: FileHandle=%x", FileHandle);
 		return STATUS_ACCESS_DENIED;
 	}
 
@@ -305,6 +319,7 @@ EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 		NTSTATUS Status = ObReferenceObjectByHandle(Event, &ExEventObjectType, (PVOID *)&UserEvent);
 		if (!NT_SUCCESS(Status)) {
 			ObfDereferenceObject(FileObject);
+			DBG_TRACE("Bad handle: Event=%x", Event);
 			return Status;
 		}
 		UserEvent->Header.SignalState = 0;
@@ -320,6 +335,10 @@ EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 			if (Event) {
 				ObfDereferenceObject(Event);
 			}
+			if (ByteOffset)
+				DBG_TRACE("Invalid byte offset: %llu", ByteOffset->QuadPart);
+			else
+				DBG_TRACE("No byte offset provided");
 			return STATUS_INVALID_PARAMETER;
 		}
 		FileOffset.QuadPart = ByteOffset->QuadPart;
@@ -338,6 +357,7 @@ EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 	PDEVICE_OBJECT DeviceObject = FileObject->DeviceObject;
 	PIRP Irp = IoAllocateIrp(DeviceObject->StackSize);
 	if (!Irp) {
+		DBG_TRACE("failed to allocate IRP!");
 		return IopCleanupFailedIrpAllocation(FileObject, UserEvent);
 	}
 	Irp->Tail.Overlay.OriginalFileObject = FileObject;
@@ -359,7 +379,10 @@ EXPORTNUM(219) NTSTATUS XBOXAPI NtReadFile
 
 	FileObject->Event.Header.SignalState = 0;
 
-	return IopSynchronousService(DeviceObject, Irp, FileObject, TRUE, IsSynchronousIo);
+	Status = IopSynchronousService(DeviceObject, Irp, FileObject, TRUE, IsSynchronousIo);
+	if (!NT_SUCCESS(Status))
+		DBG_TRACE("Failure = %x! (caller = %p)", Status, _ReturnAddress());
+	return Status;
 }
 
 EXPORTNUM(232) VOID XBOXAPI NtUserIoApcDispatcher
@@ -369,6 +392,8 @@ EXPORTNUM(232) VOID XBOXAPI NtUserIoApcDispatcher
 	ULONG Reserved
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
+	DBG_TRACE("ApcContext = %p, IoStatusBlock = %p", ApcContext, IoStatusBlock);
 	RIP_UNIMPLEMENTED();
 }
 
@@ -387,11 +412,13 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 	PFILE_OBJECT FileObject;
 	NTSTATUS Status = ObReferenceObjectByHandle(FileHandle, &IoFileObjectType, (PVOID *)&FileObject);
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Bad handle: FileHandle=%x", FileHandle);
 		return Status;
 	}
 
 	if (!FileObject->WriteAccess) {
 		ObfDereferenceObject(FileObject);
+		DBG_TRACE("Write access denied to: FileHandle=%x", FileHandle);
 		return STATUS_ACCESS_DENIED;
 	}
 
@@ -400,6 +427,7 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 		NTSTATUS Status = ObReferenceObjectByHandle(Event, &ExEventObjectType, (PVOID *)&UserEvent);
 		if (!NT_SUCCESS(Status)) {
 			ObfDereferenceObject(FileObject);
+			DBG_TRACE("Bad handle: Event=%x", Event);
 			return Status;
 		}
 		UserEvent->Header.SignalState = 0;
@@ -418,6 +446,10 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 			if (Event) {
 				ObfDereferenceObject(Event);
 			}
+			if (ByteOffset)
+				DBG_TRACE("Invalid byte offset: %llu", ByteOffset->QuadPart);
+			else
+				DBG_TRACE("No byte offset provided");
 			return STATUS_INVALID_PARAMETER;
 		}
 		FileOffset.QuadPart = ByteOffset->QuadPart;
@@ -436,6 +468,7 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 	PDEVICE_OBJECT DeviceObject = FileObject->DeviceObject;
 	PIRP Irp = IoAllocateIrp(DeviceObject->StackSize);
 	if (!Irp) {
+		DBG_TRACE("Failed to allocate IRP");
 		return IopCleanupFailedIrpAllocation(FileObject, UserEvent);
 	}
 	Irp->Tail.Overlay.OriginalFileObject = FileObject;
@@ -457,5 +490,8 @@ EXPORTNUM(236) NTSTATUS XBOXAPI NtWriteFile
 
 	FileObject->Event.Header.SignalState = 0;
 
-	return IopSynchronousService(DeviceObject, Irp, FileObject, TRUE, IsSynchronousIo);
+	Status = IopSynchronousService(DeviceObject, Irp, FileObject, TRUE, IsSynchronousIo);
+	if (!NT_SUCCESS(Status))
+		DBG_TRACE("Failure = %x! (caller = %p)", Status, _ReturnAddress());
+	return Status;
 }

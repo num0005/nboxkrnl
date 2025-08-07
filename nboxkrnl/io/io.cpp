@@ -212,30 +212,37 @@ EXPORTNUM(66) NTSTATUS XBOXAPI IoCreateFile
 		/* Validate parameters */
 
 		if (FileAttributes & ~FILE_ATTRIBUTE_VALID_FLAGS) {
+			DBG_TRACE("Bad paramaters: Invalid File attribute flags set!");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if (ShareAccess & ~FILE_SHARE_VALID_FLAGS) {
+			DBG_TRACE("Bad paramaters: Invalid File share flags set!");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if (Disposition > FILE_MAXIMUM_DISPOSITION) {
+			DBG_TRACE("Bad paramaters: Disposition is too high! (%d > %d)", Disposition, FILE_MAXIMUM_DISPOSITION);
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if (CreateOptions & ~FILE_VALID_OPTION_FLAGS) {
+			DBG_TRACE("Bad paramaters: Invalid File create flags set!");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if ((CreateOptions & (FILE_SYNCHRONOUS_IO_ALERT | FILE_SYNCHRONOUS_IO_NONALERT)) && (!(DesiredAccess & SYNCHRONIZE))) {
+			DBG_TRACE("Bad paramaters: Synchronus IO creation flags set, but SYNCHRONIZE flag is not set for DesiredAccess");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if ((CreateOptions & FILE_DELETE_ON_CLOSE) && (!(DesiredAccess & DELETE))) {
+			DBG_TRACE("Bad paramaters: FILE_DELETE_ON_CLOSE set, but DELETE flag is not set for DesiredAccess");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if ((CreateOptions & (FILE_SYNCHRONOUS_IO_NONALERT | FILE_SYNCHRONOUS_IO_ALERT)) == (FILE_SYNCHRONOUS_IO_NONALERT | FILE_SYNCHRONOUS_IO_ALERT)){
+			DBG_TRACE("Bad paramaters: both FILE_SYNCHRONOUS_IO_NONALERT and FILE_SYNCHRONOUS_IO_ALERT set!");
 			return STATUS_INVALID_PARAMETER;
 		}
 
@@ -253,14 +260,17 @@ EXPORTNUM(66) NTSTATUS XBOXAPI IoCreateFile
 				&& (Disposition != FILE_OPEN)
 				&& (Disposition != FILE_OPEN_IF))
 			) {
+			DBG_TRACE("Bad paramaters");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if ((CreateOptions & FILE_COMPLETE_IF_OPLOCKED) && (CreateOptions & FILE_RESERVE_OPFILTER)) {
+			DBG_TRACE("Bad paramaters: FILE_COMPLETE_IF_OPLOCKED and FILE_RESERVE_OPFILTER both set");
 			return STATUS_INVALID_PARAMETER;
 		}
 
 		if ((CreateOptions & FILE_NO_INTERMEDIATE_BUFFERING) && (DesiredAccess & FILE_APPEND_DATA)) {
+			DBG_TRACE("Bad paramaters: FILE_NO_INTERMEDIATE_BUFFERING not supported with FILE_APPEND_DATA");
 			return STATUS_INVALID_PARAMETER;
 		}
 	}
@@ -293,6 +303,7 @@ EXPORTNUM(66) NTSTATUS XBOXAPI IoCreateFile
 	if (!NT_SUCCESS(Status) || !SuccessfulIoParse) {
 		if (NT_SUCCESS(Status)) {
 			NtClose(Handle);
+			DBG_TRACE("object type mismatch!");
 			Status = STATUS_OBJECT_TYPE_MISMATCH;
 		}
 
@@ -321,6 +332,9 @@ EXPORTNUM(66) NTSTATUS XBOXAPI IoCreateFile
 		ObfDereferenceObject(OpenPacket.FileObject);
 	}
 
+	if (!NT_SUCCESS(Status))
+		DBG_TRACE("Failure = %x", Status);
+
 	return Status;
 }
 
@@ -332,8 +346,12 @@ EXPORTNUM(67) NTSTATUS XBOXAPI IoCreateSymbolicLink
 {
 	// Must be an absolute path because the search below always starts from the root directory
 	if (!DeviceName->Length || (DeviceName->Buffer[0] != OB_PATH_DELIMITER)) {
+		DBG_TRACE("Bad arguments!");
 		return STATUS_INVALID_PARAMETER;
 	}
+	#if DBG
+	DbgPrint("IoCreateSymbolicLink(%s, %s)", SymbolicLinkName->Buffer, DeviceName->Buffer);
+	#endif
 
 	KIRQL OldIrql = ObLock();
 
@@ -347,12 +365,14 @@ EXPORTNUM(67) NTSTATUS XBOXAPI IoCreateSymbolicLink
 
 		if (RemainingName.Length && (RemainingName.Buffer[0] == OB_PATH_DELIMITER)) {
 			// Another delimiter in the name is invalid
+			DBG_TRACE("Invalid name: too many delimiters in a row!");
 			Status = STATUS_INVALID_PARAMETER;
 			ObUnlock(OldIrql);
 			break;
 		}
 
 		if (FoundObject = ObpFindObjectInDirectory(Directory, &FirstName, TRUE); FoundObject == NULL_HANDLE) {
+			DBG_TRACE("Invalid name: Unable to find object %.*s!", FirstName.Length, FirstName.Buffer);
 			Status = STATUS_INVALID_PARAMETER;
 			ObUnlock(OldIrql);
 			break;
@@ -371,6 +391,7 @@ EXPORTNUM(67) NTSTATUS XBOXAPI IoCreateSymbolicLink
 			// NOTE: ParseProcedure is supposed to parse the remaining part of the name
 
 			if (Obj->Type->ParseProcedure == nullptr) {
+				DBG_TRACE("No ParseProcedure for current object!");
 				Status = STATUS_INVALID_PARAMETER;
 				ObUnlock(OldIrql);
 				break;
@@ -408,6 +429,7 @@ EXPORTNUM(67) NTSTATUS XBOXAPI IoCreateSymbolicLink
 
 	// If the check succeeded, create the sym link object and insert it into OB
 	if (!NT_SUCCESS(Status)) {
+		DBG_TRACE("Failed to find object!");
 		return Status;
 	}
 
@@ -434,6 +456,7 @@ EXPORTNUM(67) NTSTATUS XBOXAPI IoCreateSymbolicLink
 		}
 	}
 	else {
+		DBG_TRACE("Failed to create symbolic link object");
 		ObfDereferenceObject(TargetObject);
 	}
 
@@ -1324,6 +1347,7 @@ EXPORTNUM(90) NTSTATUS NTAPI IoDismountVolume
 	IN PDEVICE_OBJECT DeviceObject
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1332,6 +1356,7 @@ EXPORTNUM(91) NTSTATUS NTAPI IoDismountVolumeByName
 	IN PSTRING VolumeName
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1344,5 +1369,6 @@ EXPORTNUM(223) NTSTATUS XBOXAPI NtRemoveIoCompletion
 	IN PLARGE_INTEGER Timeout OPTIONAL
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
