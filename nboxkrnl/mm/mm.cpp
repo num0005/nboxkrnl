@@ -485,6 +485,10 @@ EXPORTNUM(169) PVOID XBOXAPI MmCreateKernelStack
 	BOOLEAN DebuggerThread
 )
 {
+	// HACK: increase stack size if this is a debug build (which might have larger stacks)
+	#if DBG
+	NumberOfBytes *= 2;
+	#endif
 	return MiAllocateSystemMemory(NumberOfBytes, PAGE_READWRITE, DebuggerThread ? Debugger : Stack, TRUE);
 }
 
