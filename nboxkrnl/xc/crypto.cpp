@@ -39,6 +39,74 @@ VOID XBOXAPI XcDefaultSHAFinal
 	A_SHAFinal((SHA_CTX *)(pbSHAContext + 24), (PULONG)pbDigest);
 }
 
+struct ARC4_STATE
+{
+	UCHAR PermutationS[0x100u];
+	UCHAR I;
+	UCHAR J;
+};
+static_assert(sizeof(ARC4_STATE) <= XC_ARC4_STATE_SIZE);
+
+// setup ARC4 state from the key
+VOID XBOXAPI XcDefaultRC4Key
+(
+	PUCHAR pbKeyStruct,
+	ULONG dwKeyLength,
+	PUCHAR pbKey
+)
+{
+	// https://en.wikipedia.org/wiki/RC4#Key-scheduling_algorithm_(KSA)
+	ARC4_STATE* State = (ARC4_STATE*)(pbKeyStruct);
+	for (int i = 0; i < 0x100u; i++)
+		State->PermutationS[i] = i;
+	unsigned char j = 0;
+	for (int i = 0; i < 0x100u; i++)
+	{
+		j += State->PermutationS[i] + pbKey[(i % dwKeyLength)];
+		// no std::swap for us i <-> j
+		UCHAR Temp = State->PermutationS[i];
+		State->PermutationS[i] = State->PermutationS[j];
+		State->PermutationS[j] = Temp;
+	}
+	State->I = 0;
+	State->J = 0;
+}
+
+VOID XBOXAPI XcDefaultRC4Crypt
+(
+	PUCHAR pbKeyStruct,
+	ULONG dwInputLength,
+	PUCHAR pbInput
+)
+{
+	ARC4_STATE* State = (ARC4_STATE*)(pbKeyStruct);
+	// https://en.wikipedia.org/wiki/RC4#Pseudo-random_generation_algorithm_(PRGA)
+	UCHAR i = State->I;
+	UCHAR j = State->J;
+	while (dwInputLength)
+	{
+		// mutate state
+		i++;
+		j += State->PermutationS[i];
+		// no std::swap for us i <-> j
+		UCHAR Temp = State->PermutationS[i];
+		State->PermutationS[i] = State->PermutationS[j];
+		State->PermutationS[j] = Temp;
+
+		// extract random byte
+		UCHAR K = State->PermutationS[State->PermutationS[i] + State->PermutationS[j]];
+
+		// encrypt/decrypt in place with the peusdorandom stream generated (K)
+		*pbInput ^= K;
+
+		dwInputLength--;
+		pbInput++;
+	}
+	State->I = i;
+	State->J = j;
+}
+
+
 VOID XBOXAPI XcDefaultHMAC
 (
 	PBYTE pbKeyMaterial,
@@ -107,8 +175,8 @@ const CRYPTO_VECTOR DefaultCryptoStruct = {
 	XcDefaultSHAInit,
 	XcDefaultSHAUpdate,
 	XcDefaultSHAFinal,
-	nullptr,
-	nullptr,
+	XcDefaultRC4Key,
+	XcDefaultRC4Crypt,
 	XcDefaultHMAC,
 	nullptr,
 	nullptr,
