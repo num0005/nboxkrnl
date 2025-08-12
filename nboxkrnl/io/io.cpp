@@ -655,6 +655,7 @@ EXPORTNUM(75) NTSTATUS NTAPI IoQueryFileInformation
 	OUT PULONG ReturnedLength
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -667,6 +668,7 @@ EXPORTNUM(76) NTSTATUS NTAPI IoQueryVolumeInformation
 	OUT PULONG ReturnedLength
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -717,6 +719,7 @@ EXPORTNUM(79) NTSTATUS NTAPI IoSetIoCompletion
 	IN ULONG_PTR IoStatusInformation
 )
 {
+	DBG_TRACE_NOT_IMPLEMENTED();
 	// reactos implementation 
 	#if 0
 	PKQUEUE Queue = (PKQUEUE)IoCompletion;
