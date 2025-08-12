@@ -53,6 +53,10 @@ typedef struct {
 	UCHAR Buffer[64];
 } SHA_CTX, *PSHA_CTX;
 
+#define XC_ARC4_STATE_SIZE 0x108
+#define XC_SHA1_OUTPUT_LEN 20
+#define XC_HMAC_OUTPUT_LEN XC_SHA1_OUTPUT_LEN
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,8 +79,6 @@ EXPORTNUM(337) VOID XBOXAPI XcSHAFinal
 	PUCHAR pbSHAContext,
 	PUCHAR pbDigest
 );
-
-#define XC_ARC4_STATE_SIZE 0x108
 
 EXPORTNUM(338) void NTAPI XcRC4Key
 (

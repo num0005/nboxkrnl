@@ -131,18 +131,21 @@ XBE_CERTIFICATE* XeQueryCertificate()
 static void XeSetupPerTitleKeys()
 {
 	// Generate per-title keys from the XBE Certificate
-	UCHAR Digest[20] ={};
+	UCHAR Digest[XC_HMAC_OUTPUT_LEN] ={};
 
 	// Set the LAN Key
-	XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzLanKey, XBOX_KEY_LENGTH, NULL, 0, XboxLANKey);
+	XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzLanKey, XBOX_KEY_LENGTH, NULL, 0, Digest);
+	memcpy(XboxLANKey, Digest, sizeof(XboxLANKey));
 
 	// Signature Key
-	XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzSignatureKey, XBOX_KEY_LENGTH, NULL, 0, XboxSignatureKey);
+	XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzSignatureKey, XBOX_KEY_LENGTH, NULL, 0, Digest);
+	memcpy(XboxSignatureKey, Digest, sizeof(XboxSignatureKey));
 
 	// Alternate Signature Keys
 	for (int i = 0; i < ALTERNATE_SIGNATURE_COUNT; i++)
 	{
-		XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzTitleAlternateSignatureKey[i], XBOX_KEY_LENGTH, NULL, 0, XboxAlternateSignatureKeys[i]);
+		XcHMAC(XboxCERTKey, XBOX_KEY_LENGTH, XeQueryCertificate()->bzTitleAlternateSignatureKey[i], XBOX_KEY_LENGTH, NULL, 0, Digest);
+		memcpy(XboxAlternateSignatureKeys[i], Digest, sizeof(XboxAlternateSignatureKeys[i]));
 	}
 
 	switch (XboxType)
